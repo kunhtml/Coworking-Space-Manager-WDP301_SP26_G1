@@ -524,33 +524,34 @@ export default function Home() {
         </Container>
       </section>
 
-      <div
-        className="d-flex"
-        style={{
-          whiteSpace: "nowrap",
-          backgroundColor: "white",
-          color: "black",
-          padding: "1.2rem 0",
-          transform: "rotate(-2deg) scale(1.05)",
-          boxShadow: "0 0 60px rgba(0,0,0,0.6)",
-          fontWeight: 900,
-          fontSize: "2rem",
-          textTransform: "uppercase",
-          overflow: "hidden",
-          margin: "4rem -5%",
-        }}
-      >
-        <div className="marquee-content">
-          <span style={{ padding: "0 2rem", flexShrink: 0 }}>
-            CÀ PHÊ NGUYÊN CHẤT &nbsp;-&nbsp; KHÔNG GIAN YÊN TĨNH &nbsp;-&nbsp;
-            WIFI TỐC ĐỘ CAO &nbsp;-&nbsp; PHỤC VỤ 24/7 &nbsp;-&nbsp;
-          </span>
-        </div>
-        <div className="marquee-content">
-          <span style={{ padding: "0 2rem", flexShrink: 0 }}>
-            CÀ PHÊ NGUYÊN CHẤT &nbsp;-&nbsp; KHÔNG GIAN YÊN TĨNH &nbsp;-&nbsp;
-            WIFI TỐC ĐỘ CAO &nbsp;-&nbsp; PHỤC VỤ 24/7 &nbsp;-&nbsp;
-          </span>
+      <div style={{ overflowX: "hidden" }}>
+        <div
+          className="d-flex"
+          style={{
+            whiteSpace: "nowrap",
+            backgroundColor: "white",
+            color: "black",
+            padding: "1.2rem 0",
+            transform: "rotate(-2deg) scale(1.05)",
+            boxShadow: "0 0 60px rgba(0,0,0,0.6)",
+            fontWeight: 900,
+            fontSize: "2rem",
+            textTransform: "uppercase",
+            margin: "4rem -10%",
+          }}
+        >
+          <div className="marquee-content">
+            <span style={{ padding: "0 2rem", flexShrink: 0 }}>
+              CÀ PHÊ NGUYÊN CHẤT &nbsp;-&nbsp; KHÔNG GIAN YÊN TĨNH &nbsp;-&nbsp;
+              WIFI TỐC ĐỘ CAO &nbsp;-&nbsp; PHỤC VỤ 24/7 &nbsp;-&nbsp;
+            </span>
+          </div>
+          <div className="marquee-content">
+            <span style={{ padding: "0 2rem", flexShrink: 0 }}>
+              CÀ PHÊ NGUYÊN CHẤT &nbsp;-&nbsp; KHÔNG GIAN YÊN TĨNH &nbsp;-&nbsp;
+              WIFI TỐC ĐỘ CAO &nbsp;-&nbsp; PHỤC VỤ 24/7 &nbsp;-&nbsp;
+            </span>
+          </div>
         </div>
       </div>
 
