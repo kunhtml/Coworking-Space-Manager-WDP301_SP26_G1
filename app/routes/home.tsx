@@ -524,25 +524,32 @@ export default function Home() {
         </Container>
       </section>
 
-      <div className="py-3 border-top border-bottom border-secondary overflow-hidden bg-dark">
-        <div
-          className="d-flex whitespace-nowrap"
-          style={{
-            whiteSpace: "nowrap",
-            animation: "scroll 20s linear infinite",
-          }}
-        >
-          <span className="text-secondary text-uppercase mx-4 fw-bold tracking-widest">
-            CÀ PHÊ NGUYÊN CHẤT - KHÔNG GIAN YÊN TĨNH - WIFI TỐC ĐỘ CAO - PHỤC VỤ
-            24/7 -{" "}
+      <div
+        className="d-flex"
+        style={{
+          whiteSpace: "nowrap",
+          backgroundColor: "white",
+          color: "black",
+          padding: "1.2rem 0",
+          transform: "rotate(-2deg) scale(1.05)",
+          boxShadow: "0 0 60px rgba(0,0,0,0.6)",
+          fontWeight: 900,
+          fontSize: "2rem",
+          textTransform: "uppercase",
+          overflow: "hidden",
+          margin: "4rem -5%",
+        }}
+      >
+        <div className="marquee-content">
+          <span style={{ padding: "0 2rem", flexShrink: 0 }}>
+            CÀ PHÊ NGUYÊN CHẤT &nbsp;-&nbsp; KHÔNG GIAN YÊN TĨNH &nbsp;-&nbsp;
+            WIFI TỐC ĐỘ CAO &nbsp;-&nbsp; PHỤC VỤ 24/7 &nbsp;-&nbsp;
           </span>
-          <span className="text-secondary text-uppercase mx-4 fw-bold tracking-widest">
-            CÀ PHÊ NGUYÊN CHẤT - KHÔNG GIAN YÊN TĨNH - WIFI TỐC ĐỘ CAO - PHỤC VỤ
-            24/7 -{" "}
-          </span>
-          <span className="text-secondary text-uppercase mx-4 fw-bold tracking-widest">
-            CÀ PHÊ NGUYÊN CHẤT - KHÔNG GIAN YÊN TĨNH - WIFI TỐC ĐỘ CAO - PHỤC VỤ
-            24/7 -{" "}
+        </div>
+        <div className="marquee-content">
+          <span style={{ padding: "0 2rem", flexShrink: 0 }}>
+            CÀ PHÊ NGUYÊN CHẤT &nbsp;-&nbsp; KHÔNG GIAN YÊN TĨNH &nbsp;-&nbsp;
+            WIFI TỐC ĐỘ CAO &nbsp;-&nbsp; PHỤC VỤ 24/7 &nbsp;-&nbsp;
           </span>
         </div>
       </div>
@@ -696,6 +703,15 @@ export default function Home() {
         .hover-white:hover { color: white !important; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .marquee-content {
+          display: inline-flex;
+          flex-shrink: 0;
+          animation: marquee 20s linear infinite;
+        }
+        @keyframes marquee {
+          0%   { transform: translateX(0%); }
+          100% { transform: translateX(-100%); }
+        }
       `,
         }}
       />
