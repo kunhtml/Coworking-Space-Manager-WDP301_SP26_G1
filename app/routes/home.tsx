@@ -1,3 +1,5 @@
+import { useState, useRef, useEffect } from "react";
+import { animate, stagger } from "animejs";
 import type { Route } from "./+types/home";
 import {
   Badge,
@@ -7,6 +9,8 @@ import {
   Container,
   Navbar,
   Row,
+  Modal,
+  Form,
 } from "react-bootstrap";
 import { Link } from "react-router";
 
@@ -22,6 +26,33 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Home() {
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const menuScrollRef = useRef<HTMLDivElement>(null);
+
+  const handleClose = () => setShowBookingModal(false);
+  const handleShow = () => setShowBookingModal(true);
+
+  useEffect(() => {
+    animate(".hero-letter", {
+      rotateX: [-90, 0],
+      translateY: [50, 0],
+      opacity: [0, 1],
+      ease: "outElastic(1, .6)",
+      duration: 1500,
+      delay: stagger(40),
+    });
+  }, []);
+
+  const scrollMenu = (direction: "left" | "right") => {
+    if (menuScrollRef.current) {
+      const scrollAmount = 350; // Adjust based on card width
+      menuScrollRef.current.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth",
+      });
+    }
+  };
+
   return (
     <div className="d-flex flex-column min-vh-100 bg-dark text-light font-monospace">
       <Navbar
@@ -63,12 +94,13 @@ export default function Home() {
                 Hướng dẫn đặt bàn
               </a>
               <div className="d-flex gap-2 ms-lg-3 mt-2 mt-lg-0">
-                <Link
-                  to="/dashboard"
-                  className="btn btn-outline-light px-4 rounded-0 fw-medium text-uppercase"
+                <Button
+                  variant="outline-light"
+                  className="px-4 rounded-0 fw-medium text-uppercase"
+                  onClick={handleShow}
                 >
                   Đặt bàn ngay
-                </Link>
+                </Button>
               </div>
             </div>
           </Navbar.Collapse>
@@ -94,10 +126,37 @@ export default function Home() {
           >
             H ư ơ n g v ị đ ậ m đ à . K h ô n g g i a n c ự c c h i l l .
           </p>
-          <h1 className="display-2 fw-bold text-white mb-4 lh-sm text-uppercase">
-            Trải nghiệm cà phê
+          <h1
+            className="display-2 fw-bold text-white mb-4 lh-sm text-uppercase"
+            style={{ perspective: "600px" }}
+          >
+            {"Trải nghiệm cà phê".split("").map((char, i) => (
+              <span
+                key={`line1-${i}`}
+                className="hero-letter"
+                style={{
+                  display: "inline-block",
+                  opacity: 0,
+                  whiteSpace: "pre",
+                }}
+              >
+                {char}
+              </span>
+            ))}
             <br />
-            đích thực
+            {"đích thực".split("").map((char, i) => (
+              <span
+                key={`line2-${i}`}
+                className="hero-letter"
+                style={{
+                  display: "inline-block",
+                  opacity: 0,
+                  whiteSpace: "pre",
+                }}
+              >
+                {char}
+              </span>
+            ))}
           </h1>
           <p
             className="lead text-secondary mb-5 mx-auto"
@@ -108,12 +167,14 @@ export default function Home() {
             chóng cho buổi hẹn hò hay làm việc hiệu quả.
           </p>
           <div className="d-flex flex-wrap gap-3 justify-content-center">
-            <Link
-              to="/dashboard"
-              className="btn btn-light btn-lg rounded-0 px-5 py-3 fw-bold text-uppercase"
+            <Button
+              variant="light"
+              size="lg"
+              className="rounded-0 px-5 py-3 fw-bold text-uppercase"
+              onClick={handleShow}
             >
               Đặt bàn ngay
-            </Link>
+            </Button>
             <Button
               href="#spaces"
               variant="outline-light"
@@ -282,6 +343,122 @@ export default function Home() {
       </section>
 
       <section
+        id="menu"
+        className="py-5 border-top border-secondary bg-dark position-relative"
+      >
+        <Container>
+          <div className="text-center mb-5">
+            <h2 className="display-5 fw-bold text-white text-uppercase">
+              Thực đơn nổi bật
+            </h2>
+            <p className="text-secondary">
+              Hương vị đặc trưng chỉ có tại Nexus Coffee
+            </p>
+          </div>
+
+          <div className="d-flex align-items-center gap-3">
+            <Button
+              variant="dark"
+              className="flex-shrink-0 rounded-circle border-secondary d-none d-md-flex align-items-center justify-content-center"
+              style={{ width: "44px", height: "44px" }}
+              onClick={() => scrollMenu("left")}
+            >
+              <i className="bi bi-chevron-left"></i>
+            </Button>
+
+            <div
+              ref={menuScrollRef}
+              className="d-flex gap-4 overflow-x-auto hide-scrollbar pb-3"
+              style={{ scrollSnapType: "x mandatory", flex: 1 }}
+            >
+              {[
+                {
+                  name: "Nexus Signature",
+                  desc: "Cà phê ủ lạnh kết hợp kem macchiato độc quyền",
+                  price: "65.000đ",
+                },
+                {
+                  name: "Classic Espresso",
+                  desc: "Cà phê nguyên chất pha máy chuẩn Ý",
+                  price: "45.000đ",
+                },
+                {
+                  name: "Caramel Macchiato",
+                  desc: "Espresso, sữa tươi và sốt caramel ngọt ngào",
+                  price: "55.000đ",
+                },
+                {
+                  name: "Matcha Latte",
+                  desc: "Trà xanh Nhật Bản kết hợp sữa tươi thơm béo",
+                  price: "55.000đ",
+                },
+                {
+                  name: "Peach Tea Mania",
+                  desc: "Trà đào cam sả thanh mát, giải nhiệt",
+                  price: "50.000đ",
+                },
+                {
+                  name: "Cold Brew Original",
+                  desc: "Cà phê ủ lạnh 24h, hương vị mượt mà",
+                  price: "55.000đ",
+                },
+                {
+                  name: "Mocha Frappuccino",
+                  desc: "Cà phê đá xay với sốt chocolate và kem tươi",
+                  price: "60.000đ",
+                },
+                {
+                  name: "Trà Vải Cam Sả",
+                  desc: "Trà đen kết hợp vải thiều và cam sả tươi",
+                  price: "50.000đ",
+                },
+              ].map((item, idx) => (
+                <div
+                  key={idx}
+                  className="flex-shrink-0"
+                  style={{ width: "280px", scrollSnapAlign: "start" }}
+                >
+                  <div className="p-4 border border-secondary h-100 bg-black hover-bg-dark transition-all d-flex flex-column">
+                    <div className="d-flex justify-content-between align-items-start mb-3">
+                      <h5 className="text-white text-uppercase mb-0">
+                        {item.name}
+                      </h5>
+                      <span className="text-warning fw-bold ms-2">
+                        {item.price}
+                      </span>
+                    </div>
+                    <p className="text-secondary mb-0 flex-grow-1">
+                      {item.desc}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <Button
+              variant="dark"
+              className="flex-shrink-0 rounded-circle border-secondary d-none d-md-flex align-items-center justify-content-center"
+              style={{ width: "44px", height: "44px" }}
+              onClick={() => scrollMenu("right")}
+            >
+              <i className="bi bi-chevron-right"></i>
+            </Button>
+          </div>
+
+          <div className="text-center mt-5">
+            <Button
+              variant="outline-light"
+              className="rounded-0 px-4 py-2 text-uppercase fw-bold"
+              as={Link}
+              to="/menu"
+            >
+              Xem toàn bộ thực đơn
+            </Button>
+          </div>
+        </Container>
+      </section>
+
+      <section
         id="spaces"
         className="py-5 border-top border-secondary bg-black"
       >
@@ -407,6 +584,106 @@ export default function Home() {
           </Row>
         </Container>
       </footer>
+      <Modal
+        show={showBookingModal}
+        onHide={handleClose}
+        centered
+        className="font-monospace"
+        data-bs-theme="dark"
+      >
+        <Modal.Header
+          closeButton
+          className="bg-dark text-light border-secondary rounded-0 border-bottom"
+        >
+          <Modal.Title className="text-uppercase fw-bold">
+            <i className="bi bi-calendar-check me-2"></i>
+            Đặt bàn
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="bg-dark text-light p-4">
+          <Form>
+            <Form.Group className="mb-3" controlId="bookingName">
+              <Form.Label className="text-secondary small text-uppercase fw-bold">
+                Họ và tên
+              </Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Nhập họ và tên"
+                className="bg-black text-light border-secondary rounded-0 shadow-none"
+              />
+            </Form.Group>
+            <Form.Group className="mb-3" controlId="bookingPhone">
+              <Form.Label className="text-secondary small text-uppercase fw-bold">
+                Số điện thoại
+              </Form.Label>
+              <Form.Control
+                type="tel"
+                placeholder="Nhập số điện thoại"
+                className="bg-black text-light border-secondary rounded-0 shadow-none"
+              />
+            </Form.Group>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3" controlId="bookingDate">
+                  <Form.Label className="text-secondary small text-uppercase fw-bold">
+                    Ngày
+                  </Form.Label>
+                  <Form.Control
+                    type="date"
+                    className="bg-black text-light border-secondary rounded-0 shadow-none"
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3" controlId="bookingTime">
+                  <Form.Label className="text-secondary small text-uppercase fw-bold">
+                    Giờ
+                  </Form.Label>
+                  <Form.Control
+                    type="time"
+                    className="bg-black text-light border-secondary rounded-0 shadow-none"
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+            <Form.Group className="mb-3" controlId="bookingGuests">
+              <Form.Label className="text-secondary small text-uppercase fw-bold">
+                Số người
+              </Form.Label>
+              <Form.Select className="bg-black text-light border-secondary rounded-0 shadow-none">
+                <option value="1">1 người</option>
+                <option value="2">2 người</option>
+                <option value="3">3 người</option>
+                <option value="4">4 người</option>
+                <option value="5+">5+ người</option>
+              </Form.Select>
+            </Form.Group>
+            <Form.Group className="mb-4" controlId="bookingNote">
+              <Form.Label className="text-secondary small text-uppercase fw-bold">
+                Ghi chú (Tùy chọn)
+              </Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                placeholder="Yêu cầu đặc biệt..."
+                className="bg-black text-light border-secondary rounded-0 shadow-none"
+              />
+            </Form.Group>
+            <Button
+              variant="light"
+              type="submit"
+              className="w-100 rounded-0 fw-bold text-uppercase py-3 mt-2"
+              onClick={(e) => {
+                e.preventDefault();
+                handleClose();
+              }}
+            >
+              Xác nhận đặt bàn
+            </Button>
+          </Form>
+        </Modal.Body>
+      </Modal>
+
       <style
         dangerouslySetInnerHTML={{
           __html: `
@@ -417,6 +694,8 @@ export default function Home() {
         .tracking-widest { letter-spacing: 0.1em; }
         .hover-bg-dark:hover { background-color: #212529 !important; }
         .hover-white:hover { color: white !important; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `,
         }}
       />
