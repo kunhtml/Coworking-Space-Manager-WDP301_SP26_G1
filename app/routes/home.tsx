@@ -54,7 +54,10 @@ export default function Home() {
   };
 
   return (
-    <div className="d-flex flex-column min-vh-100 bg-dark text-light font-monospace">
+    <div
+      className="d-flex flex-column min-vh-100 bg-dark text-light font-monospace"
+      style={{ overflowX: "hidden" }}
+    >
       <Navbar
         expand="lg"
         className="bg-dark border-bottom border-secondary sticky-top py-3"
@@ -95,6 +98,14 @@ export default function Home() {
               </a>
               <div className="d-flex gap-2 ms-lg-3 mt-2 mt-lg-0">
                 <Button
+                  as={Link}
+                  to="/login"
+                  variant="outline-secondary"
+                  className="px-4 rounded-0 fw-medium text-uppercase text-light border-secondary"
+                >
+                  Đăng nhập
+                </Button>
+                <Button
                   variant="outline-light"
                   className="px-4 rounded-0 fw-medium text-uppercase"
                   onClick={handleShow}
@@ -113,15 +124,37 @@ export default function Home() {
           minHeight: "80vh",
           display: "flex",
           alignItems: "center",
-          background: "linear-gradient(135deg, #121212 0%, #000000 100%)",
         }}
       >
+        {/* Blurred background image */}
+        <div
+          className="position-absolute top-0 start-0 w-100 h-100"
+          style={{
+            backgroundImage: "url('/hero-bg.png')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+            filter: "blur(3px)",
+            transform: "scale(1.05)",
+            zIndex: 0,
+            pointerEvents: "none",
+          }}
+        />
+        {/* Dark overlay */}
+        <div
+          className="position-absolute top-0 start-0 w-100 h-100"
+          style={{
+            backgroundColor: "rgba(0,0,0,0.55)",
+            zIndex: 1,
+            pointerEvents: "none",
+          }}
+        />
         <Container
           className="position-relative text-center"
-          style={{ zIndex: 1 }}
+          style={{ zIndex: 2 }}
         >
           <p
-            className="text-uppercase tracking-widest mb-4 text-secondary"
+            className="text-uppercase tracking-widest mb-4 text-white"
             style={{ letterSpacing: "0.5em" }}
           >
             H ư ơ n g v ị đ ậ m đ à . K h ô n g g i a n c ự c c h i l l .
@@ -159,7 +192,7 @@ export default function Home() {
             ))}
           </h1>
           <p
-            className="lead text-secondary mb-5 mx-auto"
+            className="lead text-white mb-5 mx-auto"
             style={{ maxWidth: "800px" }}
           >
             Khám phá không gian thưởng thức cà phê độc đáo với thiết kế hiện
@@ -524,34 +557,32 @@ export default function Home() {
         </Container>
       </section>
 
-      <div style={{ overflowX: "hidden" }}>
-        <div
-          className="d-flex"
-          style={{
-            whiteSpace: "nowrap",
-            backgroundColor: "white",
-            color: "black",
-            padding: "1.2rem 0",
-            transform: "rotate(-2deg) scale(1.05)",
-            boxShadow: "0 0 60px rgba(0,0,0,0.6)",
-            fontWeight: 900,
-            fontSize: "2rem",
-            textTransform: "uppercase",
-            margin: "4rem -10%",
-          }}
-        >
-          <div className="marquee-content">
-            <span style={{ padding: "0 2rem", flexShrink: 0 }}>
-              CÀ PHÊ NGUYÊN CHẤT &nbsp;-&nbsp; KHÔNG GIAN YÊN TĨNH &nbsp;-&nbsp;
-              WIFI TỐC ĐỘ CAO &nbsp;-&nbsp; PHỤC VỤ 24/7 &nbsp;-&nbsp;
-            </span>
-          </div>
-          <div className="marquee-content">
-            <span style={{ padding: "0 2rem", flexShrink: 0 }}>
-              CÀ PHÊ NGUYÊN CHẤT &nbsp;-&nbsp; KHÔNG GIAN YÊN TĨNH &nbsp;-&nbsp;
-              WIFI TỐC ĐỘ CAO &nbsp;-&nbsp; PHỤC VỤ 24/7 &nbsp;-&nbsp;
-            </span>
-          </div>
+      <div
+        className="d-flex"
+        style={{
+          whiteSpace: "nowrap",
+          backgroundColor: "white",
+          color: "black",
+          padding: "1.2rem 0",
+          transform: "rotate(-2deg) scale(1.05)",
+          boxShadow: "0 0 60px rgba(0,0,0,0.6)",
+          fontWeight: 900,
+          fontSize: "2rem",
+          textTransform: "uppercase",
+          margin: "4rem -10%",
+        }}
+      >
+        <div className="marquee-content">
+          <span style={{ padding: "0 2rem", flexShrink: 0 }}>
+            CÀ PHÊ NGUYÊN CHẤT &nbsp;-&nbsp; KHÔNG GIAN YÊN TĨNH &nbsp;-&nbsp;
+            WIFI TỐC ĐỘ CAO &nbsp;-&nbsp; PHỤC VỤ 24/7 &nbsp;-&nbsp;
+          </span>
+        </div>
+        <div className="marquee-content">
+          <span style={{ padding: "0 2rem", flexShrink: 0 }}>
+            CÀ PHÊ NGUYÊN CHẤT &nbsp;-&nbsp; KHÔNG GIAN YÊN TĨNH &nbsp;-&nbsp;
+            WIFI TỐC ĐỘ CAO &nbsp;-&nbsp; PHỤC VỤ 24/7 &nbsp;-&nbsp;
+          </span>
         </div>
       </div>
 
