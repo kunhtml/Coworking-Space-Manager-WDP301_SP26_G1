@@ -1,6 +1,6 @@
 # Nexus Coworking Space Manager
 
-Hệ thống quản lý và đặt chỗ không gian làm việc chung (Coworking Space) được xây dựng bằng React Router v7, React Bootstrap và TypeScript.
+Hệ thống quản lý và đặt chỗ không gian làm việc chung (Coworking Space) được xây dựng bằng React Router v7, React Bootstrap và JavaScript (React JSX).
 
 ## Tính năng
 
@@ -13,7 +13,7 @@ Hệ thống quản lý và đặt chỗ không gian làm việc chung (Coworkin
 
 - **Framework**: React Router v7 (Full-stack React framework)
 - **UI Library**: React Bootstrap, Bootstrap 5
-- **Ngôn ngữ**: TypeScript
+- **Ngôn ngữ**: JavaScript (JSX)
 - **Build Tool**: Vite
 
 ## Cài đặt và Chạy dự án
@@ -30,7 +30,7 @@ npm install
 npm run dev
 ```
 
-Ứng dụng sẽ chạy tại `http://localhost:5173`.
+Ứng dụng sẽ chạy tại `http://localhost:5173` (hoặc cổng khác nếu 5173 đang được sử dụng).
 
 ### 3. Build cho Production
 
@@ -49,10 +49,10 @@ npm run start
 ```
 app/
 ├── app.css           # Global styles
-├── root.tsx          # Root layout của ứng dụng
-├── routes.ts         # Cấu hình routing
+├── root.jsx          # Root layout của ứng dụng
+├── routes.js         # Cấu hình routing
 └── routes/
-    ├── home.tsx      # Trang chủ & Form đặt chỗ
-    ├── spaces.tsx    # Trang danh sách không gian làm việc
-    └── dashboard.tsx # Trang quản lý đặt chỗ của người dùng
+    ├── home.jsx      # Trang chủ & Form đặt chỗ
+    ├── spaces.jsx    # Trang danh sách không gian làm việc
+    └── dashboard.jsx # Trang quản lý đặt chỗ của người dùng
 ```
