@@ -77,12 +77,12 @@ export default function Home() {
           />
           <Navbar.Collapse id="basic-navbar-nav">
             <div className="ms-auto d-flex flex-column flex-lg-row gap-4 align-items-lg-center mt-3 mt-lg-0">
-              <a
-                href="#spaces"
+              <Link
+                to="/spaces"
                 className="text-decoration-none text-light fw-medium px-2 py-1 hover-primary transition-all text-uppercase"
               >
                 Không gian
-              </a>
+              </Link>
               <Link
                 to="/menu"
                 className="text-decoration-none text-light fw-medium px-2 py-1 hover-primary transition-all text-uppercase"
@@ -482,7 +482,6 @@ export default function Home() {
               Xem toàn bộ thực đơn
             </Button>
           </div>
-
         </Container>
       </section>
 
