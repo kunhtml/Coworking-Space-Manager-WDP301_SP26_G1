@@ -202,7 +202,8 @@ export default function Home() {
               Đặt bàn ngay
             </Button>
             <Button
-              href="#spaces"
+              as={Link}
+              to="/spaces"
               variant="outline-light"
               size="lg"
               className="rounded-0 px-5 py-3 fw-bold text-uppercase"
