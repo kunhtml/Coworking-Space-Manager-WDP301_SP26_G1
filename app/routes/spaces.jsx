@@ -15,97 +15,140 @@ import { Link } from "react-router";
 
 export function meta() {
   return [
-    { title: "Không gian làm việc | Nexus Coworking" },
+    { title: "Sơ đồ không gian | Nexus Coffee" },
     {
       name: "description",
-      content: "Khám phá các không gian làm việc tại Nexus Coworking.",
+      content:
+        "Xem sơ đồ bàn và không gian tại Nexus Coffee. Chọn bàn trống để đặt chỗ ngay.",
     },
   ];
 }
 
-const spaces = [
+const floors = [
   {
     id: 1,
-    name: "Hot Desk - Tầng 5",
-    type: "Chỗ ngồi tự do",
-    capacity: "1 người",
-    price: "150.000đ/ngày",
-    image:
-      "https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?w=800&q=80",
-    features: ["Wifi tốc độ cao", "Trà & Cafe miễn phí", "Ghế Ergonomic"],
+    name: "Tầng 1 - Quầy bar & Sảnh",
+    tables: [
+      { id: "T1-01", name: "Bàn đơn 01", seats: 1, type: "single", status: "available" },
+      { id: "T1-02", name: "Bàn đơn 02", seats: 1, type: "single", status: "available" },
+      { id: "T1-03", name: "Bàn đôi 03", seats: 2, type: "double", status: "booked" },
+      { id: "T1-04", name: "Bàn đôi 04", seats: 2, type: "double", status: "available" },
+      { id: "T1-05", name: "Bàn nhóm 05", seats: 4, type: "group", status: "maintenance" },
+      { id: "T1-06", name: "Bàn nhóm 06", seats: 4, type: "group", status: "booked" },
+      { id: "T1-07", name: "Bàn bar 07", seats: 1, type: "bar", status: "available" },
+      { id: "T1-08", name: "Bàn bar 08", seats: 1, type: "bar", status: "booked" },
+      { id: "T1-09", name: "Bàn bar 09", seats: 1, type: "bar", status: "available" },
+      { id: "T1-10", name: "Bàn sofa 10", seats: 3, type: "sofa", status: "available" },
+    ],
   },
   {
     id: 2,
-    name: "Dedicated Desk - Tầng 6",
-    type: "Chỗ ngồi cố định",
-    capacity: "1 người",
-    price: "3.000.000đ/tháng",
-    image:
-      "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80",
-    features: ["Tủ đồ cá nhân", "Sử dụng phòng họp 5h/tháng", "In ấn miễn phí"],
+    name: "Tầng 2 - Không gian yên tĩnh",
+    tables: [
+      { id: "T2-01", name: "Bàn cửa sổ 01", seats: 2, type: "window", status: "booked" },
+      { id: "T2-02", name: "Bàn cửa sổ 02", seats: 2, type: "window", status: "available" },
+      { id: "T2-03", name: "Bàn đơn 03", seats: 1, type: "single", status: "available" },
+      { id: "T2-04", name: "Bàn đơn 04", seats: 1, type: "single", status: "booked" },
+      { id: "T2-05", name: "Bàn cửa sổ 05", seats: 2, type: "window", status: "available" },
+      { id: "T2-06", name: "Bàn nhóm 06", seats: 6, type: "group", status: "available" },
+      { id: "T2-07", name: "Bàn đôi 07", seats: 2, type: "double", status: "maintenance" },
+      { id: "T2-08", name: "Bàn đơn 08", seats: 1, type: "single", status: "available" },
+    ],
   },
   {
     id: 3,
-    name: "Phòng họp sáng tạo",
-    type: "Phòng họp",
-    capacity: "8-10 người",
-    price: "200.000đ/giờ",
-    image:
-      "https://images.unsplash.com/photo-1517502884422-41eaead166d4?w=800&q=80",
-    features: ["Máy chiếu 4K", "Bảng trắng", "Cách âm tốt"],
-  },
-  {
-    id: 4,
-    name: "Văn phòng riêng Standard",
-    type: "Văn phòng riêng",
-    capacity: "4-6 người",
-    price: "15.000.000đ/tháng",
-    image:
-      "https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=800&q=80",
-    features: ["Bảo mật 24/7", "Logo công ty", "Miễn phí phòng họp"],
+    name: "Tầng 3 - Phòng họp & Sự kiện",
+    tables: [
+      { id: "T3-01", name: "Phòng họp nhỏ A", seats: 6, type: "meeting", status: "booked" },
+      { id: "T3-02", name: "Phòng họp nhỏ B", seats: 6, type: "meeting", status: "available" },
+      { id: "T3-03", name: "Phòng họp lớn", seats: 12, type: "meeting-lg", status: "available" },
+      { id: "T3-04", name: "Bàn cộng đồng", seats: 8, type: "community", status: "maintenance" },
+      { id: "T3-05", name: "Phòng riêng VIP", seats: 4, type: "vip", status: "booked" },
+      { id: "T3-06", name: "Bàn đơn 06", seats: 1, type: "single", status: "available" },
+    ],
   },
 ];
 
+const statusConfig = {
+  available: { label: "Còn trống", bg: "success", icon: "bi-check-circle-fill" },
+  booked: { label: "Đã đặt", bg: "danger", icon: "bi-x-circle-fill" },
+  maintenance: { label: "Bảo trì", bg: "warning", icon: "bi-tools" },
+};
+
+const typeIcons = {
+  single: "bi-person-fill",
+  double: "bi-people-fill",
+  group: "bi-people-fill",
+  bar: "bi-cup-hot-fill",
+  sofa: "bi-lamp-fill",
+  window: "bi-window",
+  meeting: "bi-easel-fill",
+  "meeting-lg": "bi-easel-fill",
+  community: "bi-globe2",
+  vip: "bi-star-fill",
+};
+
 export default function Spaces() {
+  const [activeFloor, setActiveFloor] = useState(1);
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [selectedTable, setSelectedTable] = useState(null);
+
+  const currentFloor = floors.find((f) => f.id === activeFloor);
+
+  const filteredTables = currentFloor.tables.filter(
+    (t) => filterStatus === "all" || t.status === filterStatus
+  );
+
+  const stats = {
+    available: currentFloor.tables.filter((t) => t.status === "available").length,
+    booked: currentFloor.tables.filter((t) => t.status === "booked").length,
+    maintenance: currentFloor.tables.filter((t) => t.status === "maintenance").length,
+    total: currentFloor.tables.length,
+  };
+
   return (
-    <div className="d-flex flex-column min-vh-100">
-      <Navbar expand="lg" className="bg-white shadow-sm sticky-top py-3">
+    <div className="d-flex flex-column min-vh-100 bg-dark text-light font-monospace">
+      {/* Navbar */}
+      <Navbar
+        expand="lg"
+        className="bg-dark border-bottom border-secondary sticky-top py-3"
+        variant="dark"
+      >
         <Container>
-          <Navbar.Brand as={Link} to="/" className="fw-bold text-primary fs-4">
-            <i className="bi bi-building me-2"></i>Nexus Coworking
+          <Navbar.Brand
+            as={Link}
+            to="/"
+            className="fw-bold text-white fs-4 d-flex align-items-center"
+          >
+            <i className="bi bi-cup-hot-fill me-2 fs-3"></i>
+            NEXUS COFFEE
           </Navbar.Brand>
           <Navbar.Toggle
             aria-controls="basic-navbar-nav"
             className="border-0 shadow-none"
           />
           <Navbar.Collapse id="basic-navbar-nav">
-            <div className="ms-auto d-flex flex-column flex-lg-row gap-3 align-items-lg-center mt-3 mt-lg-0">
+            <div className="ms-auto d-flex flex-column flex-lg-row gap-4 align-items-lg-center mt-3 mt-lg-0">
               <Link
                 to="/spaces"
-                className="text-decoration-none text-primary fw-bold px-2 py-1 rounded bg-primary bg-opacity-10"
+                className="text-decoration-none text-warning fw-bold px-2 py-1 text-uppercase"
               >
                 Không gian
               </Link>
               <Link
-                to="/dashboard"
-                className="text-decoration-none text-dark fw-medium px-2 py-1 hover-primary transition-all"
+                to="/menu"
+                className="text-decoration-none text-light fw-medium px-2 py-1 hover-primary transition-all text-uppercase"
               >
-                Quản lý đặt chỗ
+                Thực đơn
               </Link>
               <div className="d-flex gap-2 ms-lg-3 mt-2 mt-lg-0">
                 <Button
                   as={Link}
                   to="/login"
-                  variant="outline-primary"
-                  className="px-4 rounded-pill fw-medium"
+                  variant="outline-secondary"
+                  className="px-4 rounded-0 fw-medium text-uppercase text-light border-secondary"
                 >
                   Đăng nhập
-                </Button>
-                <Button
-                  variant="primary"
-                  className="px-4 rounded-pill fw-medium shadow-sm"
-                >
-                  Đăng ký
                 </Button>
               </div>
             </div>
@@ -113,205 +156,310 @@ export default function Spaces() {
         </Container>
       </Navbar>
 
-      <main className="flex-grow-1 bg-light py-5">
+      {/* Header */}
+      <header className="py-5 bg-black border-bottom border-secondary text-center">
         <Container>
-          <div className="text-center mb-5">
-            <Badge
-              bg="primary"
-              className="bg-opacity-10 text-primary mb-3 px-3 py-2 rounded-pill fw-medium"
-            >
-              Không gian làm việc
-            </Badge>
-            <h1 className="fw-bold display-5 mb-3 text-dark">
-              Khám phá không gian làm việc
-            </h1>
-            <p
-              className="text-muted lead mx-auto"
-              style={{ maxWidth: "700px" }}
-            >
-              Lựa chọn không gian phù hợp nhất với nhu cầu của bạn và đội ngũ.
-              Từ chỗ ngồi linh hoạt đến văn phòng riêng tư, chúng tôi đều có
-              giải pháp hoàn hảo.
-            </p>
+          <h1 className="display-4 fw-bold text-white text-uppercase mb-3">
+            Sơ đồ không gian
+          </h1>
+          <p
+            className="lead text-secondary mx-auto mb-0"
+            style={{ maxWidth: "650px" }}
+          >
+            Chọn tầng, xem bàn trống và đặt chỗ yêu thích của bạn ngay lập tức.
+          </p>
+        </Container>
+      </header>
+
+      {/* Main content */}
+      <main className="py-5 flex-grow-1">
+        <Container>
+          {/* Floor tabs */}
+          <div className="d-flex flex-wrap gap-2 mb-4">
+            {floors.map((floor) => (
+              <Button
+                key={floor.id}
+                variant={activeFloor === floor.id ? "light" : "outline-secondary"}
+                className={`rounded-0 px-4 py-2 fw-bold text-uppercase ${
+                  activeFloor === floor.id ? "text-dark" : "text-light"
+                }`}
+                onClick={() => {
+                  setActiveFloor(floor.id);
+                  setFilterStatus("all");
+                }}
+              >
+                {floor.name}
+              </Button>
+            ))}
           </div>
 
-          <Row className="g-4">
-            {spaces.map((space) => (
-              <Col md={6} lg={4} key={space.id}>
-                <Card className="h-100 shadow-sm border-0 rounded-4 overflow-hidden hover-lift transition-all">
-                  <div
-                    className="position-relative"
-                    style={{ height: "240px", overflow: "hidden" }}
-                  >
-                    <img
-                      src={space.image}
-                      alt={space.name}
-                      className="w-100 h-100 object-fit-cover transition-transform hover-zoom"
-                    />
-                    <div className="position-absolute top-0 end-0 m-3">
-                      <Badge
-                        bg="light"
-                        text="dark"
-                        className="shadow-sm px-3 py-2 rounded-pill fw-bold fs-6"
-                      >
-                        {space.price}
-                      </Badge>
-                    </div>
-                  </div>
-                  <Card.Body className="d-flex flex-column p-4">
-                    <div className="d-flex justify-content-between align-items-center mb-3">
-                      <Badge
-                        bg="primary"
-                        className="bg-opacity-10 text-primary px-3 py-2 rounded-pill fw-medium"
-                      >
-                        {space.type}
-                      </Badge>
-                      <span className="text-muted small d-flex align-items-center">
-                        <i className="bi bi-people-fill me-1"></i>{" "}
-                        {space.capacity}
-                      </span>
-                    </div>
-                    <Card.Title className="fw-bold fs-4 mb-3 text-dark">
-                      {space.name}
-                    </Card.Title>
-
-                    <div className="mb-4 flex-grow-1">
-                      <p className="fw-semibold mb-3 text-dark fs-6">
-                        Tiện ích bao gồm:
-                      </p>
-                      <ul className="list-unstyled mb-0">
-                        {space.features.map((feature, idx) => (
-                          <li
-                            key={idx}
-                            className="mb-2 text-muted d-flex align-items-center"
-                          >
-                            <div
-                              className="bg-success bg-opacity-10 text-success rounded-circle p-1 me-2 d-flex align-items-center justify-content-center"
-                              style={{ width: "24px", height: "24px" }}
-                            >
-                              <i
-                                className="bi bi-check"
-                                style={{ fontSize: "14px" }}
-                              ></i>
-                            </div>
-                            {feature}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <Button
-                      as={Link}
-                      to="/"
-                      variant="primary"
-                      className="w-100 mt-auto py-2 rounded-pill fw-bold shadow-sm"
-                    >
-                      Đặt chỗ ngay
-                    </Button>
-                  </Card.Body>
-                </Card>
-              </Col>
-            ))}
+          {/* Stats cards */}
+          <Row className="g-3 mb-4">
+            <Col xs={6} md={3}>
+              <Card
+                className={`border-0 rounded-0 text-center ${
+                  filterStatus === "all"
+                    ? "bg-light text-dark"
+                    : "bg-black border border-secondary text-light"
+                }`}
+                style={{ cursor: "pointer" }}
+                onClick={() => setFilterStatus("all")}
+              >
+                <Card.Body className="py-3">
+                  <h3 className="fw-bold mb-1">{stats.total}</h3>
+                  <small className="text-uppercase fw-bold" style={{ letterSpacing: "0.05em" }}>
+                    Tổng số bàn
+                  </small>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col xs={6} md={3}>
+              <Card
+                className={`border-0 rounded-0 text-center ${
+                  filterStatus === "available"
+                    ? "bg-success text-white"
+                    : "bg-black border border-secondary text-light"
+                }`}
+                style={{ cursor: "pointer" }}
+                onClick={() =>
+                  setFilterStatus(filterStatus === "available" ? "all" : "available")
+                }
+              >
+                <Card.Body className="py-3">
+                  <h3 className="fw-bold mb-1">{stats.available}</h3>
+                  <small className="text-uppercase fw-bold" style={{ letterSpacing: "0.05em" }}>
+                    <i className="bi bi-check-circle-fill me-1"></i>Còn trống
+                  </small>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col xs={6} md={3}>
+              <Card
+                className={`border-0 rounded-0 text-center ${
+                  filterStatus === "booked"
+                    ? "bg-danger text-white"
+                    : "bg-black border border-secondary text-light"
+                }`}
+                style={{ cursor: "pointer" }}
+                onClick={() =>
+                  setFilterStatus(filterStatus === "booked" ? "all" : "booked")
+                }
+              >
+                <Card.Body className="py-3">
+                  <h3 className="fw-bold mb-1">{stats.booked}</h3>
+                  <small className="text-uppercase fw-bold" style={{ letterSpacing: "0.05em" }}>
+                    <i className="bi bi-x-circle-fill me-1"></i>Đã đặt
+                  </small>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col xs={6} md={3}>
+              <Card
+                className={`border-0 rounded-0 text-center ${
+                  filterStatus === "maintenance"
+                    ? "bg-warning text-dark"
+                    : "bg-black border border-secondary text-light"
+                }`}
+                style={{ cursor: "pointer" }}
+                onClick={() =>
+                  setFilterStatus(filterStatus === "maintenance" ? "all" : "maintenance")
+                }
+              >
+                <Card.Body className="py-3">
+                  <h3 className="fw-bold mb-1">{stats.maintenance}</h3>
+                  <small className="text-uppercase fw-bold" style={{ letterSpacing: "0.05em" }}>
+                    <i className="bi bi-tools me-1"></i>Bảo trì
+                  </small>
+                </Card.Body>
+              </Card>
+            </Col>
           </Row>
+
+          {/* Legend */}
+          <div className="d-flex flex-wrap gap-4 mb-4 pb-3 border-bottom border-secondary">
+            {Object.entries(statusConfig).map(([key, cfg]) => (
+              <div key={key} className="d-flex align-items-center gap-2">
+                <div
+                  className={`bg-${cfg.bg} rounded-circle`}
+                  style={{ width: "12px", height: "12px" }}
+                ></div>
+                <small className="text-secondary text-uppercase fw-bold">
+                  {cfg.label}
+                </small>
+              </div>
+            ))}
+          </div>
+
+          {/* Table grid */}
+          <Row className="g-3">
+            {filteredTables.map((table) => {
+              const cfg = statusConfig[table.status];
+              const icon = typeIcons[table.type] || "bi-hdd";
+              return (
+                <Col xs={6} sm={4} md={3} lg={2} key={table.id}>
+                  <OverlayTrigger
+                    placement="top"
+                    overlay={
+                      <Tooltip>
+                        {table.name} — {table.seats} chỗ ngồi — {cfg.label}
+                      </Tooltip>
+                    }
+                  >
+                    <div
+                      className={`p-3 border text-center h-100 d-flex flex-column align-items-center justify-content-center transition-all ${
+                        table.status === "available"
+                          ? "border-success hover-bg-dark"
+                          : table.status === "booked"
+                            ? "border-danger"
+                            : "border-warning"
+                      }`}
+                      style={{
+                        cursor: table.status === "available" ? "pointer" : "default",
+                        backgroundColor:
+                          table.status === "available"
+                            ? "rgba(25, 135, 84, 0.08)"
+                            : table.status === "booked"
+                              ? "rgba(220, 53, 69, 0.08)"
+                              : "rgba(255, 193, 7, 0.08)",
+                        minHeight: "140px",
+                        opacity: table.status === "maintenance" ? 0.6 : 1,
+                      }}
+                      onClick={() => {
+                        if (table.status === "available") {
+                          setSelectedTable(table);
+                        }
+                      }}
+                    >
+                      <i
+                        className={`bi ${icon} mb-2 text-${cfg.bg}`}
+                        style={{ fontSize: "1.8rem" }}
+                      ></i>
+                      <div
+                        className="fw-bold text-white mb-1"
+                        style={{ fontSize: "0.85rem" }}
+                      >
+                        {table.id}
+                      </div>
+                      <small className="text-secondary mb-2" style={{ fontSize: "0.75rem" }}>
+                        {table.seats} chỗ
+                      </small>
+                      <Badge
+                        bg={cfg.bg}
+                        className={`rounded-0 text-uppercase px-2 py-1 ${
+                          table.status === "maintenance" ? "text-dark" : ""
+                        }`}
+                        style={{ fontSize: "0.65rem" }}
+                      >
+                        <i className={`bi ${cfg.icon} me-1`}></i>
+                        {cfg.label}
+                      </Badge>
+                    </div>
+                  </OverlayTrigger>
+                </Col>
+              );
+            })}
+          </Row>
+
+          {filteredTables.length === 0 && (
+            <div className="text-center py-5">
+              <i className="bi bi-emoji-neutral text-secondary" style={{ fontSize: "3rem" }}></i>
+              <p className="text-secondary mt-3">
+                Không có bàn nào ở trạng thái này trên tầng hiện tại.
+              </p>
+            </div>
+          )}
         </Container>
       </main>
 
-      <footer className="bg-dark text-light py-5 mt-auto">
+      {/* Footer */}
+      <footer className="bg-black text-secondary py-5 mt-auto border-top border-secondary">
         <Container>
-          <Row className="gy-4">
-            <Col lg={4} md={6}>
-              <h4 className="fw-bold mb-3 text-white">
-                <i className="bi bi-building me-2 text-primary"></i>Nexus
-                Coworking
-              </h4>
-              <p className="text-secondary mb-4">
-                Không gian làm việc sáng tạo dành cho startup, freelancer và
-                doanh nghiệp. Nơi kết nối cộng đồng và phát triển ý tưởng.
+          <Row className="gy-4 align-items-center">
+            <Col md={4} className="text-center text-md-start">
+              <div className="d-flex align-items-center justify-content-center justify-content-md-start mb-3">
+                <i className="bi bi-cup-hot-fill me-2 fs-4 text-white"></i>
+                <span className="fw-bold text-white fs-5">NEXUS COFFEE</span>
+              </div>
+              <p className="small mb-0">
+                © 2026 NEXUS COFFEE. ALL RIGHTS RESERVED.
               </p>
-              <div className="d-flex gap-3">
-                <a href="#" className="text-secondary hover-white transition-all">
-                  <i className="bi bi-facebook fs-5"></i>
+            </Col>
+            <Col md={8} className="text-center text-md-end">
+              <div className="d-flex gap-4 justify-content-center justify-content-md-end">
+                <a
+                  href="#"
+                  className="text-secondary text-decoration-none hover-white transition-all text-uppercase small fw-bold"
+                >
+                  Facebook
                 </a>
-                <a href="#" className="text-secondary hover-white transition-all">
-                  <i className="bi bi-instagram fs-5"></i>
+                <a
+                  href="#"
+                  className="text-secondary text-decoration-none hover-white transition-all text-uppercase small fw-bold"
+                >
+                  Instagram
                 </a>
-                <a href="#" className="text-secondary hover-white transition-all">
-                  <i className="bi bi-linkedin fs-5"></i>
+                <a
+                  href="#"
+                  className="text-secondary text-decoration-none hover-white transition-all text-uppercase small fw-bold"
+                >
+                  Tiktok
                 </a>
               </div>
-            </Col>
-            <Col lg={2} md={6}>
-              <h5 className="fw-bold mb-3 text-white">Liên kết</h5>
-              <ul className="list-unstyled">
-                <li className="mb-2">
-                  <Link to="/" className="text-secondary text-decoration-none hover-white transition-all">
-                    Trang chủ
-                  </Link>
-                </li>
-                <li className="mb-2">
-                  <Link to="/spaces" className="text-secondary text-decoration-none hover-white transition-all">
-                    Không gian
-                  </Link>
-                </li>
-                <li className="mb-2">
-                  <Link to="/dashboard" className="text-secondary text-decoration-none hover-white transition-all">
-                    Quản lý đặt chỗ
-                  </Link>
-                </li>
-              </ul>
-            </Col>
-            <Col lg={3} md={6}>
-              <h5 className="fw-bold mb-3 text-white">Dịch vụ</h5>
-              <ul className="list-unstyled">
-                <li className="mb-2">
-                  <a href="#" className="text-secondary text-decoration-none hover-white transition-all">Hot Desk</a>
-                </li>
-                <li className="mb-2">
-                  <a href="#" className="text-secondary text-decoration-none hover-white transition-all">Dedicated Desk</a>
-                </li>
-                <li className="mb-2">
-                  <a href="#" className="text-secondary text-decoration-none hover-white transition-all">Phòng họp</a>
-                </li>
-                <li className="mb-2">
-                  <a href="#" className="text-secondary text-decoration-none hover-white transition-all">Văn phòng riêng</a>
-                </li>
-              </ul>
-            </Col>
-            <Col lg={3} md={6}>
-              <h5 className="fw-bold mb-3 text-white">Liên hệ</h5>
-              <ul className="list-unstyled text-secondary">
-                <li className="mb-2 d-flex">
-                  <i className="bi bi-geo-alt me-2 text-primary"></i> Tầng 5,
-                  Tòa nhà Innovation, TP.HCM
-                </li>
-                <li className="mb-2 d-flex">
-                  <i className="bi bi-telephone me-2 text-primary"></i> 1900 1234
-                </li>
-                <li className="mb-2 d-flex">
-                  <i className="bi bi-envelope me-2 text-primary"></i>{" "}
-                  hello@nexuscoworking.vn
-                </li>
-              </ul>
-            </Col>
-          </Row>
-          <hr className="border-secondary my-4" />
-          <Row>
-            <Col md={6} className="text-center text-md-start">
-              <p className="text-secondary mb-0">
-                &copy; 2026 Nexus Coworking. All rights reserved.
-              </p>
-            </Col>
-            <Col md={6} className="text-center text-md-end mt-2 mt-md-0">
-              <a href="#" className="text-secondary text-decoration-none me-3 hover-white transition-all">
-                Điều khoản
-              </a>
-              <a href="#" className="text-secondary text-decoration-none hover-white transition-all">
-                Bảo mật
-              </a>
             </Col>
           </Row>
         </Container>
       </footer>
+
+      {/* Modal đặt bàn */}
+      <Modal
+        show={!!selectedTable}
+        onHide={() => setSelectedTable(null)}
+        centered
+        className="font-monospace"
+        data-bs-theme="dark"
+      >
+        <Modal.Header
+          closeButton
+          className="bg-dark text-light border-secondary rounded-0 border-bottom"
+        >
+          <Modal.Title className="text-uppercase fw-bold">
+            <i className="bi bi-calendar-check me-2"></i>
+            Xác nhận đặt bàn
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="bg-dark text-light p-4">
+          {selectedTable && (
+            <div>
+              <div
+                className="p-4 mb-4 border border-success text-center"
+                style={{ backgroundColor: "rgba(25, 135, 84, 0.1)" }}
+              >
+                <i
+                  className={`bi ${typeIcons[selectedTable.type] || "bi-hdd"} text-success mb-2`}
+                  style={{ fontSize: "2.5rem" }}
+                ></i>
+                <h4 className="text-white fw-bold mb-1">{selectedTable.name}</h4>
+                <p className="text-secondary mb-1">Mã bàn: {selectedTable.id}</p>
+                <p className="text-secondary mb-0">
+                  <i className="bi bi-people-fill me-1"></i>
+                  {selectedTable.seats} chỗ ngồi
+                </p>
+              </div>
+              <p className="text-secondary text-center mb-4">
+                Bạn cần đăng nhập để đặt bàn này. Nhấn nút bên dưới để tiếp tục.
+              </p>
+              <Button
+                as={Link}
+                to="/login"
+                variant="light"
+                className="w-100 rounded-0 fw-bold text-uppercase py-3"
+              >
+                Đăng nhập để đặt bàn
+              </Button>
+            </div>
+          )}
+        </Modal.Body>
+      </Modal>
     </div>
   );
 }
