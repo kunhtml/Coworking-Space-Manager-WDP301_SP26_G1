@@ -1,0 +1,20 @@
+[
+  {
+    "_id": { "$oid": "65e6c0000000000000000001" },
+    "name": "Cà phê",
+    "description": "Các loại cà phê pha máy và pha phin",
+    "isActive": true,
+    "createdAt": { "$date": "2026-01-01T08:00:00.000Z" },
+    "updatedAt": { "$date": "2026-01-01T08:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6c0000000000000000002" },
+    "name": "Đồ ăn nhẹ",
+    "description": "Bánh ngọt, bánh mì, đồ ăn vặt",
+    "isActive": true,
+    "createdAt": { "$date": "2026-01-01T08:00:00.000Z" },
+    "updatedAt": { "$date": "2026-01-01T08:00:00.000Z" },
+    "__v": 0
+  }
+]
