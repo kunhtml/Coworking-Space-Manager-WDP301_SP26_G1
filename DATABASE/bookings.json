@@ -1,0 +1,32 @@
+[
+  {
+    "_id": { "$oid": "65e6f0000000000000000001" },
+    "bookingCode": "BK-1001",
+    "userId": { "$oid": "65e6b0000000000000000003" },
+    "guestInfo": null,
+    "tableId": { "$oid": "65e6e0000000000000000002" },
+    "startTime": { "$date": "2026-03-05T13:00:00.000Z" },
+    "endTime": { "$date": "2026-03-05T15:00:00.000Z" },
+    "status": "In_Use",
+    "depositAmount": 150000,
+    "createdAt": { "$date": "2026-03-04T10:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6f0000000000000000002" },
+    "bookingCode": "BK-1002",
+    "userId": null,
+    "guestInfo": {
+      "name": "Khách Vãng Lai",
+      "email": "guest@example.com",
+      "phone": "0955555555"
+    },
+    "tableId": { "$oid": "65e6e0000000000000000001" },
+    "startTime": { "$date": "2026-03-06T09:00:00.000Z" },
+    "endTime": { "$date": "2026-03-06T18:00:00.000Z" },
+    "status": "Confirmed",
+    "depositAmount": 50000,
+    "createdAt": { "$date": "2026-03-05T08:00:00.000Z" },
+    "__v": 0
+  }
+]

@@ -1,0 +1,16 @@
+[
+  {
+    "_id": { "$oid": "65e7c0000000000000000001" },
+    "bookingId": { "$oid": "65e6f0000000000000000001" },
+    "orderIds": [
+      { "$oid": "65e7a0000000000000000001" }
+    ],
+    "subTotal": 400000,
+    "discount": 0,
+    "totalAmount": 400000,
+    "remainingAmount": 250000,
+    "status": "Partially_Paid",
+    "createdAt": { "$date": "2026-03-05T13:30:00.000Z" },
+    "__v": 0
+  }
+]

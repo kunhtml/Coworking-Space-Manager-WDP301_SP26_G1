@@ -1,0 +1,35 @@
+[
+  {
+    "_id": { "$oid": "65e6b0000000000000000001" },
+    "fullName": "Nguyễn Văn Admin",
+    "email": "admin@coworking.com",
+    "passwordHash": "$2b$10$qP4o784M3v/w7vEOFSJcs./GTeqovXhMnnzyDeoQypgcTAaTjBzO6",
+    "phone": "0901234567",
+    "role": "Admin",
+    "membershipStatus": "Active",
+    "createdAt": { "$date": "2025-12-01T08:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6b0000000000000000002" },
+    "fullName": "Trần Thị Staff",
+    "email": "staff1@coworking.com",
+    "passwordHash": "$2b$10$qP4o784M3v/w7vEOFSJcs./GTeqovXhMnnzyDeoQypgcTAaTjBzO6",
+    "phone": "0987654321",
+    "role": "Staff",
+    "membershipStatus": "Active",
+    "createdAt": { "$date": "2026-01-05T08:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6b0000000000000000003" },
+    "fullName": "Lê Khách Hàng",
+    "email": "customer@gmail.com",
+    "passwordHash": "$2b$10$qP4o784M3v/w7vEOFSJcs./GTeqovXhMnnzyDeoQypgcTAaTjBzO6",
+    "phone": "0912345678",
+    "role": "Customer",
+    "membershipStatus": "Active",
+    "createdAt": { "$date": "2026-02-10T08:00:00.000Z" },
+    "__v": 0
+  }
+]

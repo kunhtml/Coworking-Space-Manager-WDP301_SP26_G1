@@ -1,0 +1,24 @@
+[
+  {
+    "_id": { "$oid": "65e6e0000000000000000001" },
+    "name": "Bàn chung Tầng 1 - 01",
+    "tableType": "Hot_Desk",
+    "capacity": 1,
+    "status": "Available",
+    "pricePerHour": 20000,
+    "pricePerDay": 100000,
+    "createdAt": { "$date": "2026-01-01T08:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6e0000000000000000002" },
+    "name": "Phòng họp A",
+    "tableType": "Meeting_Room",
+    "capacity": 10,
+    "status": "Occupied",
+    "pricePerHour": 150000,
+    "pricePerDay": 1000000,
+    "createdAt": { "$date": "2026-01-01T08:00:00.000Z" },
+    "__v": 0
+  }
+]
