@@ -5,3 +5,7 @@
 # React Router
 /.react-router/
 /build/
+
+# Local files
+1.jpg
+start.bat
