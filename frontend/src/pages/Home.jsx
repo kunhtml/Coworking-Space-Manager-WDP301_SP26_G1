@@ -10,8 +10,10 @@ import {
   Row,
   Modal,
   Form,
+  Dropdown,
 } from "react-bootstrap";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
+import { useAuth } from "../hooks/useAuth";
 
 export function meta() {
   return [
@@ -24,9 +26,22 @@ export function meta() {
   ];
 }
 
+const ROLE_LABELS = {
+  Admin: { label: "Quản trị", icon: "bi-shield-fill", color: "#f4a261" },
+  Staff: { label: "Nhân viên", icon: "bi-person-badge-fill", color: "#57cc99" },
+  Customer: { label: "Tài khoản", icon: "bi-person-circle", color: "#74c0fc" },
+};
+
 export default function Home() {
+  const { isAuthenticated, user, logout } = useAuth();
+  const navigate = useNavigate();
   const [showBookingModal, setShowBookingModal] = useState(false);
   const menuScrollRef = useRef(null);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
 
   const handleClose = () => setShowBookingModal(false);
   const handleShow = () => setShowBookingModal(true);
@@ -96,14 +111,74 @@ export default function Home() {
                 Hướng dẫn đặt bàn
               </a>
               <div className="d-flex gap-2 ms-lg-3 mt-2 mt-lg-0">
-                <Button
-                  as={Link}
-                  to="/login"
-                  variant="outline-secondary"
-                  className="px-4 rounded-0 fw-medium text-uppercase text-light border-secondary"
-                >
-                  Đăng nhập
-                </Button>
+                {isAuthenticated && user ? (
+                  <Dropdown align="end">
+                    <Dropdown.Toggle
+                      variant="outline-secondary"
+                      className="px-3 rounded-0 fw-medium text-light border-secondary d-flex align-items-center gap-2"
+                      style={{ backgroundColor: "transparent" }}
+                    >
+                      <i
+                        className={`bi ${
+                          ROLE_LABELS[user.role]?.icon ?? "bi-person-circle"
+                        }`}
+                        style={{
+                          color: ROLE_LABELS[user.role]?.color ?? "#aaa",
+                        }}
+                      ></i>
+                      <span>{user.fullName}</span>
+                      <Badge
+                        pill
+                        style={{
+                          backgroundColor:
+                            ROLE_LABELS[user.role]?.color ?? "#aaa",
+                          color: "#000",
+                          fontSize: "0.65rem",
+                        }}
+                      >
+                        {ROLE_LABELS[user.role]?.label ?? user.role}
+                      </Badge>
+                    </Dropdown.Toggle>
+                    <Dropdown.Menu
+                      className="bg-dark border-secondary"
+                      style={{ minWidth: "180px" }}
+                    >
+                      <Dropdown.Item
+                        as={Link}
+                        to="/profile"
+                        className="text-light"
+                      >
+                        <i className="bi bi-person me-2"></i>Hồ sơ cá nhân
+                      </Dropdown.Item>
+                      {(user.role === "Admin" || user.role === "Staff") && (
+                        <Dropdown.Item
+                          as={Link}
+                          to="/dashboard"
+                          className="text-light"
+                        >
+                          <i className="bi bi-speedometer2 me-2"></i>
+                          {user.role === "Admin" ? "Quản trị" : "Dashboard"}
+                        </Dropdown.Item>
+                      )}
+                      <Dropdown.Divider className="border-secondary" />
+                      <Dropdown.Item
+                        onClick={handleLogout}
+                        className="text-danger"
+                      >
+                        <i className="bi bi-box-arrow-right me-2"></i>Đăng xuất
+                      </Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown>
+                ) : (
+                  <Button
+                    as={Link}
+                    to="/login"
+                    variant="outline-secondary"
+                    className="px-4 rounded-0 fw-medium text-uppercase text-light border-secondary"
+                  >
+                    Đăng nhập
+                  </Button>
+                )}
               </div>
             </div>
           </Navbar.Collapse>

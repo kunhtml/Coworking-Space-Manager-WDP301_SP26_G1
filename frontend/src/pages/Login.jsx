@@ -1,7 +1,18 @@
-import { useEffect } from "react";
-import { Container, Row, Col, Card, Form, Button } from "react-bootstrap";
-import { Link } from "react-router";
+import { useEffect, useState } from "react";
+import {
+  Container,
+  Row,
+  Col,
+  Card,
+  Form,
+  Button,
+  Alert,
+  Spinner,
+} from "react-bootstrap";
+import { Link, useNavigate } from "react-router";
 import { animate, stagger } from "animejs";
+import { loginApi } from "../services/api";
+import { saveAuth } from "../store/authSlice";
 
 export function meta() {
   return [
@@ -11,6 +22,13 @@ export function meta() {
 }
 
 export default function Login() {
+  const navigate = useNavigate();
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
   useEffect(() => {
     animate(".login-card", {
       translateY: [50, 0],
@@ -36,6 +54,29 @@ export default function Login() {
       delay: stagger(100, { start: 800 }),
     });
   }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (!identifier.trim() || !password.trim()) {
+      setError("Vui lòng nhập đầy đủ email/số điện thoại và mật khẩu.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data = await loginApi(identifier, password);
+      saveAuth(data.token, data.user);
+      setSuccess(`Chào mừng ${data.user.fullName}! Đang chuyển hướng...`);
+      setTimeout(() => navigate("/"), 1500);
+    } catch (err) {
+      setError(err.message || "Đăng nhập thất bại, vui lòng thử lại.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div
@@ -96,7 +137,25 @@ export default function Login() {
                   </p>
                 </div>
 
-                <Form>
+                {error && (
+                  <Alert
+                    variant="danger"
+                    dismissible
+                    onClose={() => setError("")}
+                    className="py-2 small"
+                  >
+                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                    {error}
+                  </Alert>
+                )}
+                {success && (
+                  <Alert variant="success" className="py-2 small">
+                    <i className="bi bi-check-circle-fill me-2"></i>
+                    {success}
+                  </Alert>
+                )}
+
+                <Form onSubmit={handleSubmit}>
                   <Form.Group
                     className="mb-4 login-form-item"
                     controlId="formBasicEmail"
@@ -110,6 +169,9 @@ export default function Login() {
                       placeholder="Nhập email hoặc số điện thoại"
                       className="bg-dark text-light border-secondary py-2 px-3 shadow-none focus-ring focus-ring-primary transition-all"
                       style={{ backgroundColor: "#212529" }}
+                      value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
+                      disabled={loading}
                     />
                   </Form.Group>
 
@@ -134,6 +196,9 @@ export default function Login() {
                       placeholder="Nhập mật khẩu"
                       className="bg-dark text-light border-secondary py-2 px-3 shadow-none focus-ring focus-ring-primary transition-all"
                       style={{ backgroundColor: "#212529" }}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={loading}
                     />
                   </Form.Group>
 
@@ -152,10 +217,18 @@ export default function Login() {
                   <Button
                     variant="primary"
                     type="submit"
-                    className="w-100 py-2 fw-bold text-uppercase mb-4 rounded-0 border-0 login-form-item transition-all hover-scale"
+                    className="w-100 py-2 fw-bold text-uppercase mb-4 rounded-0 border-0 login-form-item transition-all hover-scale d-flex align-items-center justify-content-center gap-2"
                     style={{ backgroundColor: "#d4a373", opacity: 0 }}
+                    disabled={loading}
                   >
-                    Đăng nhập
+                    {loading ? (
+                      <>
+                        <Spinner animation="border" size="sm" />
+                        Đang đăng nhập...
+                      </>
+                    ) : (
+                      "Đăng nhập"
+                    )}
                   </Button>
 
                   <div
