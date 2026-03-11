@@ -19,7 +19,7 @@ connectDB();
 app.get("/", (req, res) => {
   res.send("Coworking Space API running");
 });
-app.use("/api/auth", authRoutes);
+app.use("/api", authRoutes);
 
 const PORT = process.env.PORT || 5000;
 

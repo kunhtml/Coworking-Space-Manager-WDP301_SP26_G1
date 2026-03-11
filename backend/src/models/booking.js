@@ -11,8 +11,7 @@ const bookingSchema = new Schema(
         guestInfo: {
             name: String,
             email: String,
-            phone: String,
-            default: null
+            phone: String
         },
         tableId: {
             type: Schema.Types.ObjectId,
