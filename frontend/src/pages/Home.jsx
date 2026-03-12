@@ -269,7 +269,7 @@ export default function Home() {
           <div className="d-flex flex-wrap gap-3 justify-content-center">
             <Button
               as={Link}
-              to={isAuthenticated ? "/spaces" : "/login"}
+              to={isAuthenticated ? "/order-table" : "/login"}
               variant="light"
               size="lg"
               className="rounded-0 px-5 py-3 fw-bold text-uppercase"
@@ -286,7 +286,30 @@ export default function Home() {
       <section
         id="booking"
         className="py-5 border-top border-secondary bg-black"
+        style={{ position: "relative", overflow: "hidden" }}
       >
+        <div
+          className="position-absolute rounded-circle"
+          style={{
+            width: 550,
+            height: 550,
+            background: "radial-gradient(circle, rgba(99,102,241,0.13) 0%, transparent 70%)",
+            top: -160,
+            right: -160,
+            pointerEvents: "none",
+          }}
+        />
+        <div
+          className="position-absolute rounded-circle"
+          style={{
+            width: 420,
+            height: 420,
+            background: "radial-gradient(circle, rgba(245,158,11,0.10) 0%, transparent 70%)",
+            bottom: -100,
+            left: -100,
+            pointerEvents: "none",
+          }}
+        />
         <Container>
           <Row className="align-items-center g-5">
             <Col lg={6}>
@@ -554,7 +577,30 @@ export default function Home() {
       <section
         id="spaces"
         className="py-5 border-top border-secondary bg-black"
+        style={{ position: "relative", overflow: "hidden" }}
       >
+        <div
+          className="position-absolute rounded-circle"
+          style={{
+            width: 600,
+            height: 600,
+            background: "radial-gradient(circle, rgba(99,102,241,0.11) 0%, transparent 70%)",
+            top: -200,
+            left: -200,
+            pointerEvents: "none",
+          }}
+        />
+        <div
+          className="position-absolute rounded-circle"
+          style={{
+            width: 450,
+            height: 450,
+            background: "radial-gradient(circle, rgba(245,158,11,0.10) 0%, transparent 70%)",
+            bottom: -120,
+            right: -120,
+            pointerEvents: "none",
+          }}
+        />
         <Container>
           <div className="text-center mb-5">
             <h2 className="display-5 fw-bold text-white text-uppercase">

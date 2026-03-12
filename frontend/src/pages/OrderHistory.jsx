@@ -104,7 +104,7 @@ export default function Dashboard() {
           <Navbar.Collapse id="basic-navbar-nav">
             <div className="ms-auto d-flex flex-column flex-lg-row gap-3 align-items-lg-center mt-3 mt-lg-0">
               <Link
-                to="/spaces"
+                to="/order-table"
                 className="text-decoration-none text-dark fw-medium px-2 py-1 hover-primary transition-all"
               >
                 Không gian
@@ -159,7 +159,7 @@ export default function Dashboard() {
             <Col xs="auto" className="mt-3 mt-md-0">
               <Button
                 as={Link}
-                to="/spaces"
+                to="/order-table"
                 variant="primary"
                 className="rounded-pill px-4 fw-medium shadow-sm"
               >
@@ -242,7 +242,7 @@ export default function Dashboard() {
                 <div className="text-center py-5">
                   <i className="bi bi-calendar-x text-muted" style={{ fontSize: "3rem" }}></i>
                   <p className="text-muted mt-3 mb-0">Bạn chưa có đặt chỗ nào.</p>
-                  <Button as={Link} to="/spaces" variant="primary" className="rounded-pill px-4 mt-3">
+                  <Button as={Link} to="/order-table" variant="primary" className="rounded-pill px-4 mt-3">
                     Đặt chỗ ngay
                   </Button>
                 </div>
@@ -324,7 +324,7 @@ export default function Dashboard() {
                   <Link to="/" className="text-secondary text-decoration-none">Trang chủ</Link>
                 </li>
                 <li className="mb-2">
-                  <Link to="/spaces" className="text-secondary text-decoration-none">Không gian</Link>
+                  <Link to="/order-table" className="text-secondary text-decoration-none">Không gian</Link>
                 </li>
                 <li className="mb-2">
                   <Link to="/dashboard" className="text-secondary text-decoration-none">Quản lý đặt chỗ</Link>

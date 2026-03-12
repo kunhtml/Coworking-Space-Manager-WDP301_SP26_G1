@@ -106,7 +106,7 @@ export default function Profile() {
           <Navbar.Toggle aria-controls="profile-nav" className="border-0 shadow-none" />
           <Navbar.Collapse id="profile-nav">
             <div className="ms-auto d-flex flex-column flex-lg-row gap-3 align-items-lg-center mt-3 mt-lg-0">
-              <Link to="/spaces" className="text-decoration-none text-dark fw-medium px-2 py-1">
+              <Link to="/order-table" className="text-decoration-none text-dark fw-medium px-2 py-1">
                 Không gian
               </Link>
               <Link to="/dashboard" className="text-decoration-none text-dark fw-medium px-2 py-1">

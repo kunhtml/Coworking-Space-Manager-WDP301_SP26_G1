@@ -656,7 +656,7 @@ export default function PaymentPage() {
               <strong style={{ color: "#ef4444" }}>5 phút</strong>.
             </p>
             <button
-              onClick={() => navigate("/spaces")}
+              onClick={() => navigate("/order-table")}
               style={{
                 background: "linear-gradient(135deg,#6366f1,#4f46e5)",
                 color: "#fff",

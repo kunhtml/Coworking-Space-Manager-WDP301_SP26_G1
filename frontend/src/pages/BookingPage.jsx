@@ -162,7 +162,7 @@ export default function Spaces() {
           <Navbar.Collapse id="basic-navbar-nav">
             <div className="ms-auto d-flex flex-column flex-lg-row gap-4 align-items-lg-center mt-3 mt-lg-0">
               <Link
-                to="/spaces"
+                to="/order-table"
                 className="text-decoration-none text-warning fw-bold px-2 py-1 text-uppercase"
               >
                 Đặt bàn
