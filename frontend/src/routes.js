@@ -8,4 +8,5 @@ export default [
   route("login", "pages/Login.jsx"),
   route("register", "pages/Register.jsx"),
   route("profile", "pages/Profile.jsx"),
+  route("payment/:bookingId", "pages/PaymentPage.jsx"),
 ];

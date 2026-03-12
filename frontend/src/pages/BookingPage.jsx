@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  Alert,
   Container,
   Row,
   Col,
@@ -8,71 +9,31 @@ import {
   Badge,
   Navbar,
   Modal,
+  Form,
   OverlayTrigger,
   Tooltip,
 } from "react-bootstrap";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
+import { useAuth } from "../hooks/useAuth";
+import { searchAvailableTables, createBookingApi } from "../services/bookingService";
 
 export function meta() {
   return [
-    { title: "Sơ đồ không gian | Nexus Coffee" },
+    { title: "Đặt bàn | Nexus Coffee" },
     {
       name: "description",
       content:
-        "Xem sơ đồ bàn và không gian tại Nexus Coffee. Chọn bàn trống để đặt chỗ ngay.",
+        "Đặt bàn và tìm bàn trống tại Nexus Coffee. Chọn ngày giờ, tìm bàn phù hợp.",
     },
   ];
 }
 
-const floors = [
-  {
-    id: 1,
-    name: "Tầng 1 - Quầy bar & Sảnh",
-    tables: [
-      { id: "T1-01", name: "Bàn đơn 01", seats: 1, type: "single", status: "available" },
-      { id: "T1-02", name: "Bàn đơn 02", seats: 1, type: "single", status: "available" },
-      { id: "T1-03", name: "Bàn đôi 03", seats: 2, type: "double", status: "booked" },
-      { id: "T1-04", name: "Bàn đôi 04", seats: 2, type: "double", status: "available" },
-      { id: "T1-05", name: "Bàn nhóm 05", seats: 4, type: "group", status: "maintenance" },
-      { id: "T1-06", name: "Bàn nhóm 06", seats: 4, type: "group", status: "booked" },
-      { id: "T1-07", name: "Bàn bar 07", seats: 1, type: "bar", status: "available" },
-      { id: "T1-08", name: "Bàn bar 08", seats: 1, type: "bar", status: "booked" },
-      { id: "T1-09", name: "Bàn bar 09", seats: 1, type: "bar", status: "available" },
-      { id: "T1-10", name: "Bàn sofa 10", seats: 3, type: "sofa", status: "available" },
-    ],
-  },
-  {
-    id: 2,
-    name: "Tầng 2 - Không gian yên tĩnh",
-    tables: [
-      { id: "T2-01", name: "Bàn cửa sổ 01", seats: 2, type: "window", status: "booked" },
-      { id: "T2-02", name: "Bàn cửa sổ 02", seats: 2, type: "window", status: "available" },
-      { id: "T2-03", name: "Bàn đơn 03", seats: 1, type: "single", status: "available" },
-      { id: "T2-04", name: "Bàn đơn 04", seats: 1, type: "single", status: "booked" },
-      { id: "T2-05", name: "Bàn cửa sổ 05", seats: 2, type: "window", status: "available" },
-      { id: "T2-06", name: "Bàn nhóm 06", seats: 6, type: "group", status: "available" },
-      { id: "T2-07", name: "Bàn đôi 07", seats: 2, type: "double", status: "maintenance" },
-      { id: "T2-08", name: "Bàn đơn 08", seats: 1, type: "single", status: "available" },
-    ],
-  },
-  {
-    id: 3,
-    name: "Tầng 3 - Phòng họp & Sự kiện",
-    tables: [
-      { id: "T3-01", name: "Phòng họp nhỏ A", seats: 6, type: "meeting", status: "booked" },
-      { id: "T3-02", name: "Phòng họp nhỏ B", seats: 6, type: "meeting", status: "available" },
-      { id: "T3-03", name: "Phòng họp lớn", seats: 12, type: "meeting-lg", status: "available" },
-      { id: "T3-04", name: "Bàn cộng đồng", seats: 8, type: "community", status: "maintenance" },
-      { id: "T3-05", name: "Phòng riêng VIP", seats: 4, type: "vip", status: "booked" },
-      { id: "T3-06", name: "Bàn đơn 06", seats: 1, type: "single", status: "available" },
-    ],
-  },
-];
-
-const statusConfig = {
-  available: { label: "Còn trống", bg: "success", icon: "bi-check-circle-fill" },
-  booked: { label: "Đã đặt", bg: "danger", icon: "bi-x-circle-fill" },
-  maintenance: { label: "Bảo trì", bg: "warning", icon: "bi-tools" },
+const TABLE_TYPE_MAP = {
+  Hot_Desk: "single",
+  Dedicated_Desk: "single",
+  Group_Table: "group",
+  Meeting_Room: "meeting",
+  Private_Office: "vip",
 };
 
 const typeIcons = {
@@ -88,22 +49,93 @@ const typeIcons = {
   vip: "bi-star-fill",
 };
 
+const fmt = (n) => new Intl.NumberFormat("vi-VN").format(n);
+
 export default function Spaces() {
-  const [activeFloor, setActiveFloor] = useState(1);
-  const [filterStatus, setFilterStatus] = useState("all");
+  const { isAuthenticated, user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  // ── Step 1 form state ──
+  const [guestName, setGuestName] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
+  const [arrivalDate, setArrivalDate] = useState("");
+  const [arrivalTime, setArrivalTime] = useState("");
+  const [duration, setDuration] = useState(1);
+
+  // ── Step 2: available tables ──
+  const [searched, setSearched] = useState(false);
+  const [availableTables, setAvailableTables] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState("");
+
+  // ── Step 3: confirmation modal ──
   const [selectedTable, setSelectedTable] = useState(null);
+  const [isBooking, setIsBooking] = useState(false);
+  const [bookingError, setBookingError] = useState("");
+  const [bookingSuccess, setBookingSuccess] = useState(null);
 
-  const currentFloor = floors.find((f) => f.id === activeFloor);
+  // Pre-fill user info from auth
+  useEffect(() => {
+    if (user) {
+      setGuestName(user.fullName || "");
+      setGuestPhone(user.phone || "");
+    }
+  }, [user]);
 
-  const filteredTables = currentFloor.tables.filter(
-    (t) => filterStatus === "all" || t.status === filterStatus
-  );
+  const totalCost =
+    selectedTable && selectedTable.pricePerHour > 0
+      ? selectedTable.pricePerHour * duration
+      : 0;
 
-  const stats = {
-    available: currentFloor.tables.filter((t) => t.status === "available").length,
-    booked: currentFloor.tables.filter((t) => t.status === "booked").length,
-    maintenance: currentFloor.tables.filter((t) => t.status === "maintenance").length,
-    total: currentFloor.tables.length,
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    setSearchError("");
+    setIsSearching(true);
+    setSearched(false);
+    setSelectedTable(null);
+    try {
+      const data = await searchAvailableTables({ arrivalDate, arrivalTime, duration });
+      setAvailableTables(data);
+      setSearched(true);
+    } catch (err) {
+      setSearchError(err.message || "Lỗi khi tìm bàn, vui lòng thử lại.");
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleBook = async () => {
+    if (!selectedTable) return;
+    setBookingError("");
+    setIsBooking(true);
+    try {
+      const result = await createBookingApi({
+        tableSourceId: selectedTable.sourceId,
+        guestName,
+        guestPhone,
+        arrivalDate,
+        arrivalTime,
+        duration,
+        pricePerHour: selectedTable.pricePerHour || 0,
+      });
+      // Navigate to payment page
+      navigate(`/payment/${result.bookingId}`);
+    } catch (err) {
+      setBookingError(err.message || "Lỗi đặt bàn, vui lòng thử lại.");
+    } finally {
+      setIsBooking(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setSelectedTable(null);
+    setBookingError("");
+    setBookingSuccess(null);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
   };
 
   return (
@@ -133,7 +165,7 @@ export default function Spaces() {
                 to="/spaces"
                 className="text-decoration-none text-warning fw-bold px-2 py-1 text-uppercase"
               >
-                Không gian
+                Đặt bàn
               </Link>
               <Link
                 to="/menu"
@@ -142,14 +174,35 @@ export default function Spaces() {
                 Thực đơn
               </Link>
               <div className="d-flex gap-2 ms-lg-3 mt-2 mt-lg-0">
-                <Button
-                  as={Link}
-                  to="/login"
-                  variant="outline-secondary"
-                  className="px-4 rounded-0 fw-medium text-uppercase text-light border-secondary"
-                >
-                  Đăng nhập
-                </Button>
+                {isAuthenticated && user ? (
+                  <>
+                    <Button
+                      as={Link}
+                      to="/dashboard"
+                      variant="outline-light"
+                      className="px-4 rounded-0 fw-medium text-uppercase"
+                    >
+                      Chào {user.fullName?.split(" ").pop()}
+                    </Button>
+                    <Button
+                      variant="outline-secondary"
+                      className="px-3 rounded-0 fw-medium text-uppercase text-light border-secondary"
+                      onClick={handleLogout}
+                      title="Đăng xuất"
+                    >
+                      <i className="bi bi-box-arrow-right"></i>
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    as={Link}
+                    to="/login"
+                    variant="outline-secondary"
+                    className="px-4 rounded-0 fw-medium text-uppercase text-light border-secondary"
+                  >
+                    Đăng nhập
+                  </Button>
+                )}
               </div>
             </div>
           </Navbar.Collapse>
@@ -160,213 +213,290 @@ export default function Spaces() {
       <header className="py-5 bg-black border-bottom border-secondary text-center">
         <Container>
           <h1 className="display-4 fw-bold text-white text-uppercase mb-3">
-            Sơ đồ không gian
+            <i className="bi bi-calendar-check me-3"></i>
+            Đặt bàn
           </h1>
           <p
             className="lead text-secondary mx-auto mb-0"
             style={{ maxWidth: "650px" }}
           >
-            Chọn tầng, xem bàn trống và đặt chỗ yêu thích của bạn ngay lập tức.
+            Nhập thông tin, tìm bàn trống và xác nhận đặt chỗ chỉ trong vài bước.
           </p>
         </Container>
       </header>
 
-      {/* Main content */}
       <main className="py-5 flex-grow-1">
         <Container>
-          {/* Floor tabs */}
-          <div className="d-flex flex-wrap gap-2 mb-4">
-            {floors.map((floor) => (
-              <Button
-                key={floor.id}
-                variant={activeFloor === floor.id ? "light" : "outline-secondary"}
-                className={`rounded-0 px-4 py-2 fw-bold text-uppercase ${
-                  activeFloor === floor.id ? "text-dark" : "text-light"
-                }`}
-                onClick={() => {
-                  setActiveFloor(floor.id);
-                  setFilterStatus("all");
-                }}
-              >
-                {floor.name}
-              </Button>
-            ))}
-          </div>
+          {/* ══════ STEP 1: Booking Info Form ══════ */}
+          <Card className="bg-black border-secondary rounded-0 mb-5">
+            <Card.Header className="bg-dark border-secondary py-3">
+              <h5 className="mb-0 text-white text-uppercase fw-bold">
+                <Badge bg="light" text="dark" className="rounded-0 me-2">
+                  1
+                </Badge>
+                Thông tin đặt bàn
+              </h5>
+            </Card.Header>
+            <Card.Body className="p-4">
+              <form onSubmit={handleSearch}>
+                <Row className="g-3">
+                  <Col md={6}>
+                    <Form.Group>
+                      <Form.Label className="fw-bold text-uppercase small text-secondary">
+                        Họ và Tên
+                      </Form.Label>
+                      <Form.Control
+                        type="text"
+                        value={guestName}
+                        onChange={(e) => setGuestName(e.target.value)}
+                        placeholder="Nhập họ và tên"
+                        className="rounded-0 bg-dark text-light border-secondary"
+                        required
+                      />
+                      {isAuthenticated && (
+                        <Form.Text className="text-secondary">
+                          Đã tự điền từ tài khoản đăng nhập.
+                        </Form.Text>
+                      )}
+                    </Form.Group>
+                  </Col>
+                  <Col md={6}>
+                    <Form.Group>
+                      <Form.Label className="fw-bold text-uppercase small text-secondary">
+                        Số điện thoại
+                      </Form.Label>
+                      <Form.Control
+                        type="tel"
+                        value={guestPhone}
+                        onChange={(e) => setGuestPhone(e.target.value)}
+                        placeholder="Nhập số điện thoại"
+                        className="rounded-0 bg-dark text-light border-secondary"
+                        required
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col md={4}>
+                    <Form.Group>
+                      <Form.Label className="fw-bold text-uppercase small text-secondary">
+                        Ngày đến
+                      </Form.Label>
+                      <Form.Control
+                        type="date"
+                        value={arrivalDate}
+                        onChange={(e) => {
+                          setArrivalDate(e.target.value);
+                          setSearched(false);
+                        }}
+                        className="rounded-0 bg-dark text-light border-secondary"
+                        style={{ colorScheme: "dark" }}
+                        min={new Date().toISOString().slice(0, 10)}
+                        required
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col md={4}>
+                    <Form.Group>
+                      <Form.Label className="fw-bold text-uppercase small text-secondary">
+                        Giờ đến
+                      </Form.Label>
+                      <Form.Control
+                        type="time"
+                        value={arrivalTime}
+                        onChange={(e) => {
+                          setArrivalTime(e.target.value);
+                          setSearched(false);
+                        }}
+                        className="rounded-0 bg-dark text-light border-secondary"
+                        style={{ colorScheme: "dark" }}
+                        required
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col md={4}>
+                    <Form.Group>
+                      <Form.Label className="fw-bold text-uppercase small text-secondary">
+                        Thời gian sử dụng
+                      </Form.Label>
+                      <Form.Select
+                        value={duration}
+                        onChange={(e) => {
+                          setDuration(Number(e.target.value));
+                          setSearched(false);
+                        }}
+                        className="rounded-0 bg-dark text-light border-secondary"
+                        required
+                      >
+                        {[1, 2, 3, 4, 5, 6, 8, 10, 12].map((h) => (
+                          <option key={h} value={h}>
+                            {h} tiếng
+                          </option>
+                        ))}
+                      </Form.Select>
+                    </Form.Group>
+                  </Col>
+                </Row>
 
-          {/* Stats cards */}
-          <Row className="g-3 mb-4">
-            <Col xs={6} md={3}>
-              <Card
-                className={`border-0 rounded-0 text-center ${
-                  filterStatus === "all"
-                    ? "bg-light text-dark"
-                    : "bg-black border border-secondary text-light"
-                }`}
-                style={{ cursor: "pointer" }}
-                onClick={() => setFilterStatus("all")}
-              >
-                <Card.Body className="py-3">
-                  <h3 className="fw-bold mb-1">{stats.total}</h3>
-                  <small className="text-uppercase fw-bold" style={{ letterSpacing: "0.05em" }}>
-                    Tổng số bàn
-                  </small>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col xs={6} md={3}>
-              <Card
-                className={`border-0 rounded-0 text-center ${
-                  filterStatus === "available"
-                    ? "bg-success text-white"
-                    : "bg-black border border-secondary text-light"
-                }`}
-                style={{ cursor: "pointer" }}
-                onClick={() =>
-                  setFilterStatus(filterStatus === "available" ? "all" : "available")
-                }
-              >
-                <Card.Body className="py-3">
-                  <h3 className="fw-bold mb-1">{stats.available}</h3>
-                  <small className="text-uppercase fw-bold" style={{ letterSpacing: "0.05em" }}>
-                    <i className="bi bi-check-circle-fill me-1"></i>Còn trống
-                  </small>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col xs={6} md={3}>
-              <Card
-                className={`border-0 rounded-0 text-center ${
-                  filterStatus === "booked"
-                    ? "bg-danger text-white"
-                    : "bg-black border border-secondary text-light"
-                }`}
-                style={{ cursor: "pointer" }}
-                onClick={() =>
-                  setFilterStatus(filterStatus === "booked" ? "all" : "booked")
-                }
-              >
-                <Card.Body className="py-3">
-                  <h3 className="fw-bold mb-1">{stats.booked}</h3>
-                  <small className="text-uppercase fw-bold" style={{ letterSpacing: "0.05em" }}>
-                    <i className="bi bi-x-circle-fill me-1"></i>Đã đặt
-                  </small>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col xs={6} md={3}>
-              <Card
-                className={`border-0 rounded-0 text-center ${
-                  filterStatus === "maintenance"
-                    ? "bg-warning text-dark"
-                    : "bg-black border border-secondary text-light"
-                }`}
-                style={{ cursor: "pointer" }}
-                onClick={() =>
-                  setFilterStatus(filterStatus === "maintenance" ? "all" : "maintenance")
-                }
-              >
-                <Card.Body className="py-3">
-                  <h3 className="fw-bold mb-1">{stats.maintenance}</h3>
-                  <small className="text-uppercase fw-bold" style={{ letterSpacing: "0.05em" }}>
-                    <i className="bi bi-tools me-1"></i>Bảo trì
-                  </small>
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
+                {searchError && (
+                  <Alert variant="danger" className="rounded-0 mt-3 mb-0">
+                    <i className="bi bi-exclamation-triangle me-2"></i>
+                    {searchError}
+                  </Alert>
+                )}
 
-          {/* Legend */}
-          <div className="d-flex flex-wrap gap-4 mb-4 pb-3 border-bottom border-secondary">
-            {Object.entries(statusConfig).map(([key, cfg]) => (
-              <div key={key} className="d-flex align-items-center gap-2">
-                <div
-                  className={`bg-${cfg.bg} rounded-circle`}
-                  style={{ width: "12px", height: "12px" }}
-                ></div>
-                <small className="text-secondary text-uppercase fw-bold">
-                  {cfg.label}
-                </small>
-              </div>
-            ))}
-          </div>
-
-          {/* Table grid */}
-          <Row className="g-3">
-            {filteredTables.map((table) => {
-              const cfg = statusConfig[table.status];
-              const icon = typeIcons[table.type] || "bi-hdd";
-              return (
-                <Col xs={6} sm={4} md={3} lg={2} key={table.id}>
-                  <OverlayTrigger
-                    placement="top"
-                    overlay={
-                      <Tooltip>
-                        {table.name} — {table.seats} chỗ ngồi — {cfg.label}
-                      </Tooltip>
-                    }
+                <div className="mt-4 text-center">
+                  <Button
+                    type="submit"
+                    variant="warning"
+                    size="lg"
+                    className="rounded-0 px-5 py-3 fw-bold text-uppercase text-dark"
+                    disabled={isSearching || !guestName.trim() || !guestPhone.trim()}
                   >
-                    <div
-                      className={`p-3 border text-center h-100 d-flex flex-column align-items-center justify-content-center transition-all ${
-                        table.status === "available"
-                          ? "border-success hover-bg-dark"
-                          : table.status === "booked"
-                            ? "border-danger"
-                            : "border-warning"
-                      }`}
-                      style={{
-                        cursor: table.status === "available" ? "pointer" : "default",
-                        backgroundColor:
-                          table.status === "available"
-                            ? "rgba(25, 135, 84, 0.08)"
-                            : table.status === "booked"
-                              ? "rgba(220, 53, 69, 0.08)"
-                              : "rgba(255, 193, 7, 0.08)",
-                        minHeight: "140px",
-                        opacity: table.status === "maintenance" ? 0.6 : 1,
-                      }}
-                      onClick={() => {
-                        if (table.status === "available") {
-                          setSelectedTable(table);
-                        }
-                      }}
-                    >
-                      <i
-                        className={`bi ${icon} mb-2 text-${cfg.bg}`}
-                        style={{ fontSize: "1.8rem" }}
-                      ></i>
-                      <div
-                        className="fw-bold text-white mb-1"
-                        style={{ fontSize: "0.85rem" }}
-                      >
-                        {table.id}
-                      </div>
-                      <small className="text-secondary mb-2" style={{ fontSize: "0.75rem" }}>
-                        {table.seats} chỗ
-                      </small>
-                      <Badge
-                        bg={cfg.bg}
-                        className={`rounded-0 text-uppercase px-2 py-1 ${
-                          table.status === "maintenance" ? "text-dark" : ""
-                        }`}
-                        style={{ fontSize: "0.65rem" }}
-                      >
-                        <i className={`bi ${cfg.icon} me-1`}></i>
-                        {cfg.label}
-                      </Badge>
-                    </div>
-                  </OverlayTrigger>
-                </Col>
-              );
-            })}
-          </Row>
+                    {isSearching ? (
+                      <>
+                        <span
+                          className="spinner-border spinner-border-sm me-2"
+                          role="status"
+                        ></span>
+                        Đang tìm...
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-search me-2"></i>
+                        Tìm bàn trống
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </Card.Body>
+          </Card>
 
-          {filteredTables.length === 0 && (
-            <div className="text-center py-5">
-              <i className="bi bi-emoji-neutral text-secondary" style={{ fontSize: "3rem" }}></i>
-              <p className="text-secondary mt-3">
-                Không có bàn nào ở trạng thái này trên tầng hiện tại.
-              </p>
-            </div>
+          {/* ══════ STEP 2: Available Tables ══════ */}
+          {searched && (
+            <Card className="bg-black border-secondary rounded-0 mb-5">
+              <Card.Header className="bg-dark border-secondary py-3 d-flex justify-content-between align-items-center">
+                <h5 className="mb-0 text-white text-uppercase fw-bold">
+                  <Badge bg="light" text="dark" className="rounded-0 me-2">
+                    2
+                  </Badge>
+                  Chọn bàn trống
+                </h5>
+                <Badge
+                  bg={availableTables.length > 0 ? "success" : "danger"}
+                  className="rounded-0 fs-6"
+                >
+                  {availableTables.length} bàn trống
+                </Badge>
+              </Card.Header>
+              <Card.Body className="p-4">
+                {availableTables.length === 0 ? (
+                  <div className="text-center py-5">
+                    <i
+                      className="bi bi-emoji-frown text-secondary"
+                      style={{ fontSize: "3rem" }}
+                    ></i>
+                    <p className="text-secondary mt-3 mb-0">
+                      Không tìm thấy bàn trống trong khung giờ này. Vui lòng thử
+                      thời gian khác.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-secondary mb-3">
+                      <i className="bi bi-info-circle me-1"></i>
+                      Nhấn vào bàn để xem chi tiết và xác nhận đặt bàn.
+                    </p>
+                    <Row className="g-3">
+                      {availableTables.map((table) => {
+                        const uiType = TABLE_TYPE_MAP[table.tableType] || "single";
+                        const icon = typeIcons[uiType] || "bi-hdd";
+                        const costEst =
+                          table.pricePerHour > 0
+                            ? table.pricePerHour * duration
+                            : 0;
+                        return (
+                          <Col
+                            xs={6}
+                            sm={4}
+                            md={3}
+                            lg={2}
+                            key={table.sourceId}
+                          >
+                            <OverlayTrigger
+                              placement="top"
+                              overlay={
+                                <Tooltip>
+                                  {table.name} — {table.capacity} chỗ —{" "}
+                                  {costEst > 0
+                                    ? `${fmt(costEst)}đ / ${duration}h`
+                                    : "Miễn phí"}
+                                </Tooltip>
+                              }
+                            >
+                              <div
+                                className="p-3 border border-success text-center h-100 d-flex flex-column align-items-center justify-content-center"
+                                style={{
+                                  cursor: "pointer",
+                                  backgroundColor: "rgba(25, 135, 84, 0.08)",
+                                  minHeight: "175px",
+                                  transition: "all 0.2s",
+                                }}
+                                onClick={() =>
+                                  setSelectedTable({ ...table, uiType })
+                                }
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor =
+                                    "rgba(25, 135, 84, 0.2)";
+                                  e.currentTarget.style.borderColor = "#fff";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor =
+                                    "rgba(25, 135, 84, 0.08)";
+                                  e.currentTarget.style.borderColor = "#198754";
+                                }}
+                              >
+                                <i
+                                  className={`bi ${icon} mb-2 text-success`}
+                                  style={{ fontSize: "1.8rem" }}
+                                ></i>
+                                <div
+                                  className="fw-bold text-white mb-1"
+                                  style={{ fontSize: "0.85rem" }}
+                                >
+                                  {table.name}
+                                </div>
+                                <small
+                                  className="text-secondary mb-1"
+                                  style={{ fontSize: "0.75rem" }}
+                                >
+                                  {table.capacity} chỗ
+                                </small>
+                                {table.pricePerHour > 0 && (
+                                  <small
+                                    className="text-warning fw-semibold"
+                                    style={{ fontSize: "0.7rem" }}
+                                  >
+                                    {fmt(table.pricePerHour)}đ/giờ
+                                  </small>
+                                )}
+                                <Badge
+                                  bg="success"
+                                  className="rounded-0 text-uppercase px-2 py-1 mt-1"
+                                  style={{ fontSize: "0.65rem" }}
+                                >
+                                  <i className="bi bi-check-circle-fill me-1"></i>
+                                  Còn trống
+                                </Badge>
+                              </div>
+                            </OverlayTrigger>
+                          </Col>
+                        );
+                      })}
+                    </Row>
+                  </>
+                )}
+              </Card.Body>
+            </Card>
           )}
         </Container>
       </main>
@@ -410,10 +540,10 @@ export default function Spaces() {
         </Container>
       </footer>
 
-      {/* Modal đặt bàn */}
+      {/* ══════ STEP 3: Confirmation Modal ══════ */}
       <Modal
         show={!!selectedTable}
-        onHide={() => setSelectedTable(null)}
+        onHide={handleCloseModal}
         centered
         className="font-monospace"
         data-bs-theme="dark"
@@ -423,39 +553,177 @@ export default function Spaces() {
           className="bg-dark text-light border-secondary rounded-0 border-bottom"
         >
           <Modal.Title className="text-uppercase fw-bold">
-            <i className="bi bi-calendar-check me-2"></i>
+            <i className="bi bi-receipt me-2"></i>
             Xác nhận đặt bàn
           </Modal.Title>
         </Modal.Header>
         <Modal.Body className="bg-dark text-light p-4">
           {selectedTable && (
             <div>
+              {/* Table info card */}
               <div
                 className="p-4 mb-4 border border-success text-center"
                 style={{ backgroundColor: "rgba(25, 135, 84, 0.1)" }}
               >
                 <i
-                  className={`bi ${typeIcons[selectedTable.type] || "bi-hdd"} text-success mb-2`}
+                  className={`bi ${typeIcons[selectedTable.uiType] || "bi-hdd"} text-success mb-2`}
                   style={{ fontSize: "2.5rem" }}
                 ></i>
                 <h4 className="text-white fw-bold mb-1">{selectedTable.name}</h4>
-                <p className="text-secondary mb-1">Mã bàn: {selectedTable.id}</p>
                 <p className="text-secondary mb-0">
                   <i className="bi bi-people-fill me-1"></i>
-                  {selectedTable.seats} chỗ ngồi
+                  {selectedTable.capacity} chỗ ngồi
                 </p>
               </div>
-              <p className="text-secondary text-center mb-4">
-                Bạn cần đăng nhập để đặt bàn này. Nhấn nút bên dưới để tiếp tục.
-              </p>
-              <Button
-                as={Link}
-                to="/login"
-                variant="light"
-                className="w-100 rounded-0 fw-bold text-uppercase py-3"
-              >
-                Đăng nhập để đặt bàn
-              </Button>
+
+              {bookingSuccess ? (
+                /* Success state */
+                <div className="text-center">
+                  <i
+                    className="bi bi-check-circle-fill text-success mb-3"
+                    style={{ fontSize: "3rem" }}
+                  ></i>
+                  <p className="text-success fw-bold fs-5">Đặt bàn thành công!</p>
+                  <p className="text-secondary">
+                    Mã đặt bàn:{" "}
+                    <span className="text-white fw-bold">{bookingSuccess}</span>
+                  </p>
+                  <div className="d-flex gap-2 mt-3">
+                    <Button
+                      variant="outline-light"
+                      className="flex-fill rounded-0 fw-bold text-uppercase"
+                      onClick={() => navigate("/dashboard")}
+                    >
+                      Xem lịch đặt bàn
+                    </Button>
+                    <Button
+                      variant="light"
+                      className="flex-fill rounded-0 fw-bold text-uppercase"
+                      onClick={handleCloseModal}
+                    >
+                      Đóng
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                /* Booking form / summary */
+                <>
+                  {/* Summary table */}
+                  <div
+                    className="p-3 mb-4 border border-secondary"
+                    style={{ backgroundColor: "rgba(255,255,255,0.03)" }}
+                  >
+                    <table className="w-100 small">
+                      <tbody>
+                        <tr>
+                          <td className="text-secondary py-1">Khách hàng:</td>
+                          <td className="text-end text-white fw-bold py-1">
+                            {guestName}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="text-secondary py-1">Số điện thoại:</td>
+                          <td className="text-end text-white fw-bold py-1">
+                            {guestPhone}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="text-secondary py-1">Ngày đến:</td>
+                          <td className="text-end text-white fw-bold py-1">
+                            {arrivalDate
+                              ? new Date(
+                                  arrivalDate + "T00:00:00"
+                                ).toLocaleDateString("vi-VN")
+                              : ""}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="text-secondary py-1">Giờ đến:</td>
+                          <td className="text-end text-white fw-bold py-1">
+                            {arrivalTime}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="text-secondary py-1">
+                            Thời gian sử dụng:
+                          </td>
+                          <td className="text-end text-white fw-bold py-1">
+                            {duration} tiếng
+                          </td>
+                        </tr>
+                        {selectedTable.pricePerHour > 0 && (
+                          <tr>
+                            <td className="text-secondary py-1">Giá mỗi giờ:</td>
+                            <td className="text-end text-white fw-bold py-1">
+                              {fmt(selectedTable.pricePerHour)}đ
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                    <hr className="border-secondary my-2" />
+                    <div className="d-flex justify-content-between align-items-center">
+                      <span className="text-warning fw-bold text-uppercase">
+                        Tổng tiền đặt cọc:
+                      </span>
+                      <span className="text-warning fw-bold fs-4">
+                        {totalCost > 0 ? `${fmt(totalCost)}đ` : "Miễn phí"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {bookingError && (
+                    <Alert variant="danger" className="rounded-0 mb-3">
+                      <i className="bi bi-exclamation-triangle me-2"></i>
+                      {bookingError}
+                    </Alert>
+                  )}
+
+                  {!isAuthenticated && (
+                    <Alert variant="warning" className="rounded-0 mb-3">
+                      <i className="bi bi-exclamation-circle me-2"></i>
+                      Bạn cần{" "}
+                      <Link to="/login" className="fw-bold">
+                        đăng nhập
+                      </Link>{" "}
+                      để hoàn tất đặt bàn.
+                    </Alert>
+                  )}
+
+                  <div className="d-flex gap-3">
+                    <Button
+                      variant="outline-secondary"
+                      className="flex-fill rounded-0 fw-bold text-uppercase py-3"
+                      onClick={handleCloseModal}
+                      disabled={isBooking}
+                    >
+                      <i className="bi bi-arrow-left me-2"></i>
+                      Quay trở lại
+                    </Button>
+                    <Button
+                      variant="success"
+                      className="flex-fill rounded-0 fw-bold text-uppercase py-3"
+                      onClick={handleBook}
+                      disabled={isBooking || !isAuthenticated}
+                    >
+                      {isBooking ? (
+                        <>
+                          <span
+                            className="spinner-border spinner-border-sm me-2"
+                            role="status"
+                          ></span>
+                          Đang xử lý...
+                        </>
+                      ) : (
+                        <>
+                          <i className="bi bi-check-lg me-2"></i>
+                          Xác nhận đặt bàn
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </Modal.Body>
