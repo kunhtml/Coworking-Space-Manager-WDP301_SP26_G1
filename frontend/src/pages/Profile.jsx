@@ -1,508 +1,344 @@
 import { useEffect, useState } from "react";
 import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  Col,
-  Container,
-  Form,
-  Navbar,
-  Row,
-  Spinner,
-  Table,
+  Container, Row, Col, Card, Button, Navbar, Form, Alert, Spinner, Badge,
 } from "react-bootstrap";
 import { Link, useNavigate } from "react-router";
 import { useAuth } from "../hooks/useAuth";
-import {
-  changePasswordApi,
-  getMyBookingsApi,
-  getMeApi,
-  updateProfileApi,
-} from "../services/api";
-import { saveAuth } from "../store/authSlice";
+import { getMeApi, updateProfileApi, changePasswordApi } from "../services/api";
 
 export function meta() {
-  return [{ title: "Hồ sơ | Nexus Coffee" }];
+  return [{ title: "Thông tin cá nhân | Nexus Coworking" }];
 }
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
-const fmt = (v) =>
-  v ? new Date(v).toLocaleString("vi-VN") : "--";
-const fmtDate = (v) =>
-  v ? new Date(v).toLocaleDateString("vi-VN") : "--";
-const fmtTime = (v) =>
-  v
-    ? new Date(v).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
-    : "--";
-const fmtMoney = (n) =>
-  `${new Intl.NumberFormat("vi-VN").format(Number(n || 0))}đ`;
-
-const ROLE_META = {
-  Admin:    { label: "Quản trị viên", bg: "warning",  text: "dark",  icon: "bi-shield-fill",       avatarBg: "#f4a261" },
-  Staff:    { label: "Nhân viên",     bg: "success",  text: "light", icon: "bi-person-badge-fill",  avatarBg: "#57cc99" },
-  Customer: { label: "Khách hàng",   bg: "secondary", text: "light", icon: "bi-person-circle",      avatarBg: "#74c0fc" },
-};
-
-const STATUS_LABEL = {
-  Pending: "Chờ xác nhận", Confirmed: "Đã xác nhận",
-  Awaiting_Payment: "Chờ TT", In_Use: "Đang dùng",
-  Completed: "Hoàn thành", Cancelled: "Đã hủy", Canceled: "Đã hủy",
-};
-const STATUS_VARIANT = {
-  Pending: "secondary", Confirmed: "success", Awaiting_Payment: "warning",
-  In_Use: "primary", Completed: "dark", Cancelled: "danger", Canceled: "danger",
-};
-
-// ─── Inline editable field (Customer) ────────────────────────────────────────
-function EditableField({ label, field, value, type = "text", onSave }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(value || "");
-  const [saving, setSaving] = useState(false);
-
-  const cancel = () => { setDraft(value || ""); setEditing(false); };
-
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!draft.trim()) return;
-    setSaving(true);
-    await onSave(field, draft.trim());
-    setSaving(false);
-    setEditing(false);
-  };
-
-  return (
-    <div className="mb-3">
-      <div className="text-muted small text-uppercase">{label}</div>
-      {editing ? (
-        <form onSubmit={submit} className="d-flex align-items-center gap-2 mt-1">
-          <input
-            type={type}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            className="form-control form-control-sm"
-            autoFocus
-          />
-          <Button type="button" variant="outline-secondary" size="sm"
-            className="rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0"
-            style={{ width: 32, height: 32 }} onClick={cancel} disabled={saving}>
-            <i className="bi bi-x-lg"></i>
-          </Button>
-          <Button type="submit" variant="success" size="sm"
-            className="rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0"
-            style={{ width: 32, height: 32 }} disabled={saving || !draft.trim()}>
-            {saving ? <Spinner size="sm" animation="border" /> : <i className="bi bi-check-lg"></i>}
-          </Button>
-        </form>
-      ) : (
-        <div className="d-flex align-items-center justify-content-between gap-2 mt-1">
-          <div className="fw-semibold">{value || <span className="text-muted fst-italic">Chưa cập nhật</span>}</div>
-          <Button type="button" variant="outline-secondary" size="sm"
-            className="rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0"
-            style={{ width: 32, height: 32 }} onClick={() => { setDraft(value || ""); setEditing(true); }}>
-            <i className="bi bi-pencil-square"></i>
-          </Button>
-        </div>
-      )}
-    </div>
-  );
+function formatDate(iso) {
+  if (!iso) return "--";
+  return new Date(iso).toLocaleDateString("vi-VN", { year: "numeric", month: "long", day: "numeric" });
 }
 
-// ─── Admin / Staff profile ────────────────────────────────────────────────────
-function StaffAdminProfile({ user, roleMeta, onLogout }) {
-  const [profile, setProfile] = useState({ fullName: user.fullName || "", email: user.email || "", phone: user.phone || "" });
-  const [pwd, setPwd] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
-  const [flash, setFlash] = useState(null);
+const MEMBERSHIP_MAP = {
+  Active: { label: "Đang hoạt động", bg: "success" },
+  Inactive: { label: "Chưa kích hoạt", bg: "secondary" },
+  Suspended: { label: "Tạm khóa", bg: "danger" },
+};
+
+export default function Profile() {
+  const { user: authUser, logout, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Edit profile state
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
-  const [changingPwd, setChangingPwd] = useState(false);
+  const [saveMsg, setSaveMsg] = useState(null); // { type, text }
 
-  const showFlash = (variant, message) => {
-    setFlash({ variant, message });
-    setTimeout(() => setFlash(null), 4000);
-  };
+  // Change password state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changingPw, setChangingPw] = useState(false);
+  const [pwMsg, setPwMsg] = useState(null);
 
-  const handleProfileSave = async (e) => {
+  useEffect(() => {
+    if (!isAuthenticated) { navigate("/login"); return; }
+    getMeApi()
+      .then((data) => {
+        setProfile(data);
+        setFullName(data.fullName || "");
+        setEmail(data.email || "");
+        setPhone(data.phone || "");
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [isAuthenticated, navigate]);
+
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
     setSaving(true);
+    setSaveMsg(null);
     try {
-      const updated = await updateProfileApi(profile);
-      saveAuth(localStorage.getItem("token"), updated);
-      setProfile({ fullName: updated.fullName, email: updated.email, phone: updated.phone || "" });
-      showFlash("success", "Đã cập nhật thông tin tài khoản.");
+      const updated = await updateProfileApi({ fullName, email, phone });
+      setProfile(updated);
+      // Sync localStorage so navbar updates
+      const stored = JSON.parse(localStorage.getItem("user") || "null");
+      if (stored) {
+        localStorage.setItem("user", JSON.stringify({ ...stored, fullName: updated.fullName, email: updated.email, phone: updated.phone }));
+      }
+      setSaveMsg({ type: "success", text: "Cập nhật thông tin thành công." });
     } catch (err) {
-      showFlash("danger", err.message);
+      setSaveMsg({ type: "danger", text: err.message || "Cập nhật thất bại." });
     } finally {
       setSaving(false);
     }
   };
 
-  const handlePwdChange = async (e) => {
+  const handleChangePassword = async (e) => {
     e.preventDefault();
-    setChangingPwd(true);
+    setChangingPw(true);
+    setPwMsg(null);
     try {
-      await changePasswordApi(pwd);
-      setPwd({ currentPassword: "", newPassword: "", confirmPassword: "" });
-      showFlash("success", "Đổi mật khẩu thành công.");
+      const res = await changePasswordApi({ currentPassword, newPassword, confirmPassword });
+      setPwMsg({ type: "success", text: res.message || "Đổi mật khẩu thành công." });
+      setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
     } catch (err) {
-      showFlash("danger", err.message);
+      setPwMsg({ type: "danger", text: err.message || "Đổi mật khẩu thất bại." });
     } finally {
-      setChangingPwd(false);
+      setChangingPw(false);
     }
   };
-
-  return (
-    <div className="d-flex flex-column min-vh-100 bg-light">
-      {/* Navbar */}
-      <Navbar expand="lg" className="bg-dark shadow-sm sticky-top py-2" variant="dark">
-        <Container fluid="xl">
-          <Navbar.Brand as={Link} to="/" className="fw-bold text-white fs-5">
-            <i className="bi bi-cup-hot-fill me-2 text-warning"></i>NEXUS COFFEE
-          </Navbar.Brand>
-          <div className="ms-auto d-flex align-items-center gap-3">
-            <Badge bg={roleMeta.bg} text={roleMeta.text} className="px-3 py-2 rounded-pill fs-6">
-              <i className={`bi ${roleMeta.icon} me-1`}></i>{roleMeta.label}
-            </Badge>
-            <Button variant="outline-light" size="sm" className="rounded-pill px-3" onClick={onLogout}>
-              <i className="bi bi-box-arrow-right me-1"></i>Đăng xuất
-            </Button>
-          </div>
-        </Container>
-      </Navbar>
-
-      <main className="flex-grow-1 py-4">
-        <Container fluid="xl">
-          <div className="mb-4">
-            <h4 className="fw-bold mb-1">
-              <i className="bi bi-person-gear me-2 text-warning"></i>Hồ sơ cá nhân
-            </h4>
-            <p className="text-muted mb-0">Quản lý thông tin cá nhân và mật khẩu đăng nhập.</p>
-          </div>
-
-          {flash && (
-            <Alert variant={flash.variant} dismissible onClose={() => setFlash(null)}
-              className="rounded-4 border-0 shadow-sm mb-4">
-              <i className={`bi ${flash.variant === "success" ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill"} me-2`}></i>
-              {flash.message}
-            </Alert>
-          )}
-
-          <Row className="g-4">
-            {/* Thông tin cá nhân */}
-            <Col lg={7}>
-              <Card className="border-0 shadow-sm rounded-4 h-100">
-                <Card.Header className="bg-white border-bottom py-3 px-4">
-                  <h5 className="fw-bold mb-0">
-                    <i className="bi bi-person-fill me-2 text-primary"></i>Thông tin tài khoản
-                  </h5>
-                </Card.Header>
-                <Card.Body className="p-4">
-                  <div className="d-flex align-items-center gap-4 mb-4">
-                    <div className="rounded-circle d-flex align-items-center justify-content-center fw-bold fs-2 text-white"
-                      style={{ width: 80, height: 80, backgroundColor: roleMeta.avatarBg }}>
-                      {profile.fullName ? profile.fullName[0].toUpperCase() : "?"}
-                    </div>
-                    <div>
-                      <h5 className="fw-bold mb-1">{profile.fullName}</h5>
-                      <Badge bg={roleMeta.bg} text={roleMeta.text} className="px-3 py-1 rounded-pill">
-                        {roleMeta.label}
-                      </Badge>
-                      <div className="text-muted small mt-1">
-                        Tham gia: {fmt(user.createdAt)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <Form onSubmit={handleProfileSave}>
-                    <Row>
-                      <Col md={6}>
-                        <Form.Group className="mb-3">
-                          <Form.Label className="fw-semibold small text-uppercase text-muted">Họ tên</Form.Label>
-                          <Form.Control value={profile.fullName} required className="rounded-3"
-                            onChange={(e) => setProfile((p) => ({ ...p, fullName: e.target.value }))} />
-                        </Form.Group>
-                      </Col>
-                      <Col md={6}>
-                        <Form.Group className="mb-3">
-                          <Form.Label className="fw-semibold small text-uppercase text-muted">Số điện thoại</Form.Label>
-                          <Form.Control value={profile.phone} className="rounded-3" placeholder="0901234567"
-                            onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))} />
-                        </Form.Group>
-                      </Col>
-                    </Row>
-                    <Form.Group className="mb-4">
-                      <Form.Label className="fw-semibold small text-uppercase text-muted">Email</Form.Label>
-                      <Form.Control type="email" value={profile.email} required className="rounded-3"
-                        onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))} />
-                    </Form.Group>
-                    <Button type="submit" variant="dark" className="rounded-pill px-4" disabled={saving}>
-                      {saving ? <><Spinner size="sm" animation="border" className="me-2" />Đang lưu...</> : <><i className="bi bi-floppy-fill me-2"></i>Lưu thay đổi</>}
-                    </Button>
-                  </Form>
-                </Card.Body>
-              </Card>
-            </Col>
-
-            {/* Đổi mật khẩu + Đăng xuất */}
-            <Col lg={5}>
-              <Card className="border-0 shadow-sm rounded-4 mb-4">
-                <Card.Header className="bg-white border-bottom py-3 px-4">
-                  <h5 className="fw-bold mb-0">
-                    <i className="bi bi-lock-fill me-2 text-danger"></i>Đổi mật khẩu
-                  </h5>
-                </Card.Header>
-                <Card.Body className="p-4">
-                  <Form onSubmit={handlePwdChange}>
-                    {["currentPassword", "newPassword", "confirmPassword"].map((field, i) => (
-                      <Form.Group key={field} className="mb-3">
-                        <Form.Label className="fw-semibold small text-uppercase text-muted">
-                          {["Mật khẩu hiện tại", "Mật khẩu mới", "Xác nhận mật khẩu mới"][i]}
-                        </Form.Label>
-                        <Form.Control type="password" required className="rounded-3"
-                          placeholder={i === 1 ? "Tối thiểu 6 ký tự" : "••••••••"}
-                          value={pwd[field]}
-                          onChange={(e) => setPwd((p) => ({ ...p, [field]: e.target.value }))} />
-                      </Form.Group>
-                    ))}
-                    <Button type="submit" variant="danger" className="rounded-pill px-4 w-100 mt-1" disabled={changingPwd}>
-                      {changingPwd ? <><Spinner size="sm" animation="border" className="me-2" />Đang xử lý...</> : <><i className="bi bi-key-fill me-2"></i>Đổi mật khẩu</>}
-                    </Button>
-                  </Form>
-                </Card.Body>
-              </Card>
-
-              <Card className="border-0 shadow-sm rounded-4">
-                <Card.Body className="p-4">
-                  <h6 className="fw-bold mb-3">
-                    <i className="bi bi-door-open me-2 text-secondary"></i>Phiên đăng nhập
-                  </h6>
-                  <p className="text-muted small mb-3">Đăng xuất khỏi tài khoản. Bạn cần đăng nhập lại để tiếp tục.</p>
-                  <Button variant="outline-secondary" className="rounded-pill px-4 w-100" onClick={onLogout}>
-                    <i className="bi bi-box-arrow-right me-2"></i>Đăng xuất
-                  </Button>
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
-        </Container>
-      </main>
-    </div>
-  );
-}
-
-// ─── Customer profile ─────────────────────────────────────────────────────────
-function CustomerProfile({ user, onLogout }) {
-  const roleMeta = ROLE_META.Customer;
-  const [profile, setProfile] = useState(user);
-  const [bookings, setBookings] = useState([]);
-  const [loadingBookings, setLoadingBookings] = useState(true);
-  const [flash, setFlash] = useState(null);
-
-  useEffect(() => {
-    getMyBookingsApi()
-      .then(setBookings)
-      .catch(() => setBookings([]))
-      .finally(() => setLoadingBookings(false));
-  }, []);
-
-  const showFlash = (variant, message) => {
-    setFlash({ variant, message });
-    setTimeout(() => setFlash(null), 4000);
-  };
-
-  const handleFieldSave = async (field, value) => {
-    const fieldMap = { name: "fullName", email: "email", phone: "phone" };
-    const payload = { fullName: profile.fullName, email: profile.email, phone: profile.phone || "", [fieldMap[field] || field]: value };
-    try {
-      const updated = await updateProfileApi(payload);
-      saveAuth(localStorage.getItem("token"), updated);
-      setProfile(updated);
-      showFlash("success", "Đã cập nhật thông tin.");
-    } catch (err) {
-      showFlash("danger", err.message);
-    }
-  };
-
-  const stats = {
-    total: bookings.length,
-    confirmed: bookings.filter((b) => b.status === "Confirmed").length,
-    active: bookings.filter((b) => b.status === "In_Use").length,
-    deposit: fmtMoney(bookings.reduce((s, b) => s + (b.depositAmount || 0), 0)),
-  };
-
-  return (
-    <div className="d-flex flex-column min-vh-100 bg-body-tertiary">
-      <Navbar expand="lg" className="bg-dark shadow-sm sticky-top py-3" variant="dark">
-        <Container>
-          <Navbar.Brand as={Link} to="/" className="fw-bold text-white fs-4">
-            <i className="bi bi-cup-hot-fill me-2 text-warning"></i>NEXUS COFFEE
-          </Navbar.Brand>
-          <div className="ms-auto d-flex align-items-center gap-3">
-            <Button variant="outline-light" className="px-4 rounded-pill fw-medium" onClick={onLogout}>
-              Đăng xuất
-            </Button>
-          </div>
-        </Container>
-      </Navbar>
-
-      <main className="flex-grow-1 py-5">
-        <Container>
-          {flash && (
-            <Alert variant={flash.variant} dismissible onClose={() => setFlash(null)} className="border-0 shadow-sm rounded-4 mb-4">
-              <i className={`bi ${flash.variant === "success" ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill"} me-2`}></i>
-              {flash.message}
-            </Alert>
-          )}
-
-          {/* Hero + account card */}
-          <Row className="g-4 mb-4">
-            <Col lg={8}>
-              <Card className="border-0 shadow-sm rounded-4 overflow-hidden h-100">
-                <Card.Body className="p-4 p-lg-5 bg-dark text-light">
-                  <Badge bg="warning" text="dark" className="mb-3 px-3 py-2 rounded-pill">KHÁCH HÀNG</Badge>
-                  <h1 className="fw-bold mb-2">Xin chào, {profile.fullName}</h1>
-                  <p className="text-secondary mb-4">Theo dõi booking và lịch sử của bạn tại Nexus Coffee.</p>
-                  <Button as={Link} to="/spaces" variant="warning" className="rounded-pill px-4 fw-semibold">
-                    Đặt chỗ mới
-                  </Button>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col lg={4}>
-              <Card className="border-0 shadow-sm rounded-4 h-100">
-                <Card.Body className="p-4">
-                  <h5 className="fw-bold mb-3">Thông tin tài khoản</h5>
-                  <EditableField label="Tên khách hàng" field="name" value={profile.fullName} onSave={handleFieldSave} />
-                  <EditableField label="Email" field="email" type="email" value={profile.email} onSave={handleFieldSave} />
-                  <EditableField label="Số điện thoại" field="phone" type="tel" value={profile.phone} onSave={handleFieldSave} />
-                  <div className="mb-3">
-                    <div className="text-muted small text-uppercase">Vai trò</div>
-                    <Badge bg={roleMeta.bg}>{roleMeta.label}</Badge>
-                  </div>
-                  <div className="mb-3">
-                    <div className="text-muted small text-uppercase">Trạng thái</div>
-                    <Badge bg={profile.membershipStatus === "Active" ? "success" : "secondary"}>
-                      {profile.membershipStatus}
-                    </Badge>
-                  </div>
-                  <div>
-                    <div className="text-muted small text-uppercase">Ngày tham gia</div>
-                    <div className="fw-semibold">{fmt(profile.createdAt)}</div>
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
-
-          {/* Stats */}
-          <Row className="g-4 mb-4">
-            {[
-              { icon: "bi-calendar-check-fill", title: "Tổng booking", value: stats.total, tone: "primary" },
-              { icon: "bi-check-circle-fill",   title: "Đã xác nhận",  value: stats.confirmed, tone: "success" },
-              { icon: "bi-lightning-charge-fill",title: "Đang dùng",   value: stats.active,   tone: "warning" },
-              { icon: "bi-wallet2",             title: "Tổng đặt cọc", value: stats.deposit,  tone: "dark" },
-            ].map(({ icon, title, value, tone }) => (
-              <Col md={6} xl={3} key={title}>
-                <Card className="border-0 shadow-sm rounded-4 h-100">
-                  <Card.Body className="p-4 d-flex align-items-center">
-                    <div className={`bg-${tone} bg-opacity-10 text-${tone} rounded-circle p-3 me-3 d-flex align-items-center justify-content-center`}
-                      style={{ width: 60, height: 60 }}>
-                      <i className={`bi ${icon} fs-3`}></i>
-                    </div>
-                    <div>
-                      <h6 className="text-muted mb-1">{title}</h6>
-                      <h3 className="fw-bold mb-0">{value}</h3>
-                    </div>
-                  </Card.Body>
-                </Card>
-              </Col>
-            ))}
-          </Row>
-
-          {/* Bookings table */}
-          <Card className="border-0 shadow-sm rounded-4 overflow-hidden">
-            <Card.Header className="bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
-              <h5 className="fw-bold mb-0 text-dark">Booking của bạn</h5>
-              <Badge bg="dark">{bookings.length}</Badge>
-            </Card.Header>
-            <Card.Body className="p-0">
-              {loadingBookings ? (
-                <div className="py-5 text-center text-muted">
-                  <Spinner animation="border" size="sm" className="me-2" />Đang tải...
-                </div>
-              ) : (
-                <Table responsive hover className="mb-0 align-middle">
-                  <thead className="bg-light">
-                    <tr>
-                      <th className="py-3 px-4">Mã</th>
-                      <th className="py-3 px-4">Không gian</th>
-                      <th className="py-3 px-4">Thời gian</th>
-                      <th className="py-3 px-4">Đặt cọc</th>
-                      <th className="py-3 px-4">Trạng thái</th>
-                      <th className="py-3 px-4">Tạo lúc</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {bookings.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="py-5 px-4 text-center text-muted">
-                          Bạn chưa có booking nào. Hãy{" "}
-                          <Link to="/spaces" className="text-warning fw-semibold">đặt chỗ mới</Link> để bắt đầu.
-                        </td>
-                      </tr>
-                    ) : (
-                      bookings.map((b) => (
-                        <tr key={b.id}>
-                          <td className="py-3 px-4 fw-semibold text-primary">{b.bookingCode}</td>
-                          <td className="py-3 px-4">{b.spaceName}</td>
-                          <td className="py-3 px-4">
-                            <div>{fmtDate(b.startTime)}</div>
-                            <small className="text-muted">{fmtTime(b.startTime)} – {fmtTime(b.endTime)}</small>
-                          </td>
-                          <td className="py-3 px-4 fw-semibold">{fmtMoney(b.depositAmount)}</td>
-                          <td className="py-3 px-4">
-                            <Badge bg={STATUS_VARIANT[b.status] || "secondary"}>
-                              {STATUS_LABEL[b.status] || b.status}
-                            </Badge>
-                          </td>
-                          <td className="py-3 px-4 text-muted small">{fmt(b.createdAt)}</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </Table>
-              )}
-            </Card.Body>
-          </Card>
-        </Container>
-      </main>
-    </div>
-  );
-}
-
-// ─── Main export ─────────────────────────────────────────────────────────────
-export default function Profile() {
-  const { isAuthenticated, user, logout } = useAuth();
-  const navigate = useNavigate();
 
   const handleLogout = () => { logout(); navigate("/"); };
 
-  if (!isAuthenticated || !user) {
-    return (
-      <div className="min-vh-100 d-flex align-items-center justify-content-center bg-dark text-light">
-        <div className="text-center">
-          <i className="bi bi-lock-fill fs-1 text-warning mb-3 d-block"></i>
-          <h5>Bạn chưa đăng nhập</h5>
-          <Link to="/login" className="btn btn-warning rounded-pill px-4 mt-2">Đăng nhập ngay</Link>
-        </div>
-      </div>
-    );
-  }
+  const avatarLetter = (profile?.fullName || authUser?.fullName || "?").charAt(0).toUpperCase();
+  const membership = MEMBERSHIP_MAP[profile?.membershipStatus] || { label: profile?.membershipStatus || "--", bg: "secondary" };
 
-  const roleMeta = ROLE_META[user.role] || ROLE_META.Customer;
+  return (
+    <div className="d-flex flex-column min-vh-100">
+      {/* Navbar */}
+      <Navbar expand="lg" className="bg-white shadow-sm sticky-top py-3">
+        <Container>
+          <Navbar.Brand as={Link} to="/" className="fw-bold text-primary fs-4">
+            <i className="bi bi-building me-2"></i>Nexus Coworking
+          </Navbar.Brand>
+          <Navbar.Toggle aria-controls="profile-nav" className="border-0 shadow-none" />
+          <Navbar.Collapse id="profile-nav">
+            <div className="ms-auto d-flex flex-column flex-lg-row gap-3 align-items-lg-center mt-3 mt-lg-0">
+              <Link to="/spaces" className="text-decoration-none text-dark fw-medium px-2 py-1">
+                Không gian
+              </Link>
+              <Link to="/dashboard" className="text-decoration-none text-dark fw-medium px-2 py-1">
+                Quản lý đặt chỗ
+              </Link>
+              <div className="d-flex gap-2 ms-lg-3 mt-2 mt-lg-0 align-items-center">
+                <div
+                  className="d-flex align-items-center gap-2 px-3 py-2 rounded-pill border border-primary"
+                  style={{ background: "#eef2ff" }}
+                >
+                  <div
+                    className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold"
+                    style={{ width: 30, height: 30, fontSize: 13, flexShrink: 0 }}
+                  >
+                    {avatarLetter}
+                  </div>
+                  <span className="fw-medium text-primary" style={{ fontSize: 14 }}>
+                    {profile?.fullName || authUser?.fullName || "Profile"}
+                  </span>
+                </div>
+                <Button variant="outline-danger" className="px-4 rounded-pill fw-medium" onClick={handleLogout}>
+                  Đăng xuất
+                </Button>
+              </div>
+            </div>
+          </Navbar.Collapse>
+        </Container>
+      </Navbar>
 
-  if (user.role === "Admin" || user.role === "Staff") {
-    return <StaffAdminProfile user={user} roleMeta={roleMeta} onLogout={handleLogout} />;
-  }
+      <main className="flex-grow-1 bg-light py-5">
+        <Container>
+          <Row className="mb-4 align-items-center">
+            <Col>
+              <h2 className="fw-bold mb-1 text-dark">Thông tin cá nhân</h2>
+              <p className="text-muted mb-0">Xem và cập nhật thông tin tài khoản của bạn</p>
+            </Col>
+            <Col xs="auto">
+              <Button as={Link} to="/dashboard" variant="outline-secondary" className="rounded-pill px-4 fw-medium">
+                <i className="bi bi-arrow-left me-1"></i> Quay lại
+              </Button>
+            </Col>
+          </Row>
 
-  return <CustomerProfile user={user} onLogout={handleLogout} />;
+          {loading ? (
+            <div className="text-center py-5">
+              <Spinner animation="border" variant="primary" />
+            </div>
+          ) : (
+            <Row className="g-4">
+              {/* Left: Avatar card */}
+              <Col lg={3} md={4}>
+                <Card className="border-0 shadow-sm rounded-4 text-center p-4">
+                  <div
+                    className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold mx-auto mb-3"
+                    style={{ width: 90, height: 90, fontSize: 36 }}
+                  >
+                    {avatarLetter}
+                  </div>
+                  <h5 className="fw-bold mb-1">{profile?.fullName}</h5>
+                  <p className="text-muted small mb-2">{profile?.email}</p>
+                  <Badge bg={membership.bg} className="rounded-pill px-3 py-2 mb-3">
+                    {membership.label}
+                  </Badge>
+                  <hr />
+                  <div className="text-start small">
+                    <div className="d-flex align-items-center gap-2 text-muted mb-2">
+                      <i className="bi bi-shield-check text-primary"></i>
+                      <span>
+                        Vai trò:{" "}
+                        <span className="fw-medium text-dark">
+                          {profile?.role === "admin" ? "Quản trị viên" : "Khách hàng"}
+                        </span>
+                      </span>
+                    </div>
+                    <div className="d-flex align-items-center gap-2 text-muted">
+                      <i className="bi bi-calendar3 text-primary"></i>
+                      <span>
+                        Tham gia:{" "}
+                        <span className="fw-medium text-dark">{formatDate(profile?.createdAt)}</span>
+                      </span>
+                    </div>
+                  </div>
+                </Card>
+              </Col>
+
+              {/* Right: Edit forms */}
+              <Col lg={9} md={8}>
+                {/* Update profile */}
+                <Card className="border-0 shadow-sm rounded-4 mb-4">
+                  <Card.Header className="bg-white border-bottom py-3 px-4 rounded-top-4">
+                    <h6 className="fw-bold mb-0">
+                      <i className="bi bi-person-gear me-2 text-primary"></i>Cập nhật thông tin
+                    </h6>
+                  </Card.Header>
+                  <Card.Body className="p-4">
+                    {saveMsg && (
+                      <Alert variant={saveMsg.type} className="rounded-3 py-2 px-3 mb-4" onClose={() => setSaveMsg(null)} dismissible>
+                        <i className={`bi ${saveMsg.type === "success" ? "bi-check-circle" : "bi-exclamation-circle"} me-2`}></i>
+                        {saveMsg.text}
+                      </Alert>
+                    )}
+                    <Form onSubmit={handleSaveProfile}>
+                      <Row className="g-3">
+                        <Col md={6}>
+                          <Form.Group>
+                            <Form.Label className="fw-semibold small text-muted text-uppercase">Họ và tên</Form.Label>
+                            <Form.Control
+                              type="text"
+                              value={fullName}
+                              onChange={(e) => setFullName(e.target.value)}
+                              className="rounded-3"
+                              required
+                            />
+                          </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                          <Form.Group>
+                            <Form.Label className="fw-semibold small text-muted text-uppercase">Email</Form.Label>
+                            <Form.Control
+                              type="email"
+                              value={email}
+                              onChange={(e) => setEmail(e.target.value)}
+                              className="rounded-3"
+                              required
+                            />
+                          </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                          <Form.Group>
+                            <Form.Label className="fw-semibold small text-muted text-uppercase">Số điện thoại</Form.Label>
+                            <Form.Control
+                              type="tel"
+                              value={phone}
+                              onChange={(e) => setPhone(e.target.value)}
+                              placeholder="Nhập số điện thoại"
+                              className="rounded-3"
+                            />
+                          </Form.Group>
+                        </Col>
+                      </Row>
+                      <div className="mt-4 text-end">
+                        <Button type="submit" variant="primary" className="rounded-pill px-4 fw-medium" disabled={saving}>
+                          {saving ? (
+                            <><Spinner size="sm" className="me-2" />Đang lưu...</>
+                          ) : (
+                            <><i className="bi bi-check-lg me-1"></i>Lưu thay đổi</>
+                          )}
+                        </Button>
+                      </div>
+                    </Form>
+                  </Card.Body>
+                </Card>
+
+                {/* Change password */}
+                <Card className="border-0 shadow-sm rounded-4">
+                  <Card.Header className="bg-white border-bottom py-3 px-4 rounded-top-4">
+                    <h6 className="fw-bold mb-0">
+                      <i className="bi bi-lock me-2 text-warning"></i>Đổi mật khẩu
+                    </h6>
+                  </Card.Header>
+                  <Card.Body className="p-4">
+                    {pwMsg && (
+                      <Alert variant={pwMsg.type} className="rounded-3 py-2 px-3 mb-4" onClose={() => setPwMsg(null)} dismissible>
+                        <i className={`bi ${pwMsg.type === "success" ? "bi-check-circle" : "bi-exclamation-circle"} me-2`}></i>
+                        {pwMsg.text}
+                      </Alert>
+                    )}
+                    <Form onSubmit={handleChangePassword}>
+                      <Row className="g-3">
+                        <Col md={12}>
+                          <Form.Group>
+                            <Form.Label className="fw-semibold small text-muted text-uppercase">Mật khẩu hiện tại</Form.Label>
+                            <Form.Control
+                              type="password"
+                              value={currentPassword}
+                              onChange={(e) => setCurrentPassword(e.target.value)}
+                              className="rounded-3"
+                              required
+                            />
+                          </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                          <Form.Group>
+                            <Form.Label className="fw-semibold small text-muted text-uppercase">Mật khẩu mới</Form.Label>
+                            <Form.Control
+                              type="password"
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              placeholder="Tối thiểu 6 ký tự"
+                              className="rounded-3"
+                              required
+                            />
+                          </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                          <Form.Group>
+                            <Form.Label className="fw-semibold small text-muted text-uppercase">Xác nhận mật khẩu mới</Form.Label>
+                            <Form.Control
+                              type="password"
+                              value={confirmPassword}
+                              onChange={(e) => setConfirmPassword(e.target.value)}
+                              className="rounded-3"
+                              required
+                            />
+                          </Form.Group>
+                        </Col>
+                      </Row>
+                      <div className="mt-4 text-end">
+                        <Button type="submit" variant="warning" className="rounded-pill px-4 fw-medium" disabled={changingPw}>
+                          {changingPw ? (
+                            <><Spinner size="sm" className="me-2" />Đang đổi...</>
+                          ) : (
+                            <><i className="bi bi-shield-lock me-1"></i>Đổi mật khẩu</>
+                          )}
+                        </Button>
+                      </div>
+                    </Form>
+                  </Card.Body>
+                </Card>
+              </Col>
+            </Row>
+          )}
+        </Container>
+      </main>
+
+      <footer className="bg-dark text-light py-4 mt-auto">
+        <Container>
+          <p className="text-secondary mb-0 text-center small">
+            &copy; 2026 Nexus Coworking. All rights reserved.
+          </p>
+        </Container>
+      </footer>
+    </div>
+  );
 }

@@ -269,7 +269,7 @@ export default function Home() {
           <div className="d-flex flex-wrap gap-3 justify-content-center">
             <Button
               as={Link}
-              to="/login"
+              to={isAuthenticated ? "/spaces" : "/login"}
               variant="light"
               size="lg"
               className="rounded-0 px-5 py-3 fw-bold text-uppercase"
