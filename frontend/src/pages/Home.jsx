@@ -276,15 +276,6 @@ export default function Home() {
             >
               Đặt bàn ngay
             </Button>
-            <Button
-              as={Link}
-              to="/spaces"
-              variant="outline-light"
-              size="lg"
-              className="rounded-0 px-5 py-3 fw-bold text-uppercase"
-            >
-              Khám phá không gian
-            </Button>
           </div>
           <div className="mt-5 pt-5 text-secondary opacity-50">
             <i className="bi bi-cup-hot" style={{ fontSize: "120px" }}></i>
