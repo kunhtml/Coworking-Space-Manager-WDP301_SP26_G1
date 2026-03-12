@@ -1,11 +1,5 @@
 .DS_Store
 .env
 /node_modules/
-
-# React Router
 /.react-router/
 /build/
-
-# Local files
-1.jpg
-start.bat
