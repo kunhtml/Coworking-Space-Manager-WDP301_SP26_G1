@@ -1,3 +1,11 @@
+import { connectDB } from "./db.server";
+
+export async function loader() {
+  console.log(" Đang khởi chạy Root Loader..."); 
+  await connectDB(); 
+  return {};
+}
+
 import {
   isRouteErrorResponse,
   Links,

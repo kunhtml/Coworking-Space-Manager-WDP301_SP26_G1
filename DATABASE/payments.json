@@ -1,0 +1,13 @@
+[
+  {
+    "_id": { "$oid": "65e7d0000000000000000001" },
+    "invoiceId": { "$oid": "65e7c0000000000000000001" },
+    "paymentMethod": "MoMo",
+    "transactionId": "MOMO_TRANS_999888777",
+    "amount": 150000,
+    "type": "Deposit",
+    "paymentStatus": "Success",
+    "paidAt": { "$date": "2026-03-04T10:05:00.000Z" },
+    "__v": 0
+  }
+]

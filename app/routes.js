@@ -7,6 +7,7 @@ export default [
   route("menu", "routes/menu.jsx"),
   route("login", "routes/login.jsx"),
 
+  route("admin/dashboard", "routes/admin.dashboard.jsx"),
   route("admin/accounts", "routes/admin.accounts.jsx"),
   route("admin/menu", "routes/admin.menu.jsx"),
   route("admin/tables", "routes/admin.tables.jsx"),

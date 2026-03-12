@@ -1,0 +1,24 @@
+[
+  {
+    "_id": { "$oid": "65e6d0000000000000000001" },
+    "name": "Cà phê sữa đá",
+    "categoryId": { "$oid": "65e6c0000000000000000001" },
+    "description": "Cà phê pha phin truyền thống",
+    "price": 35000,
+    "stockQuantity": 50,
+    "availabilityStatus": "In_Stock",
+    "createdAt": { "$date": "2026-01-01T08:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6d0000000000000000002" },
+    "name": "Bánh mì chả lụa",
+    "categoryId": { "$oid": "65e6c0000000000000000002" },
+    "description": "Bánh mì nóng giòn ăn kèm chả lụa",
+    "price": 30000,
+    "stockQuantity": 15,
+    "availabilityStatus": "In_Stock",
+    "createdAt": { "$date": "2026-01-01T08:00:00.000Z" },
+    "__v": 0
+  }
+]
