@@ -2,7 +2,11 @@ import { useEffect, useState, useCallback } from "react";
 import { Spinner } from "react-bootstrap";
 import { useParams, useNavigate, Link } from "react-router";
 import { useAuth } from "../hooks/useAuth";
-import { getPaymentData, createPaymentApi, cancelPaymentApi } from "../services/bookingService";
+import {
+  getPaymentData,
+  createPaymentApi,
+  cancelPaymentApi,
+} from "../services/bookingService";
 
 // ─── Icons ───
 import {
@@ -312,10 +316,15 @@ export default function PaymentPage() {
   // Auto-create payment when data loads and no payment exists yet
   useEffect(() => {
     if (!data) return;
-    if (data.payosEnabled && data.ui?.canPay && !data.payment && !creatingPayment) {
+    if (
+      data.payosEnabled &&
+      data.ui?.canPay &&
+      !data.payment &&
+      !creatingPayment
+    ) {
       handleCreatePayment();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.payment, data?.payosEnabled, data?.ui?.canPay]);
 
   useEffect(() => {
@@ -326,7 +335,11 @@ export default function PaymentPage() {
 
   // Start 5-minute cancel countdown when QR becomes visible
   useEffect(() => {
-    if (!data?.payment?.qrCodeDataUrl || data?.payment?.paymentStatus !== "Pending") return;
+    if (
+      !data?.payment?.qrCodeDataUrl ||
+      data?.payment?.paymentStatus !== "Pending"
+    )
+      return;
     if (timeLeft !== null) return; // already started
     setTimeLeft(5 * 60);
   }, [data, timeLeft]);
@@ -341,13 +354,19 @@ export default function PaymentPage() {
   useEffect(() => {
     if (timeLeft !== 0) return;
     (async () => {
-      try { await cancelPaymentApi(bookingId); } catch { /* ignore */ }
+      try {
+        await cancelPaymentApi(bookingId);
+      } catch {
+        /* ignore */
+      }
       setCancelled(true);
     })();
   }, [timeLeft, bookingId]);
 
   // Backend maps PayOS PAID -> "Success"
-  const isPaid = ["Paid", "PAID", "Success", "success"].includes(data?.payment?.paymentStatus);
+  const isPaid = ["Paid", "PAID", "Success", "success"].includes(
+    data?.payment?.paymentStatus,
+  );
 
   useEffect(() => {
     if (!isPaid || countdown !== null) return;
@@ -961,7 +980,10 @@ export default function PaymentPage() {
                 <RiLoader4Line
                   size={40}
                   color="#6366f1"
-                  style={{ animation: "pp-spin .9s linear infinite", marginBottom: 16 }}
+                  style={{
+                    animation: "pp-spin .9s linear infinite",
+                    marginBottom: 16,
+                  }}
                 />
                 <p style={{ color: "#64748b", fontSize: 14, margin: 0 }}>
                   Đang tạo mã QR thanh toán...

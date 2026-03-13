@@ -282,7 +282,8 @@ export default function SpacesPage() {
           style={{
             width: 500,
             height: 500,
-            background: "radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)",
+            background:
+              "radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)",
             top: -100,
             left: -100,
           }}
@@ -292,7 +293,8 @@ export default function SpacesPage() {
           style={{
             width: 400,
             height: 400,
-            background: "radial-gradient(circle, rgba(245,158,11,0.12) 0%, transparent 70%)",
+            background:
+              "radial-gradient(circle, rgba(245,158,11,0.12) 0%, transparent 70%)",
             bottom: -80,
             right: -80,
           }}
@@ -312,12 +314,14 @@ export default function SpacesPage() {
             className="display-4 fw-bold mb-3"
             style={{ letterSpacing: -1, lineHeight: 1.1 }}
           >
-            Không gian &amp;{" "}
-            <span style={{ color: "#f59e0b" }}>Thực đơn</span>
+            Không gian &amp; <span style={{ color: "#f59e0b" }}>Thực đơn</span>
           </h1>
-          <p className="text-secondary fs-5 mb-4" style={{ maxWidth: 540, margin: "0 auto" }}>
-            Trải nghiệm không gian cà phê tinh tế và thực đơn đa dạng,
-            được chắt lọc từ những nguyên liệu tươi ngon nhất.
+          <p
+            className="text-secondary fs-5 mb-4"
+            style={{ maxWidth: 540, margin: "0 auto" }}
+          >
+            Trải nghiệm không gian cà phê tinh tế và thực đơn đa dạng, được chắt
+            lọc từ những nguyên liệu tươi ngon nhất.
           </p>
           <div className="d-flex gap-3 justify-content-center flex-wrap">
             <Button
@@ -343,7 +347,11 @@ export default function SpacesPage() {
       </section>
 
       {/* Space Gallery */}
-      <section id="gallery-spaces" className="py-5" style={{ background: "#111827" }}>
+      <section
+        id="gallery-spaces"
+        className="py-5"
+        style={{ background: "#111827" }}
+      >
         <Container>
           <div className="text-center mb-5">
             <Badge
@@ -355,7 +363,8 @@ export default function SpacesPage() {
             </Badge>
             <h2 className="fw-bold display-6 mb-2">Không gian của chúng tôi</h2>
             <p className="text-secondary">
-              Mỗi góc nhỏ đều được thiết kế để mang lại trải nghiệm tốt nhất cho bạn
+              Mỗi góc nhỏ đều được thiết kế để mang lại trải nghiệm tốt nhất cho
+              bạn
             </p>
           </div>
 
@@ -416,7 +425,10 @@ export default function SpacesPage() {
                     >
                       {img.tag}
                     </Badge>
-                    <div className="fw-bold text-white" style={{ fontSize: 15 }}>
+                    <div
+                      className="fw-bold text-white"
+                      style={{ fontSize: 15 }}
+                    >
                       {img.title}
                     </div>
                   </div>
@@ -425,7 +437,10 @@ export default function SpacesPage() {
                     className="position-absolute top-0 end-0 m-2 bg-dark bg-opacity-50 rounded-circle d-flex align-items-center justify-content-center"
                     style={{ width: 34, height: 34 }}
                   >
-                    <i className="bi bi-zoom-in text-white" style={{ fontSize: 14 }}></i>
+                    <i
+                      className="bi bi-zoom-in text-white"
+                      style={{ fontSize: 14 }}
+                    ></i>
                   </div>
                 </div>
               </Col>
@@ -438,7 +453,8 @@ export default function SpacesPage() {
       <div
         className="py-4 text-center"
         style={{
-          background: "linear-gradient(90deg, transparent, rgba(245,158,11,0.15), transparent)",
+          background:
+            "linear-gradient(90deg, transparent, rgba(245,158,11,0.15), transparent)",
         }}
       >
         <i
@@ -459,11 +475,10 @@ export default function SpacesPage() {
             >
               THỰC ĐƠN
             </Badge>
-            <h2 className="fw-bold display-6 mb-2">
-              Đồ ăn &amp; Thức uống
-            </h2>
+            <h2 className="fw-bold display-6 mb-2">Đồ ăn &amp; Thức uống</h2>
             <p className="text-secondary">
-              Thưởng thức hương vị đặc sắc được chế biến từ nguyên liệu tươi ngon hàng ngày
+              Thưởng thức hương vị đặc sắc được chế biến từ nguyên liệu tươi
+              ngon hàng ngày
             </p>
           </div>
 
@@ -528,7 +543,9 @@ export default function SpacesPage() {
                         {item.price}
                       </span>
                     </div>
-                    <h6 className="fw-bold text-white mb-1 mt-2">{item.title}</h6>
+                    <h6 className="fw-bold text-white mb-1 mt-2">
+                      {item.title}
+                    </h6>
                     <p
                       className="text-secondary mb-0"
                       style={{ fontSize: 13, lineHeight: 1.5 }}
@@ -552,9 +569,7 @@ export default function SpacesPage() {
         }}
       >
         <Container>
-          <h2 className="fw-bold display-6 mb-3">
-            Sẵn sàng trải nghiệm?
-          </h2>
+          <h2 className="fw-bold display-6 mb-3">Sẵn sàng trải nghiệm?</h2>
           <p className="text-secondary mb-4 fs-5">
             Đặt bàn ngay hôm nay và tận hưởng không gian cà phê tuyệt vời
           </p>
@@ -588,12 +603,34 @@ export default function SpacesPage() {
               NEXUS COFFEE
             </div>
             <div className="d-flex gap-4 flex-wrap">
-              <Link to="/" className="text-secondary text-decoration-none small">Trang chủ</Link>
-              <Link to="/spaces" className="text-primary text-decoration-none small fw-medium">Không gian</Link>
-              <Link to="/menu" className="text-secondary text-decoration-none small">Thực đơn</Link>
-              <Link to="/order-table" className="text-secondary text-decoration-none small">Đặt bàn</Link>
+              <Link
+                to="/"
+                className="text-secondary text-decoration-none small"
+              >
+                Trang chủ
+              </Link>
+              <Link
+                to="/spaces"
+                className="text-primary text-decoration-none small fw-medium"
+              >
+                Không gian
+              </Link>
+              <Link
+                to="/menu"
+                className="text-secondary text-decoration-none small"
+              >
+                Thực đơn
+              </Link>
+              <Link
+                to="/order-table"
+                className="text-secondary text-decoration-none small"
+              >
+                Đặt bàn
+              </Link>
             </div>
-            <div className="text-secondary small">© 2026 Nexus Coffee. All rights reserved.</div>
+            <div className="text-secondary small">
+              © 2026 Nexus Coffee. All rights reserved.
+            </div>
           </div>
         </Container>
       </footer>
@@ -633,10 +670,7 @@ export default function SpacesPage() {
                     {lightbox.item.tag}
                   </Badge>
                   {lightbox.type === "food" && (
-                    <span
-                      className="fw-bold fs-5"
-                      style={{ color: "#f59e0b" }}
-                    >
+                    <span className="fw-bold fs-5" style={{ color: "#f59e0b" }}>
                       {lightbox.item.price}
                     </span>
                   )}

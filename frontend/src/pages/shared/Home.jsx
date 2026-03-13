@@ -143,17 +143,10 @@ export default function Home() {
                       className="bg-dark border-secondary"
                       style={{ minWidth: "180px" }}
                     >
-                      <Dropdown.Item
-                        as={Link}
-                        to="/profile"
-                        className="text-light"
-                      >
-                        <i className="bi bi-person me-2"></i>Hồ sơ cá nhân
-                      </Dropdown.Item>
                       {(user.role === "Admin" || user.role === "Staff") && (
                         <Dropdown.Item
                           as={Link}
-                          to="/dashboard"
+                          to={user.role === "Admin" ? "/admin" : "/dashboard"}
                           className="text-light"
                         >
                           <i className="bi bi-speedometer2 me-2"></i>
@@ -293,7 +286,8 @@ export default function Home() {
           style={{
             width: 550,
             height: 550,
-            background: "radial-gradient(circle, rgba(99,102,241,0.13) 0%, transparent 70%)",
+            background:
+              "radial-gradient(circle, rgba(99,102,241,0.13) 0%, transparent 70%)",
             top: -160,
             right: -160,
             pointerEvents: "none",
@@ -304,7 +298,8 @@ export default function Home() {
           style={{
             width: 420,
             height: 420,
-            background: "radial-gradient(circle, rgba(245,158,11,0.10) 0%, transparent 70%)",
+            background:
+              "radial-gradient(circle, rgba(245,158,11,0.10) 0%, transparent 70%)",
             bottom: -100,
             left: -100,
             pointerEvents: "none",
@@ -584,7 +579,8 @@ export default function Home() {
           style={{
             width: 600,
             height: 600,
-            background: "radial-gradient(circle, rgba(99,102,241,0.11) 0%, transparent 70%)",
+            background:
+              "radial-gradient(circle, rgba(99,102,241,0.11) 0%, transparent 70%)",
             top: -200,
             left: -200,
             pointerEvents: "none",
@@ -595,7 +591,8 @@ export default function Home() {
           style={{
             width: 450,
             height: 450,
-            background: "radial-gradient(circle, rgba(245,158,11,0.10) 0%, transparent 70%)",
+            background:
+              "radial-gradient(circle, rgba(245,158,11,0.10) 0%, transparent 70%)",
             bottom: -120,
             right: -120,
             pointerEvents: "none",
