@@ -11,8 +11,8 @@ import {
 } from "react-bootstrap";
 import { Link, useNavigate } from "react-router";
 import { animate, stagger } from "animejs";
-import { loginApi } from "../services/api";
-import { saveAuth } from "../store/authSlice";
+import { loginApi } from "../../services/api";
+import { saveAuth } from "../../store/authSlice";
 
 export function meta() {
   return [

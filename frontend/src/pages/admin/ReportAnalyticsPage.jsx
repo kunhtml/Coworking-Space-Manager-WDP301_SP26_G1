@@ -13,8 +13,8 @@ import {
   Dropdown,
 } from "react-bootstrap";
 import { Link, useNavigate } from "react-router";
-import { useAuth } from "../hooks/useAuth";
-import { apiClient as api } from "../services/api";
+import { useAuth } from "../../hooks/useAuth";
+import { apiClient as api } from "../../services/api";
 
 export function meta() {
   return [

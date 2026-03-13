@@ -14,11 +14,11 @@ import {
   Tooltip,
 } from "react-bootstrap";
 import { Link, useNavigate } from "react-router";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../../hooks/useAuth";
 import {
   searchAvailableTables,
   createBookingApi,
-} from "../services/bookingService";
+} from "../../services/bookingService";
 
 export function meta() {
   return [

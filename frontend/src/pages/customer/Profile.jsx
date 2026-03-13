@@ -12,8 +12,12 @@ import {
   Badge,
 } from "react-bootstrap";
 import { Link, useNavigate } from "react-router";
-import { useAuth } from "../hooks/useAuth";
-import { getMeApi, updateProfileApi, changePasswordApi } from "../services/api";
+import { useAuth } from "../../hooks/useAuth";
+import {
+  getMeApi,
+  updateProfileApi,
+  changePasswordApi,
+} from "../../services/api";
 
 export function meta() {
   return [{ title: "Thông tin cá nhân | Nexus Coworking" }];
