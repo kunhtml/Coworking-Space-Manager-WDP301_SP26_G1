@@ -158,16 +158,16 @@ export default function Profile() {
           <Navbar.Collapse id="profile-nav">
             <div className="ms-auto d-flex flex-column flex-lg-row gap-3 align-items-lg-center mt-3 mt-lg-0">
               <Link
-                to="/order-table"
-                className="text-decoration-none text-dark fw-medium px-2 py-1"
-              >
-                Không gian
-              </Link>
-              <Link
                 to="/dashboard"
                 className="text-decoration-none text-dark fw-medium px-2 py-1"
               >
                 Quản lý đặt chỗ
+              </Link>
+              <Link
+                to="/profile"
+                className="text-decoration-none text-dark fw-medium px-2 py-1"
+              >
+                Chỉnh sửa Profile
               </Link>
               <div className="d-flex gap-2 ms-lg-3 mt-2 mt-lg-0 align-items-center">
                 <div

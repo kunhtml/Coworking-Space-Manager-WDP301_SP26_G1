@@ -10,6 +10,7 @@ import {
   Table,
   Spinner,
   Alert,
+  Dropdown,
 } from "react-bootstrap";
 import { Link, useNavigate } from "react-router";
 import { useAuth } from "../../hooks/useAuth";
@@ -146,22 +147,21 @@ export default function Dashboard() {
           <Navbar.Collapse id="basic-navbar-nav">
             <div className="ms-auto d-flex flex-column flex-lg-row gap-3 align-items-lg-center mt-3 mt-lg-0">
               <Link
-                to="/order-table"
-                className="text-decoration-none text-dark fw-medium px-2 py-1 hover-primary transition-all"
-              >
-                Không gian
-              </Link>
-              <Link
                 to="/dashboard"
-                className="text-decoration-none text-primary fw-bold px-2 py-1 rounded bg-primary bg-opacity-10"
+                className="text-decoration-none text-dark fw-medium px-2 py-1"
               >
                 Quản lý đặt chỗ
               </Link>
+              <Link
+                to="/profile"
+                className="text-decoration-none text-dark fw-medium px-2 py-1"
+              >
+                Chỉnh sửa Profile
+              </Link>
               <div className="d-flex gap-2 ms-lg-3 mt-2 mt-lg-0 align-items-center">
-                <Link
-                  to="/profile"
-                  className="d-flex align-items-center gap-2 px-3 py-2 rounded-pill border border-secondary-subtle text-decoration-none"
-                  style={{ background: "#f8f9fa" }}
+                <div
+                  className="d-flex align-items-center gap-2 px-3 py-2 rounded-pill border border-primary"
+                  style={{ background: "#eef2ff" }}
                 >
                   <div
                     className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold"
@@ -177,12 +177,12 @@ export default function Dashboard() {
                       .toUpperCase()}
                   </div>
                   <span
-                    className="fw-medium text-dark"
+                    className="fw-medium text-primary"
                     style={{ fontSize: 14 }}
                   >
                     {user?.fullName || user?.email || "Khách"}
                   </span>
-                </Link>
+                </div>
                 <Button
                   variant="outline-danger"
                   className="px-4 rounded-pill fw-medium"

@@ -143,6 +143,15 @@ export default function Home() {
                       className="bg-dark border-secondary"
                       style={{ minWidth: "180px" }}
                     >
+                      {user.role !== "Admin" && (
+                        <Dropdown.Item
+                          as={Link}
+                          to="/profile"
+                          className="text-light"
+                        >
+                          <i className="bi bi-person me-2"></i>Hồ sơ cá nhân
+                        </Dropdown.Item>
+                      )}
                       {(user.role === "Admin" || user.role === "Staff") && (
                         <Dropdown.Item
                           as={Link}
