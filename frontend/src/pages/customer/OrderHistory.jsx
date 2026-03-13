@@ -12,8 +12,8 @@ import {
   Alert,
 } from "react-bootstrap";
 import { Link, useNavigate } from "react-router";
-import { useAuth } from "../hooks/useAuth";
-import { getBookings } from "../services/bookingService";
+import { useAuth } from "../../hooks/useAuth";
+import { getBookings } from "../../services/bookingService";
 
 export function meta() {
   return [

@@ -1,12 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
 import { Spinner } from "react-bootstrap";
 import { useParams, useNavigate, Link } from "react-router";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../../hooks/useAuth";
 import {
   getPaymentData,
   createPaymentApi,
   cancelPaymentApi,
-} from "../services/bookingService";
+} from "../../services/bookingService";
 
 // ─── Icons ───
 import {
