@@ -15,7 +15,10 @@ import {
 } from "react-bootstrap";
 import { Link, useNavigate } from "react-router";
 import { useAuth } from "../hooks/useAuth";
-import { searchAvailableTables, createBookingApi } from "../services/bookingService";
+import {
+  searchAvailableTables,
+  createBookingApi,
+} from "../services/bookingService";
 
 export function meta() {
   return [
@@ -94,7 +97,11 @@ export default function Spaces() {
     setSearched(false);
     setSelectedTable(null);
     try {
-      const data = await searchAvailableTables({ arrivalDate, arrivalTime, duration });
+      const data = await searchAvailableTables({
+        arrivalDate,
+        arrivalTime,
+        duration,
+      });
       setAvailableTables(data);
       setSearched(true);
     } catch (err) {
@@ -162,7 +169,7 @@ export default function Spaces() {
           <Navbar.Collapse id="basic-navbar-nav">
             <div className="ms-auto d-flex flex-column flex-lg-row gap-4 align-items-lg-center mt-3 mt-lg-0">
               <Link
-                to="/spaces"
+                to="/order-table"
                 className="text-decoration-none text-warning fw-bold px-2 py-1 text-uppercase"
               >
                 Đặt bàn
@@ -220,7 +227,8 @@ export default function Spaces() {
             className="lead text-secondary mx-auto mb-0"
             style={{ maxWidth: "650px" }}
           >
-            Nhập thông tin, tìm bàn trống và xác nhận đặt chỗ chỉ trong vài bước.
+            Nhập thông tin, tìm bàn trống và xác nhận đặt chỗ chỉ trong vài
+            bước.
           </p>
         </Container>
       </header>
@@ -349,7 +357,9 @@ export default function Spaces() {
                     variant="warning"
                     size="lg"
                     className="rounded-0 px-5 py-3 fw-bold text-uppercase text-dark"
-                    disabled={isSearching || !guestName.trim() || !guestPhone.trim()}
+                    disabled={
+                      isSearching || !guestName.trim() || !guestPhone.trim()
+                    }
                   >
                     {isSearching ? (
                       <>
@@ -408,20 +418,15 @@ export default function Spaces() {
                     </p>
                     <Row className="g-3">
                       {availableTables.map((table) => {
-                        const uiType = TABLE_TYPE_MAP[table.tableType] || "single";
+                        const uiType =
+                          TABLE_TYPE_MAP[table.tableType] || "single";
                         const icon = typeIcons[uiType] || "bi-hdd";
                         const costEst =
                           table.pricePerHour > 0
                             ? table.pricePerHour * duration
                             : 0;
                         return (
-                          <Col
-                            xs={6}
-                            sm={4}
-                            md={3}
-                            lg={2}
-                            key={table.sourceId}
-                          >
+                          <Col xs={6} sm={4} md={3} lg={2} key={table.sourceId}>
                             <OverlayTrigger
                               placement="top"
                               overlay={
@@ -569,7 +574,9 @@ export default function Spaces() {
                   className={`bi ${typeIcons[selectedTable.uiType] || "bi-hdd"} text-success mb-2`}
                   style={{ fontSize: "2.5rem" }}
                 ></i>
-                <h4 className="text-white fw-bold mb-1">{selectedTable.name}</h4>
+                <h4 className="text-white fw-bold mb-1">
+                  {selectedTable.name}
+                </h4>
                 <p className="text-secondary mb-0">
                   <i className="bi bi-people-fill me-1"></i>
                   {selectedTable.capacity} chỗ ngồi
@@ -583,7 +590,9 @@ export default function Spaces() {
                     className="bi bi-check-circle-fill text-success mb-3"
                     style={{ fontSize: "3rem" }}
                   ></i>
-                  <p className="text-success fw-bold fs-5">Đặt bàn thành công!</p>
+                  <p className="text-success fw-bold fs-5">
+                    Đặt bàn thành công!
+                  </p>
                   <p className="text-secondary">
                     Mã đặt bàn:{" "}
                     <span className="text-white fw-bold">{bookingSuccess}</span>
@@ -622,7 +631,9 @@ export default function Spaces() {
                           </td>
                         </tr>
                         <tr>
-                          <td className="text-secondary py-1">Số điện thoại:</td>
+                          <td className="text-secondary py-1">
+                            Số điện thoại:
+                          </td>
                           <td className="text-end text-white fw-bold py-1">
                             {guestPhone}
                           </td>
@@ -632,7 +643,7 @@ export default function Spaces() {
                           <td className="text-end text-white fw-bold py-1">
                             {arrivalDate
                               ? new Date(
-                                  arrivalDate + "T00:00:00"
+                                  arrivalDate + "T00:00:00",
                                 ).toLocaleDateString("vi-VN")
                               : ""}
                           </td>
@@ -653,7 +664,9 @@ export default function Spaces() {
                         </tr>
                         {selectedTable.pricePerHour > 0 && (
                           <tr>
-                            <td className="text-secondary py-1">Giá mỗi giờ:</td>
+                            <td className="text-secondary py-1">
+                              Giá mỗi giờ:
+                            </td>
                             <td className="text-end text-white fw-bold py-1">
                               {fmt(selectedTable.pricePerHour)}đ
                             </td>

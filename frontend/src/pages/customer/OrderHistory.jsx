@@ -48,17 +48,50 @@ function calcDuration(start, end) {
 }
 
 const STATUS_MAP = {
-  Pending: { label: "Chờ thanh toán", bg: "warning", textClass: "text-dark", icon: "bi-clock-history" },
-  Awaiting_Payment: { label: "Chờ thanh toán", bg: "warning", textClass: "text-dark", icon: "bi-qr-code" },
-  Confirmed: { label: "Đã xác nhận", bg: "success", textClass: "text-white", icon: "bi-check-circle" },
-  Completed: { label: "Đã hoàn thành", bg: "secondary", textClass: "text-white", icon: "bi-check2-all" },
-  Cancelled: { label: "Đã hủy", bg: "danger", textClass: "text-white", icon: "bi-x-circle" },
+  Pending: {
+    label: "Chờ thanh toán",
+    bg: "warning",
+    textClass: "text-dark",
+    icon: "bi-clock-history",
+  },
+  Awaiting_Payment: {
+    label: "Chờ thanh toán",
+    bg: "warning",
+    textClass: "text-dark",
+    icon: "bi-qr-code",
+  },
+  Confirmed: {
+    label: "Đã xác nhận",
+    bg: "success",
+    textClass: "text-white",
+    icon: "bi-check-circle",
+  },
+  Completed: {
+    label: "Đã hoàn thành",
+    bg: "secondary",
+    textClass: "text-white",
+    icon: "bi-check2-all",
+  },
+  Cancelled: {
+    label: "Đã hủy",
+    bg: "danger",
+    textClass: "text-white",
+    icon: "bi-x-circle",
+  },
 };
 
 function StatusBadge({ status }) {
-  const s = STATUS_MAP[status] || { label: status, bg: "secondary", textClass: "text-white", icon: "bi-dash" };
+  const s = STATUS_MAP[status] || {
+    label: status,
+    bg: "secondary",
+    textClass: "text-white",
+    icon: "bi-dash",
+  };
   return (
-    <Badge bg={s.bg} className={`px-3 py-2 rounded-pill fw-medium ${s.textClass}`}>
+    <Badge
+      bg={s.bg}
+      className={`px-3 py-2 rounded-pill fw-medium ${s.textClass}`}
+    >
       <i className={`bi ${s.icon} me-1`}></i>
       {s.label}
     </Badge>
@@ -80,7 +113,9 @@ export default function Dashboard() {
     }
     getBookings()
       .then(setBookings)
-      .catch((err) => setError(err.message || "Không thể tải danh sách đặt chỗ."))
+      .catch((err) =>
+        setError(err.message || "Không thể tải danh sách đặt chỗ."),
+      )
       .finally(() => setLoading(false));
   }, [isAuthenticated, navigate]);
 
@@ -90,8 +125,12 @@ export default function Dashboard() {
   };
 
   const total = bookings.length;
-  const pendingCount = bookings.filter((b) => ["Pending", "Awaiting_Payment"].includes(b.status)).length;
-  const completedCount = bookings.filter((b) => b.status === "Completed").length;
+  const pendingCount = bookings.filter((b) =>
+    ["Pending", "Awaiting_Payment"].includes(b.status),
+  ).length;
+  const completedCount = bookings.filter(
+    (b) => b.status === "Completed",
+  ).length;
 
   return (
     <div className="d-flex flex-column min-vh-100">
@@ -100,11 +139,14 @@ export default function Dashboard() {
           <Navbar.Brand as={Link} to="/" className="fw-bold text-primary fs-4">
             <i className="bi bi-building me-2"></i>Nexus Coworking
           </Navbar.Brand>
-          <Navbar.Toggle aria-controls="basic-navbar-nav" className="border-0 shadow-none" />
+          <Navbar.Toggle
+            aria-controls="basic-navbar-nav"
+            className="border-0 shadow-none"
+          />
           <Navbar.Collapse id="basic-navbar-nav">
             <div className="ms-auto d-flex flex-column flex-lg-row gap-3 align-items-lg-center mt-3 mt-lg-0">
               <Link
-                to="/spaces"
+                to="/order-table"
                 className="text-decoration-none text-dark fw-medium px-2 py-1 hover-primary transition-all"
               >
                 Không gian
@@ -123,11 +165,21 @@ export default function Dashboard() {
                 >
                   <div
                     className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold"
-                    style={{ width: 30, height: 30, fontSize: 13, flexShrink: 0 }}
+                    style={{
+                      width: 30,
+                      height: 30,
+                      fontSize: 13,
+                      flexShrink: 0,
+                    }}
                   >
-                    {(user?.fullName || user?.email || "?").charAt(0).toUpperCase()}
+                    {(user?.fullName || user?.email || "?")
+                      .charAt(0)
+                      .toUpperCase()}
                   </div>
-                  <span className="fw-medium text-dark" style={{ fontSize: 14 }}>
+                  <span
+                    className="fw-medium text-dark"
+                    style={{ fontSize: 14 }}
+                  >
                     {user?.fullName || user?.email || "Khách"}
                   </span>
                 </Link>
@@ -159,7 +211,7 @@ export default function Dashboard() {
             <Col xs="auto" className="mt-3 mt-md-0">
               <Button
                 as={Link}
-                to="/spaces"
+                to="/order-table"
                 variant="primary"
                 className="rounded-pill px-4 fw-medium shadow-sm"
               >
@@ -197,7 +249,9 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <h6 className="text-muted mb-1">Chờ thanh toán</h6>
-                    <h3 className="fw-bold mb-0">{loading ? "—" : pendingCount}</h3>
+                    <h3 className="fw-bold mb-0">
+                      {loading ? "—" : pendingCount}
+                    </h3>
                   </div>
                 </Card.Body>
               </Card>
@@ -213,7 +267,9 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <h6 className="text-muted mb-1">Đã hoàn thành</h6>
-                    <h3 className="fw-bold mb-0">{loading ? "—" : completedCount}</h3>
+                    <h3 className="fw-bold mb-0">
+                      {loading ? "—" : completedCount}
+                    </h3>
                   </div>
                 </Card.Body>
               </Card>
@@ -240,9 +296,19 @@ export default function Dashboard() {
                 </div>
               ) : bookings.length === 0 ? (
                 <div className="text-center py-5">
-                  <i className="bi bi-calendar-x text-muted" style={{ fontSize: "3rem" }}></i>
-                  <p className="text-muted mt-3 mb-0">Bạn chưa có đặt chỗ nào.</p>
-                  <Button as={Link} to="/spaces" variant="primary" className="rounded-pill px-4 mt-3">
+                  <i
+                    className="bi bi-calendar-x text-muted"
+                    style={{ fontSize: "3rem" }}
+                  ></i>
+                  <p className="text-muted mt-3 mb-0">
+                    Bạn chưa có đặt chỗ nào.
+                  </p>
+                  <Button
+                    as={Link}
+                    to="/order-table"
+                    variant="primary"
+                    className="rounded-pill px-4 mt-3"
+                  >
                     Đặt chỗ ngay
                   </Button>
                 </div>
@@ -250,12 +316,24 @@ export default function Dashboard() {
                 <Table responsive hover className="mb-0 align-middle">
                   <thead className="bg-light">
                     <tr>
-                      <th className="py-3 px-4 border-bottom-0 text-muted fw-semibold">Mã đặt chỗ</th>
-                      <th className="py-3 px-4 border-bottom-0 text-muted fw-semibold">Không gian</th>
-                      <th className="py-3 px-4 border-bottom-0 text-muted fw-semibold">Thời gian</th>
-                      <th className="py-3 px-4 border-bottom-0 text-muted fw-semibold">Tổng tiền</th>
-                      <th className="py-3 px-4 border-bottom-0 text-muted fw-semibold">Trạng thái</th>
-                      <th className="py-3 px-4 border-bottom-0 text-muted fw-semibold text-end">Thao tác</th>
+                      <th className="py-3 px-4 border-bottom-0 text-muted fw-semibold">
+                        Mã đặt chỗ
+                      </th>
+                      <th className="py-3 px-4 border-bottom-0 text-muted fw-semibold">
+                        Không gian
+                      </th>
+                      <th className="py-3 px-4 border-bottom-0 text-muted fw-semibold">
+                        Thời gian
+                      </th>
+                      <th className="py-3 px-4 border-bottom-0 text-muted fw-semibold">
+                        Tổng tiền
+                      </th>
+                      <th className="py-3 px-4 border-bottom-0 text-muted fw-semibold">
+                        Trạng thái
+                      </th>
+                      <th className="py-3 px-4 border-bottom-0 text-muted fw-semibold text-end">
+                        Thao tác
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -264,23 +342,32 @@ export default function Dashboard() {
                         <td className="py-3 px-4 fw-medium text-primary">
                           {booking.bookingCode}
                         </td>
-                        <td className="py-3 px-4 fw-medium">{booking.spaceName}</td>
+                        <td className="py-3 px-4 fw-medium">
+                          {booking.spaceName}
+                        </td>
                         <td className="py-3 px-4">
-                          <div className="fw-medium">{formatDate(booking.startTime)}</div>
+                          <div className="fw-medium">
+                            {formatDate(booking.startTime)}
+                          </div>
                           <small className="text-muted">
                             <i className="bi bi-clock me-1"></i>
                             {formatTime(booking.startTime)}
-                            {booking.endTime && ` (${calcDuration(booking.startTime, booking.endTime)})`}
+                            {booking.endTime &&
+                              ` (${calcDuration(booking.startTime, booking.endTime)})`}
                           </small>
                         </td>
                         <td className="py-3 px-4 fw-bold text-dark">
-                          {booking.depositAmount > 0 ? `${fmt(booking.depositAmount)}đ` : "Miễn phí"}
+                          {booking.depositAmount > 0
+                            ? `${fmt(booking.depositAmount)}đ`
+                            : "Miễn phí"}
                         </td>
                         <td className="py-3 px-4">
                           <StatusBadge status={booking.status} />
                         </td>
                         <td className="py-3 px-4 text-end">
-                          {["Pending", "Awaiting_Payment"].includes(booking.status) && (
+                          {["Pending", "Awaiting_Payment"].includes(
+                            booking.status,
+                          ) && (
                             <Button
                               variant="primary"
                               size="sm"
@@ -306,57 +393,107 @@ export default function Dashboard() {
           <Row className="gy-4">
             <Col lg={4} md={6}>
               <h4 className="fw-bold mb-3 text-white">
-                <i className="bi bi-building me-2 text-primary"></i>Nexus Coworking
+                <i className="bi bi-building me-2 text-primary"></i>Nexus
+                Coworking
               </h4>
               <p className="text-secondary mb-4">
-                Không gian làm việc sáng tạo dành cho startup, freelancer và doanh nghiệp.
+                Không gian làm việc sáng tạo dành cho startup, freelancer và
+                doanh nghiệp.
               </p>
               <div className="d-flex gap-3">
-                <a href="#" className="text-secondary"><i className="bi bi-facebook fs-5"></i></a>
-                <a href="#" className="text-secondary"><i className="bi bi-instagram fs-5"></i></a>
-                <a href="#" className="text-secondary"><i className="bi bi-linkedin fs-5"></i></a>
+                <a href="#" className="text-secondary">
+                  <i className="bi bi-facebook fs-5"></i>
+                </a>
+                <a href="#" className="text-secondary">
+                  <i className="bi bi-instagram fs-5"></i>
+                </a>
+                <a href="#" className="text-secondary">
+                  <i className="bi bi-linkedin fs-5"></i>
+                </a>
               </div>
             </Col>
             <Col lg={2} md={6}>
               <h5 className="fw-bold mb-3 text-white">Liên kết</h5>
               <ul className="list-unstyled">
                 <li className="mb-2">
-                  <Link to="/" className="text-secondary text-decoration-none">Trang chủ</Link>
+                  <Link to="/" className="text-secondary text-decoration-none">
+                    Trang chủ
+                  </Link>
                 </li>
                 <li className="mb-2">
-                  <Link to="/spaces" className="text-secondary text-decoration-none">Không gian</Link>
+                  <Link
+                    to="/order-table"
+                    className="text-secondary text-decoration-none"
+                  >
+                    Không gian
+                  </Link>
                 </li>
                 <li className="mb-2">
-                  <Link to="/dashboard" className="text-secondary text-decoration-none">Quản lý đặt chỗ</Link>
+                  <Link
+                    to="/dashboard"
+                    className="text-secondary text-decoration-none"
+                  >
+                    Quản lý đặt chỗ
+                  </Link>
                 </li>
               </ul>
             </Col>
             <Col lg={3} md={6}>
               <h5 className="fw-bold mb-3 text-white">Dịch vụ</h5>
               <ul className="list-unstyled">
-                <li className="mb-2"><a href="#" className="text-secondary text-decoration-none">Hot Desk</a></li>
-                <li className="mb-2"><a href="#" className="text-secondary text-decoration-none">Dedicated Desk</a></li>
-                <li className="mb-2"><a href="#" className="text-secondary text-decoration-none">Phòng họp</a></li>
-                <li className="mb-2"><a href="#" className="text-secondary text-decoration-none">Văn phòng riêng</a></li>
+                <li className="mb-2">
+                  <a href="#" className="text-secondary text-decoration-none">
+                    Hot Desk
+                  </a>
+                </li>
+                <li className="mb-2">
+                  <a href="#" className="text-secondary text-decoration-none">
+                    Dedicated Desk
+                  </a>
+                </li>
+                <li className="mb-2">
+                  <a href="#" className="text-secondary text-decoration-none">
+                    Phòng họp
+                  </a>
+                </li>
+                <li className="mb-2">
+                  <a href="#" className="text-secondary text-decoration-none">
+                    Văn phòng riêng
+                  </a>
+                </li>
               </ul>
             </Col>
             <Col lg={3} md={6}>
               <h5 className="fw-bold mb-3 text-white">Liên hệ</h5>
               <ul className="list-unstyled text-secondary">
-                <li className="mb-2 d-flex"><i className="bi bi-geo-alt me-2 text-primary"></i>Tầng 5, Tòa nhà Innovation, TP.HCM</li>
-                <li className="mb-2 d-flex"><i className="bi bi-telephone me-2 text-primary"></i>1900 1234</li>
-                <li className="mb-2 d-flex"><i className="bi bi-envelope me-2 text-primary"></i>hello@nexuscoworking.vn</li>
+                <li className="mb-2 d-flex">
+                  <i className="bi bi-geo-alt me-2 text-primary"></i>Tầng 5, Tòa
+                  nhà Innovation, TP.HCM
+                </li>
+                <li className="mb-2 d-flex">
+                  <i className="bi bi-telephone me-2 text-primary"></i>1900 1234
+                </li>
+                <li className="mb-2 d-flex">
+                  <i className="bi bi-envelope me-2 text-primary"></i>
+                  hello@nexuscoworking.vn
+                </li>
               </ul>
             </Col>
           </Row>
           <hr className="border-secondary my-4" />
           <Row>
             <Col md={6} className="text-center text-md-start">
-              <p className="text-secondary mb-0">&copy; 2026 Nexus Coworking. All rights reserved.</p>
+              <p className="text-secondary mb-0">
+                &copy; 2026 Nexus Coworking. All rights reserved.
+              </p>
             </Col>
             <Col md={6} className="text-center text-md-end mt-2 mt-md-0">
-              <a href="#" className="text-secondary text-decoration-none me-3">Điều khoản</a>
-              <a href="#" className="text-secondary text-decoration-none">Bảo mật</a>
+              <a href="#" className="text-secondary text-decoration-none me-3">
+                Điều khoản
+              </a>
+              <a href="#" className="text-secondary text-decoration-none">
+                Bảo mật
+              </a>
             </Col>
           </Row>
         </Container>

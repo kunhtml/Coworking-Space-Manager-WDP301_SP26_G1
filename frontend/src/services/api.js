@@ -33,6 +33,15 @@ export const apiClient = {
     if (!res.ok) throw new Error(data.message || "Lỗi server");
     return data;
   },
+  delete: async (path) => {
+    const res = await fetch(`${BASE_URL}${path}`, {
+      method: "DELETE",
+      headers: { ...authHeader() },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Lỗi server");
+    return data;
+  },
 };
 
 export const loginApi = (identifier, password) =>
@@ -42,6 +51,7 @@ export const getMeApi = () => apiClient.get("/auth/me");
 
 export const updateProfileApi = (data) => apiClient.put("/auth/profile", data);
 
-export const changePasswordApi = (data) => apiClient.put("/auth/password", data);
+export const changePasswordApi = (data) =>
+  apiClient.put("/auth/password", data);
 
 export const getMyBookingsApi = () => apiClient.get("/bookings/my");

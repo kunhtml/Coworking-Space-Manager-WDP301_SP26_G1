@@ -143,17 +143,10 @@ export default function Home() {
                       className="bg-dark border-secondary"
                       style={{ minWidth: "180px" }}
                     >
-                      <Dropdown.Item
-                        as={Link}
-                        to="/profile"
-                        className="text-light"
-                      >
-                        <i className="bi bi-person me-2"></i>Hồ sơ cá nhân
-                      </Dropdown.Item>
                       {(user.role === "Admin" || user.role === "Staff") && (
                         <Dropdown.Item
                           as={Link}
-                          to="/dashboard"
+                          to={user.role === "Admin" ? "/admin" : "/dashboard"}
                           className="text-light"
                         >
                           <i className="bi bi-speedometer2 me-2"></i>
@@ -269,21 +262,12 @@ export default function Home() {
           <div className="d-flex flex-wrap gap-3 justify-content-center">
             <Button
               as={Link}
-              to={isAuthenticated ? "/spaces" : "/login"}
+              to={isAuthenticated ? "/order-table" : "/login"}
               variant="light"
               size="lg"
               className="rounded-0 px-5 py-3 fw-bold text-uppercase"
             >
               Đặt bàn ngay
-            </Button>
-            <Button
-              as={Link}
-              to="/spaces"
-              variant="outline-light"
-              size="lg"
-              className="rounded-0 px-5 py-3 fw-bold text-uppercase"
-            >
-              Khám phá không gian
             </Button>
           </div>
           <div className="mt-5 pt-5 text-secondary opacity-50">
@@ -295,7 +279,32 @@ export default function Home() {
       <section
         id="booking"
         className="py-5 border-top border-secondary bg-black"
+        style={{ position: "relative", overflow: "hidden" }}
       >
+        <div
+          className="position-absolute rounded-circle"
+          style={{
+            width: 550,
+            height: 550,
+            background:
+              "radial-gradient(circle, rgba(99,102,241,0.13) 0%, transparent 70%)",
+            top: -160,
+            right: -160,
+            pointerEvents: "none",
+          }}
+        />
+        <div
+          className="position-absolute rounded-circle"
+          style={{
+            width: 420,
+            height: 420,
+            background:
+              "radial-gradient(circle, rgba(245,158,11,0.10) 0%, transparent 70%)",
+            bottom: -100,
+            left: -100,
+            pointerEvents: "none",
+          }}
+        />
         <Container>
           <Row className="align-items-center g-5">
             <Col lg={6}>
@@ -563,7 +572,32 @@ export default function Home() {
       <section
         id="spaces"
         className="py-5 border-top border-secondary bg-black"
+        style={{ position: "relative", overflow: "hidden" }}
       >
+        <div
+          className="position-absolute rounded-circle"
+          style={{
+            width: 600,
+            height: 600,
+            background:
+              "radial-gradient(circle, rgba(99,102,241,0.11) 0%, transparent 70%)",
+            top: -200,
+            left: -200,
+            pointerEvents: "none",
+          }}
+        />
+        <div
+          className="position-absolute rounded-circle"
+          style={{
+            width: 450,
+            height: 450,
+            background:
+              "radial-gradient(circle, rgba(245,158,11,0.10) 0%, transparent 70%)",
+            bottom: -120,
+            right: -120,
+            pointerEvents: "none",
+          }}
+        />
         <Container>
           <div className="text-center mb-5">
             <h2 className="display-5 fw-bold text-white text-uppercase">
