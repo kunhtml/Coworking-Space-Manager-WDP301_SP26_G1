@@ -8,8 +8,8 @@ import {
   Navbar,
   Row,
 } from "react-bootstrap";
-import { Link, useNavigate } from "react-router";
-import { useAuth } from "../../hooks/useAuth";
+import { Link } from "react-router";
+import AuthNavActions from "../../components/common/AuthNavActions";
 
 export function meta() {
   return [
@@ -150,15 +150,8 @@ const TAG_COLORS = {
 };
 
 export default function SpacesPage() {
-  const { isAuthenticated, user, logout } = useAuth();
-  const navigate = useNavigate();
   const [lightbox, setLightbox] = useState(null);
   const [activeTab, setActiveTab] = useState("all");
-
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
 
   const spaceTags = ["all", ...new Set(spaceImages.map((i) => i.tag))];
   const foodTags = ["all", ...new Set(foodImages.map((i) => i.tag))];
@@ -177,7 +170,7 @@ export default function SpacesPage() {
       : foodImages.filter((i) => i.tag === foodFilter);
 
   return (
-    <div className="d-flex flex-column min-vh-100 bg-dark text-light">
+    <div className="d-flex flex-column min-vh-100 bg-dark text-light font-monospace">
       {/* Navbar */}
       <Navbar
         expand="lg"
@@ -194,73 +187,30 @@ export default function SpacesPage() {
             NEXUS COFFEE
           </Navbar.Brand>
           <Navbar.Toggle
-            aria-controls="spaces-navbar"
+            aria-controls="basic-navbar-nav"
             className="border-0 shadow-none"
           />
-          <Navbar.Collapse id="spaces-navbar">
+          <Navbar.Collapse id="basic-navbar-nav">
             <div className="ms-auto d-flex flex-column flex-lg-row gap-4 align-items-lg-center mt-3 mt-lg-0">
               <Link
                 to="/spaces"
-                className="text-decoration-none text-primary fw-bold px-2 py-1 text-uppercase"
+                className="text-decoration-none text-warning fw-bold px-2 py-1 text-uppercase"
               >
                 Không gian
               </Link>
               <Link
-                to="/menu"
-                className="text-decoration-none text-light fw-medium px-2 py-1 text-uppercase"
-              >
-                Thực đơn
-              </Link>
-              <Link
                 to="/order-table"
-                className="text-decoration-none text-light fw-medium px-2 py-1 text-uppercase"
+                className="text-decoration-none text-light fw-medium px-2 py-1 hover-primary transition-all text-uppercase"
               >
                 Đặt bàn
               </Link>
-              <div className="d-flex gap-2 ms-lg-3 mt-2 mt-lg-0">
-                {isAuthenticated && user ? (
-                  <>
-                    <Button
-                      as={Link}
-                      to="/dashboard"
-                      variant="outline-light"
-                      size="sm"
-                      className="rounded-pill px-3"
-                    >
-                      {user.fullName || user.email}
-                    </Button>
-                    <Button
-                      variant="outline-danger"
-                      size="sm"
-                      className="rounded-pill px-3"
-                      onClick={handleLogout}
-                    >
-                      Đăng xuất
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button
-                      as={Link}
-                      to="/login"
-                      variant="outline-light"
-                      size="sm"
-                      className="rounded-pill px-4"
-                    >
-                      Đăng nhập
-                    </Button>
-                    <Button
-                      as={Link}
-                      to="/order-table"
-                      variant="light"
-                      size="sm"
-                      className="rounded-pill px-4 fw-bold"
-                    >
-                      Đặt bàn ngay
-                    </Button>
-                  </>
-                )}
-              </div>
+              <Link
+                to="/menu"
+                className="text-decoration-none text-light fw-medium px-2 py-1 hover-primary transition-all text-uppercase"
+              >
+                Thực đơn
+              </Link>
+              <AuthNavActions />
             </div>
           </Navbar.Collapse>
         </Container>

@@ -5,9 +5,13 @@ import {
   updateProfile,
   changePassword,
   getMyBookings,
+  updateMyBooking,
   getAllBookings,
   checkInBooking,
   createBooking,
+  getMyOrders,
+  createOrder,
+  updateMyOrder,
   getTables,
   getAvailableTables,
   createTable,
@@ -51,6 +55,12 @@ router.delete("/tables/:id", requireStaff, deleteTable);
 // Bookings — customer
 router.get("/bookings/my", requireAuth, getMyBookings);
 router.post("/bookings", requireAuth, createBooking);
+router.patch("/bookings/:id", requireAuth, updateMyBooking);
+
+// Orders — customer
+router.get("/orders/my", requireAuth, getMyOrders);
+router.post("/orders", requireAuth, createOrder);
+router.put("/orders/:id", requireAuth, updateMyOrder);
 
 // Bookings — staff / admin
 router.get("/bookings/all", requireStaff, getAllBookings);

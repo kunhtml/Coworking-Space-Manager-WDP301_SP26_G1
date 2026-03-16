@@ -12,6 +12,10 @@ export async function createBookingApi(data) {
   return apiClient.post("/bookings", data);
 }
 
+export async function updateBookingApi(bookingId, data) {
+  return apiClient.patch(`/bookings/${bookingId}`, data);
+}
+
 export async function getPaymentData(bookingId) {
   return apiClient.get(`/payments/${bookingId}`);
 }

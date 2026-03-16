@@ -1,5 +1,6 @@
-import { Container, Navbar, Row, Col, Badge } from "react-bootstrap";
+import { Badge, Button, Container, Navbar, Row, Col } from "react-bootstrap";
 import { Link } from "react-router";
+import AuthNavActions from "../../components/common/AuthNavActions";
 
 export function meta() {
   return [
@@ -136,10 +137,16 @@ export default function Menu() {
           <Navbar.Collapse id="basic-navbar-nav">
             <div className="ms-auto d-flex flex-column flex-lg-row gap-4 align-items-lg-center mt-3 mt-lg-0">
               <Link
-                to="/#spaces"
+                to="/spaces"
                 className="text-decoration-none text-light fw-medium px-2 py-1 hover-primary transition-all text-uppercase"
               >
                 Không gian
+              </Link>
+              <Link
+                to="/order-table"
+                className="text-decoration-none text-light fw-medium px-2 py-1 hover-primary transition-all text-uppercase"
+              >
+                Đặt bàn
               </Link>
               <Link
                 to="/menu"
@@ -147,20 +154,7 @@ export default function Menu() {
               >
                 Thực đơn
               </Link>
-              <Link
-                to="/#booking"
-                className="text-decoration-none text-light fw-medium px-2 py-1 hover-primary transition-all text-uppercase"
-              >
-                Hướng dẫn đặt bàn
-              </Link>
-              <div className="d-flex gap-2 ms-lg-3 mt-2 mt-lg-0">
-                <Link
-                  to="/"
-                  className="btn btn-outline-light px-4 rounded-0 fw-medium text-uppercase"
-                >
-                  Về trang chủ
-                </Link>
-              </div>
+              <AuthNavActions />
             </div>
           </Navbar.Collapse>
         </Container>

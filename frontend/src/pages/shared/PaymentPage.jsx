@@ -396,7 +396,7 @@ export default function PaymentPage() {
         alignItems: "center",
         justifyContent: "center",
         padding: "24px 16px",
-        fontFamily: "'Inter','Segoe UI',system-ui,sans-serif",
+        fontFamily: "var(--bs-font-monospace)",
         position: "relative",
         overflow: "hidden",
       }}

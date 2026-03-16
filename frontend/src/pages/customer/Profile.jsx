@@ -13,6 +13,7 @@ import {
 } from "react-bootstrap";
 import { Link, useNavigate } from "react-router";
 import { useAuth } from "../../hooks/useAuth";
+import AuthNavActions from "../../components/common/AuthNavActions";
 import {
   getMeApi,
   updateProfileApi,
@@ -39,7 +40,7 @@ const MEMBERSHIP_MAP = {
 };
 
 export default function Profile() {
-  const { user: authUser, logout, isAuthenticated } = useAuth();
+  const { user: authUser, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const [profile, setProfile] = useState(null);
@@ -130,11 +131,6 @@ export default function Profile() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
-
   const avatarLetter = (profile?.fullName || authUser?.fullName || "?")
     .charAt(0)
     .toUpperCase();
@@ -144,62 +140,57 @@ export default function Profile() {
   };
 
   return (
-    <div className="d-flex flex-column min-vh-100">
+    <div
+      className="d-flex flex-column min-vh-100 bg-dark text-light font-monospace"
+      style={{ overflowX: "hidden" }}
+    >
       {/* Navbar */}
-      <Navbar expand="lg" className="bg-white shadow-sm sticky-top py-3">
+      <Navbar
+        expand="lg"
+        className="bg-dark border-bottom border-secondary sticky-top py-3"
+        variant="dark"
+      >
         <Container>
-          <Navbar.Brand as={Link} to="/" className="fw-bold text-primary fs-4">
-            <i className="bi bi-building me-2"></i>Nexus Coworking
+          <Navbar.Brand
+            as={Link}
+            to="/"
+            className="fw-bold text-white fs-4 d-flex align-items-center"
+          >
+            <i className="bi bi-cup-hot-fill me-2 fs-3"></i>
+            NEXUS COFFEE
           </Navbar.Brand>
           <Navbar.Toggle
-            aria-controls="profile-nav"
+            aria-controls="basic-navbar-nav"
             className="border-0 shadow-none"
           />
-          <Navbar.Collapse id="profile-nav">
-            <div className="ms-auto d-flex flex-column flex-lg-row gap-3 align-items-lg-center mt-3 mt-lg-0">
+          <Navbar.Collapse id="basic-navbar-nav">
+            <div className="ms-auto d-flex flex-column flex-lg-row gap-4 align-items-lg-center mt-3 mt-lg-0">
               <Link
-                to="/order-table"
-                className="text-decoration-none text-dark fw-medium px-2 py-1"
+                to="/spaces"
+                className="text-decoration-none text-light fw-medium px-2 py-1 hover-primary transition-all text-uppercase"
               >
                 Không gian
               </Link>
               <Link
-                to="/dashboard"
-                className="text-decoration-none text-dark fw-medium px-2 py-1"
+                to="/menu"
+                className="text-decoration-none text-light fw-medium px-2 py-1 hover-primary transition-all text-uppercase"
               >
-                Quản lý đặt chỗ
+                Thực đơn
               </Link>
-              <div className="d-flex gap-2 ms-lg-3 mt-2 mt-lg-0 align-items-center">
-                <div
-                  className="d-flex align-items-center gap-2 px-3 py-2 rounded-pill border border-primary"
-                  style={{ background: "#eef2ff" }}
-                >
-                  <div
-                    className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold"
-                    style={{
-                      width: 30,
-                      height: 30,
-                      fontSize: 13,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {avatarLetter}
-                  </div>
-                  <span
-                    className="fw-medium text-primary"
-                    style={{ fontSize: 14 }}
-                  >
-                    {profile?.fullName || authUser?.fullName || "Profile"}
-                  </span>
-                </div>
-                <Button
-                  variant="outline-danger"
-                  className="px-4 rounded-pill fw-medium"
-                  onClick={handleLogout}
-                >
-                  Đăng xuất
-                </Button>
-              </div>
+              <Link
+                to="/profile"
+                className="text-decoration-none text-warning fw-bold px-2 py-1 text-uppercase"
+              >
+                Hồ sơ
+              </Link>
+              <AuthNavActions
+                displayName={
+                  profile?.fullName ||
+                  authUser?.fullName ||
+                  authUser?.email ||
+                  "Profile"
+                }
+              />
             </div>
           </Navbar.Collapse>
         </Container>
