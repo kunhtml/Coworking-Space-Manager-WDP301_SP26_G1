@@ -119,9 +119,8 @@ export default function Home() {
                       style={{ backgroundColor: "transparent" }}
                     >
                       <i
-                        className={`bi ${
-                          ROLE_LABELS[user.role]?.icon ?? "bi-person-circle"
-                        }`}
+                        className={`bi ${ROLE_LABELS[user.role]?.icon ?? "bi-person-circle"
+                          }`}
                         style={{
                           color: ROLE_LABELS[user.role]?.color ?? "#aaa",
                         }}
@@ -143,6 +142,9 @@ export default function Home() {
                       className="bg-dark border-secondary"
                       style={{ minWidth: "180px" }}
                     >
+                      <Dropdown.Item as={Link} to="/profile" className="text-light">
+                        <i className="bi bi-person-lines-fill me-2"></i>Hồ sơ cá nhân
+                      </Dropdown.Item>
                       {(user.role === "Admin" || user.role === "Staff") && (
                         <Dropdown.Item
                           as={Link}
@@ -163,14 +165,25 @@ export default function Home() {
                     </Dropdown.Menu>
                   </Dropdown>
                 ) : (
-                  <Button
-                    as={Link}
-                    to="/login"
-                    variant="outline-secondary"
-                    className="px-4 rounded-0 fw-medium text-uppercase text-light border-secondary"
-                  >
-                    Đăng nhập
-                  </Button>
+                  <div className="d-flex gap-2"> {/* Thêm div bọc để quản lý khoảng cách */}
+                    <Button
+                      as={Link}
+                      to="/login"
+                      variant="outline-secondary"
+                      className="px-4 rounded-0 fw-medium text-uppercase text-light border-secondary"
+                    >
+                      Đăng nhập
+                    </Button>
+
+                    <Button
+                      as={Link}
+                      to="/register"
+                      className="px-4 rounded-0 fw-medium text-uppercase border-0 text-dark"
+                      style={{ backgroundColor: "#d4a373" }} // Màu vàng đồng đồng bộ với trang Register
+                    >
+                      Đăng ký
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>
