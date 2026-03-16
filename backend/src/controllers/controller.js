@@ -72,6 +72,63 @@ export const login = async (req, res) => {
   }
 };
 
+//
+export const register = async (req, res) => {
+  try {
+    const { fullName, email, phone, password } = req.body;
+
+    // 1. Kiểm tra nhập liệu
+    if (!fullName || !email || !phone || !password) {
+      return res.status(400).json({ message: "Vui lòng điền đầy đủ thông tin." });
+    }
+
+    // 2. Kiểm tra định dạng email
+    const emailLower = email.toLowerCase().trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLower)) {
+      return res.status(400).json({ message: "Email không đúng định dạng." });
+    }
+
+    // 3. Kiểm tra user đã tồn tại chưa (email hoặc số điện thoại)
+    const existingUser = await User.findOne({
+      $or: [{ email: emailLower }, { phone: phone.trim() }],
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        message: "Email hoặc số điện thoại này đã được sử dụng.",
+      });
+    }
+
+    // 4. Mã hóa mật khẩu (Sử dụng bcryptjs như code của bạn)
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    // 5. Tạo User mới (Mặc định role là Customer)
+    const newUser = new User({
+      fullName: fullName.trim(),
+      email: emailLower,
+      phone: phone.trim(),
+      passwordHash,
+      role: "Customer",           // Tự động gán là khách hàng
+      membershipStatus: "Active", // Mặc định là hoạt động
+    });
+
+    await newUser.save();
+
+    res.status(201).json({
+      message: "Đăng ký tài khoản thành công!",
+      user: {
+        id: newUser._id,
+        fullName: newUser.fullName,
+        email: newUser.email,
+      },
+    });
+  } catch (err) {
+    console.error("Register Error:", err);
+    res.status(500).json({ message: "Lỗi server, vui lòng thử lại sau." });
+  }
+};
+
 // GET /api/auth/me
 export const getMe = async (req, res) => {
   try {
