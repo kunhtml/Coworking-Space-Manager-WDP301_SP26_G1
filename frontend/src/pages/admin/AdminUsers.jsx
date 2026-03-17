@@ -415,14 +415,6 @@ export default function AdminUsers() {
                               <i className="bi bi-pencil"></i>
                               Sửa
                             </Button>
-                            <Button
-                              variant="outline-danger"
-                              size="sm"
-                              onClick={() => openDelete(userItem)}
-                            >
-                              <i className="bi bi-trash"></i>
-                              Xóa
-                            </Button>
                           </div>
                         </td>
                       </tr>

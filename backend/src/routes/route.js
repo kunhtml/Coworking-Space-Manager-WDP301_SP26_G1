@@ -17,6 +17,10 @@ import {
   createTable,
   updateTable,
   deleteTable,
+  getTableTypes,
+  createTableType,
+  updateTableType,
+  deleteTableType,
   getReportAnalytics,
   getPaymentData,
   createPayment,
@@ -51,6 +55,12 @@ router.post("/tables/available", getAvailableTables);
 router.post("/tables", requireStaff, createTable);
 router.put("/tables/:id", requireStaff, updateTable);
 router.delete("/tables/:id", requireStaff, deleteTable);
+
+// Table Types
+router.get("/table-types", getTableTypes);
+router.post("/table-types", requireStaff, createTableType);
+router.put("/table-types/:id", requireStaff, updateTableType);
+router.delete("/table-types/:id", requireStaff, deleteTableType);
 
 // Bookings — customer
 router.get("/bookings/my", requireAuth, getMyBookings);
