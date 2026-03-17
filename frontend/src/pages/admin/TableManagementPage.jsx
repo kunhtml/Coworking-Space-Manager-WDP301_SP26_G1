@@ -262,99 +262,6 @@ export default function TableManagementPage() {
     return <Badge bg={variants[status] || "secondary"}>{status}</Badge>;
   };
 
-  // ─── Table form modal body (shared Add/Edit) ──────────────────
-  const TableFormBody = () => (
-    <>
-      <Row>
-        <Col md={6}>
-          <Form.Group className="mb-3">
-            <Form.Label>
-              Tên bàn <span className="text-danger">*</span>
-            </Form.Label>
-            <Form.Control
-              type="text"
-              placeholder="VD: Bàn 1, Phòng VIP A..."
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-            />
-          </Form.Group>
-        </Col>
-        <Col md={6}>
-          <Form.Group className="mb-3">
-            <Form.Label>
-              Loại bàn <span className="text-danger">*</span>
-            </Form.Label>
-            <Form.Select
-              value={formData.tableType}
-              onChange={(e) => setFormData({ ...formData, tableType: e.target.value })}
-              required
-            >
-              <option value="">-- Chọn loại --</option>
-              {tableTypes.map((t) => (
-                <option key={t.sourceId} value={t.name}>
-                  {t.name}
-                </option>
-              ))}
-            </Form.Select>
-          </Form.Group>
-        </Col>
-      </Row>
-      <Row>
-        <Col md={4}>
-          <Form.Group className="mb-3">
-            <Form.Label>
-              Sức chứa <span className="text-danger">*</span>
-            </Form.Label>
-            <Form.Control
-              type="number"
-              min="1"
-              placeholder="Số người"
-              value={formData.capacity}
-              onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
-              required
-            />
-          </Form.Group>
-        </Col>
-        <Col md={4}>
-          <Form.Group className="mb-3">
-            <Form.Label>Giá/Giờ (đ)</Form.Label>
-            <Form.Control
-              type="number"
-              min="0"
-              placeholder="0"
-              value={formData.pricePerHour}
-              onChange={(e) => setFormData({ ...formData, pricePerHour: e.target.value })}
-            />
-          </Form.Group>
-        </Col>
-        <Col md={4}>
-          <Form.Group className="mb-3">
-            <Form.Label>Giá/Ngày (đ)</Form.Label>
-            <Form.Control
-              type="number"
-              min="0"
-              placeholder="0"
-              value={formData.pricePerDay}
-              onChange={(e) => setFormData({ ...formData, pricePerDay: e.target.value })}
-            />
-          </Form.Group>
-        </Col>
-      </Row>
-      <Form.Group className="mb-3">
-        <Form.Label>Trạng thái</Form.Label>
-        <Form.Select
-          value={formData.status}
-          onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-        >
-          <option value="Available">Available</option>
-          <option value="Occupied">Occupied</option>
-          <option value="Maintenance">Maintenance</option>
-        </Form.Select>
-      </Form.Group>
-    </>
-  );
-
   return (
     <div className="d-flex flex-column min-vh-100 bg-light">
       {/* Navbar */}
@@ -646,7 +553,71 @@ export default function TableManagementPage() {
         </Modal.Header>
         <Form onSubmit={submitAdd}>
           <Modal.Body>
-            <TableFormBody />
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Tên bàn <span className="text-danger">*</span></Form.Label>
+                  <Form.Control
+                    type="text"
+                    placeholder="VD: Bàn 1, Phòng VIP A..."
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Loại bàn <span className="text-danger">*</span></Form.Label>
+                  <Form.Select
+                    value={formData.tableType}
+                    onChange={(e) => setFormData({ ...formData, tableType: e.target.value })}
+                    required
+                  >
+                    <option value="">-- Chọn loại --</option>
+                    {tableTypes.map((t) => (
+                      <option key={t.sourceId} value={t.name}>{t.name}</option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+            </Row>
+            <Row>
+              <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Sức chứa <span className="text-danger">*</span></Form.Label>
+                  <Form.Control type="number" min="1" placeholder="Số người"
+                    value={formData.capacity}
+                    onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
+                    required />
+                </Form.Group>
+              </Col>
+              <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Giá/Giờ (đ)</Form.Label>
+                  <Form.Control type="number" min="0" placeholder="0"
+                    value={formData.pricePerHour}
+                    onChange={(e) => setFormData({ ...formData, pricePerHour: e.target.value })} />
+                </Form.Group>
+              </Col>
+              <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Giá/Ngày (đ)</Form.Label>
+                  <Form.Control type="number" min="0" placeholder="0"
+                    value={formData.pricePerDay}
+                    onChange={(e) => setFormData({ ...formData, pricePerDay: e.target.value })} />
+                </Form.Group>
+              </Col>
+            </Row>
+            <Form.Group className="mb-3">
+              <Form.Label>Trạng thái</Form.Label>
+              <Form.Select value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
+                <option value="Available">Available</option>
+                <option value="Occupied">Occupied</option>
+                <option value="Maintenance">Maintenance</option>
+              </Form.Select>
+            </Form.Group>
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={() => setShowAddModal(false)}>
@@ -670,7 +641,71 @@ export default function TableManagementPage() {
         </Modal.Header>
         <Form onSubmit={submitEdit}>
           <Modal.Body>
-            <TableFormBody />
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Tên bàn <span className="text-danger">*</span></Form.Label>
+                  <Form.Control
+                    type="text"
+                    placeholder="VD: Bàn 1, Phòng VIP A..."
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Loại bàn <span className="text-danger">*</span></Form.Label>
+                  <Form.Select
+                    value={formData.tableType}
+                    onChange={(e) => setFormData({ ...formData, tableType: e.target.value })}
+                    required
+                  >
+                    <option value="">-- Chọn loại --</option>
+                    {tableTypes.map((t) => (
+                      <option key={t.sourceId} value={t.name}>{t.name}</option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+            </Row>
+            <Row>
+              <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Sức chứa <span className="text-danger">*</span></Form.Label>
+                  <Form.Control type="number" min="1" placeholder="Số người"
+                    value={formData.capacity}
+                    onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
+                    required />
+                </Form.Group>
+              </Col>
+              <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Giá/Giờ (đ)</Form.Label>
+                  <Form.Control type="number" min="0" placeholder="0"
+                    value={formData.pricePerHour}
+                    onChange={(e) => setFormData({ ...formData, pricePerHour: e.target.value })} />
+                </Form.Group>
+              </Col>
+              <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Giá/Ngày (đ)</Form.Label>
+                  <Form.Control type="number" min="0" placeholder="0"
+                    value={formData.pricePerDay}
+                    onChange={(e) => setFormData({ ...formData, pricePerDay: e.target.value })} />
+                </Form.Group>
+              </Col>
+            </Row>
+            <Form.Group className="mb-3">
+              <Form.Label>Trạng thái</Form.Label>
+              <Form.Select value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
+                <option value="Available">Available</option>
+                <option value="Occupied">Occupied</option>
+                <option value="Maintenance">Maintenance</option>
+              </Form.Select>
+            </Form.Group>
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={() => setShowEditModal(false)}>
