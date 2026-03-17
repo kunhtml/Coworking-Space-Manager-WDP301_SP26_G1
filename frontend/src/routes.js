@@ -2,15 +2,15 @@ import { index, route } from "@react-router/dev/routes";
 
 export default [
   // Shared pages
-  index("pages/shared/Home.jsx"),
+  index("pages/shared/HomeNew.jsx"),
   route("login", "pages/shared/Login.jsx"),
   route("register", "pages/shared/Register.jsx"),
   route("spaces", "pages/shared/SpacesPage.jsx"),
-  route("menu", "pages/shared/OrderPage.jsx"),
+  route("menu", "pages/shared/OrderPageNew.jsx"),
   route("payment/:bookingId", "pages/shared/PaymentPage.jsx"),
 
   // Customer pages
-  route("order-table", "pages/customer/BookingPage.jsx"),
+  route("order-table", "pages/customer/BookingPageNew.jsx"),
   route("dashboard", "pages/customer/OrderHistory.jsx"),
   route("profile", "pages/customer/Profile.jsx"),
 
