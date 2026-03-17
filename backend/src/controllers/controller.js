@@ -35,6 +35,12 @@ export const login = async (req, res) => {
       ],
     });
 
+    if (user.membershipStatus === "Inactive") {
+  return res.status(403).json({ 
+    message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên." 
+  });
+}
+
     if (!user) {
       return res
         .status(401)
@@ -1048,16 +1054,70 @@ export const createCategory = async (req, res) => {
   }
 };
 
+// PUT /api/menu/categories/:id
+export const updateCategory = async (req, res) => {
+  try {
+    const { name, description, isActive } = req.body;
+    if (!name?.trim()) {
+      return res.status(400).json({ message: "Tên danh mục không được để trống." });
+    }
+    const updated = await Category.findByIdAndUpdate(
+      req.params.id,
+      {
+        name: name.trim(),
+        description: description?.trim() || "",
+        isActive: isActive !== false,
+      },
+      { new: true }
+    ).lean();
+
+    if (!updated) return res.status(404).json({ message: "Không tìm thấy danh mục." });
+    res.json({ message: "Cập nhật danh mục thành công!", category: updated });
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi khi cập nhật danh mục." });
+  }
+};
+
+// DELETE /api/menu/categories/:id
+export const deleteCategory = async (req, res) => {
+  try {
+    const hasProducts = await MenuItem.findOne({ categoryId: req.params.id });
+    if (hasProducts) {
+      return res.status(400).json({ 
+        message: "Không thể xóa danh mục đang chứa sản phẩm. Vui lòng xóa hoặc chuyển sản phẩm trước." 
+      });
+    }
+
+    const deleted = await Category.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: "Không tìm thấy danh mục." });
+    res.json({ message: "Xoá danh mục thành công!" });
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi khi xoá danh mục." });
+  }
+};
+
 // ==================== USER MANAGEMENT ====================
 
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find()
+    const { search, role, status } = req.query;
+    let query = {};
+    if (search) {
+      const searchRegex = new RegExp(search.trim(), "i");
+      query.$or = [
+        { fullName: searchRegex },
+        { email: searchRegex },
+        { phone: searchRegex }
+      ];
+    }
+    if (role && role !== "Tất cả") query.role = role;
+    if (status && status !== "Tất cả") query.membershipStatus = status;
+
+    const users = await User.find(query)
       .select("-passwordHash")
       .sort({ createdAt: -1 });
     res.json(users);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: "Lỗi khi tải danh sách người dùng." });
   }
 };
