@@ -30,17 +30,19 @@ export default function TableManagementPage() {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
 
+  // Active tab
+  const [activeTab, setActiveTab] = useState("tables");
+
+  // ─── Tables state ───────────────────────────────────────────
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  // Form state
   const [formData, setFormData] = useState({
     name: "",
     tableType: "",
@@ -52,10 +54,26 @@ export default function TableManagementPage() {
   const [editingId, setEditingId] = useState(null);
   const [deletingTable, setDeletingTable] = useState(null);
 
+  // ─── Table Types state ──────────────────────────────────────
+  const [tableTypes, setTableTypes] = useState([]);
+  const [typeLoading, setTypeLoading] = useState(false);
+  const [typeError, setTypeError] = useState("");
+  const [typeSuccess, setTypeSuccess] = useState("");
+
+  const [showAddTypeModal, setShowAddTypeModal] = useState(false);
+  const [showEditTypeModal, setShowEditTypeModal] = useState(false);
+  const [showDeleteTypeModal, setShowDeleteTypeModal] = useState(false);
+
+  const [typeFormData, setTypeFormData] = useState({ name: "", description: "" });
+  const [editingTypeId, setEditingTypeId] = useState(null);
+  const [deletingType, setDeletingType] = useState(null);
+
   useEffect(() => {
     loadData();
+    loadTableTypes();
   }, []);
 
+  // ─── Tables ─────────────────────────────────────────────────
   const loadData = async () => {
     setLoading(true);
     try {
@@ -85,7 +103,6 @@ export default function TableManagementPage() {
     setEditingId(null);
   };
 
-  // === ADD ===
   const openAdd = () => {
     resetForm();
     setShowAddModal(true);
@@ -106,7 +123,6 @@ export default function TableManagementPage() {
     }
   };
 
-  // === EDIT ===
   const openEdit = (table) => {
     setFormData({
       name: table.name,
@@ -135,7 +151,6 @@ export default function TableManagementPage() {
     }
   };
 
-  // === DELETE ===
   const openDelete = (table) => {
     setDeletingTable(table);
     setShowDeleteModal(true);
@@ -155,6 +170,85 @@ export default function TableManagementPage() {
     }
   };
 
+  // ─── Table Types ─────────────────────────────────────────────
+  const loadTableTypes = async () => {
+    setTypeLoading(true);
+    try {
+      const data = await api.get("/table-types");
+      setTableTypes(data);
+    } catch (err) {
+      setTypeError(err.message || "Lỗi khi tải loại bàn");
+    } finally {
+      setTypeLoading(false);
+    }
+  };
+
+  const resetTypeForm = () => {
+    setTypeFormData({ name: "", description: "" });
+    setEditingTypeId(null);
+  };
+
+  const openAddType = () => {
+    resetTypeForm();
+    setShowAddTypeModal(true);
+  };
+
+  const submitAddType = async (e) => {
+    e.preventDefault();
+    setTypeError("");
+    setTypeSuccess("");
+    try {
+      await api.post("/table-types", typeFormData);
+      setTypeSuccess("Thêm loại bàn thành công!");
+      setShowAddTypeModal(false);
+      resetTypeForm();
+      loadTableTypes();
+    } catch (err) {
+      setTypeError(err.message || "Lỗi khi thêm loại bàn");
+    }
+  };
+
+  const openEditType = (type) => {
+    setTypeFormData({ name: type.name, description: type.description || "" });
+    setEditingTypeId(type.sourceId);
+    setShowEditTypeModal(true);
+  };
+
+  const submitEditType = async (e) => {
+    e.preventDefault();
+    setTypeError("");
+    setTypeSuccess("");
+    try {
+      await api.put(`/table-types/${editingTypeId}`, typeFormData);
+      setTypeSuccess("Cập nhật loại bàn thành công!");
+      setShowEditTypeModal(false);
+      resetTypeForm();
+      loadTableTypes();
+    } catch (err) {
+      setTypeError(err.message || "Lỗi khi cập nhật loại bàn");
+    }
+  };
+
+  const openDeleteType = (type) => {
+    setDeletingType(type);
+    setShowDeleteTypeModal(true);
+  };
+
+  const submitDeleteType = async () => {
+    setTypeError("");
+    setTypeSuccess("");
+    try {
+      await api.delete(`/table-types/${deletingType.sourceId}`);
+      setTypeSuccess("Xoá loại bàn thành công!");
+      setShowDeleteTypeModal(false);
+      setDeletingType(null);
+      loadTableTypes();
+    } catch (err) {
+      setTypeError(err.message || "Lỗi khi xoá loại bàn");
+    }
+  };
+
+  // ─── Helpers ─────────────────────────────────────────────────
   const formatPrice = (price) => {
     return new Intl.NumberFormat("vi-VN").format(price) + "đ";
   };
@@ -167,6 +261,99 @@ export default function TableManagementPage() {
     };
     return <Badge bg={variants[status] || "secondary"}>{status}</Badge>;
   };
+
+  // ─── Table form modal body (shared Add/Edit) ──────────────────
+  const TableFormBody = () => (
+    <>
+      <Row>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label>
+              Tên bàn <span className="text-danger">*</span>
+            </Form.Label>
+            <Form.Control
+              type="text"
+              placeholder="VD: Bàn 1, Phòng VIP A..."
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+            />
+          </Form.Group>
+        </Col>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label>
+              Loại bàn <span className="text-danger">*</span>
+            </Form.Label>
+            <Form.Select
+              value={formData.tableType}
+              onChange={(e) => setFormData({ ...formData, tableType: e.target.value })}
+              required
+            >
+              <option value="">-- Chọn loại --</option>
+              {tableTypes.map((t) => (
+                <option key={t.sourceId} value={t.name}>
+                  {t.name}
+                </option>
+              ))}
+            </Form.Select>
+          </Form.Group>
+        </Col>
+      </Row>
+      <Row>
+        <Col md={4}>
+          <Form.Group className="mb-3">
+            <Form.Label>
+              Sức chứa <span className="text-danger">*</span>
+            </Form.Label>
+            <Form.Control
+              type="number"
+              min="1"
+              placeholder="Số người"
+              value={formData.capacity}
+              onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
+              required
+            />
+          </Form.Group>
+        </Col>
+        <Col md={4}>
+          <Form.Group className="mb-3">
+            <Form.Label>Giá/Giờ (đ)</Form.Label>
+            <Form.Control
+              type="number"
+              min="0"
+              placeholder="0"
+              value={formData.pricePerHour}
+              onChange={(e) => setFormData({ ...formData, pricePerHour: e.target.value })}
+            />
+          </Form.Group>
+        </Col>
+        <Col md={4}>
+          <Form.Group className="mb-3">
+            <Form.Label>Giá/Ngày (đ)</Form.Label>
+            <Form.Control
+              type="number"
+              min="0"
+              placeholder="0"
+              value={formData.pricePerDay}
+              onChange={(e) => setFormData({ ...formData, pricePerDay: e.target.value })}
+            />
+          </Form.Group>
+        </Col>
+      </Row>
+      <Form.Group className="mb-3">
+        <Form.Label>Trạng thái</Form.Label>
+        <Form.Select
+          value={formData.status}
+          onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+        >
+          <option value="Available">Available</option>
+          <option value="Occupied">Occupied</option>
+          <option value="Maintenance">Maintenance</option>
+        </Form.Select>
+      </Form.Group>
+    </>
+  );
 
   return (
     <div className="d-flex flex-column min-vh-100 bg-light">
@@ -194,7 +381,7 @@ export default function TableManagementPage() {
               </Nav.Link>
               <Nav.Link as={Link} to="/admin/reports" className="text-light">
                 <i className="bi bi-bar-chart-line me-1"></i>
-                Report & Analytics
+                Report &amp; Analytics
               </Nav.Link>
             </Nav>
             <div className="ms-auto d-flex align-items-center gap-3 mt-3 mt-lg-0">
@@ -232,105 +419,225 @@ export default function TableManagementPage() {
               <i className="bi bi-table me-2 text-primary"></i>
               Quản lý Bàn
             </h2>
-            <p className="text-muted mb-0">Quản lý danh sách bàn của quán</p>
-          </Col>
-          <Col xs="auto">
-            <Button variant="primary" onClick={openAdd}>
-              <i className="bi bi-plus-circle me-2"></i>
-              Thêm bàn mới
-            </Button>
+            <p className="text-muted mb-0">Quản lý danh sách bàn và loại bàn của quán</p>
           </Col>
         </Row>
 
-        {error && (
-          <Alert variant="danger" dismissible onClose={() => setError("")}>
-            {error}
-          </Alert>
-        )}
-        {success && (
-          <Alert variant="success" dismissible onClose={() => setSuccess("")}>
-            {success}
-          </Alert>
+        {/* Tabs */}
+        <Nav
+          variant="tabs"
+          className="mb-4"
+          activeKey={activeTab}
+          onSelect={(k) => setActiveTab(k)}
+        >
+          <Nav.Item>
+            <Nav.Link eventKey="tables">
+              <i className="bi bi-grid-3x3-gap me-2"></i>
+              Danh sách Bàn
+            </Nav.Link>
+          </Nav.Item>
+          <Nav.Item>
+            <Nav.Link eventKey="types">
+              <i className="bi bi-tags me-2"></i>
+              Loại Bàn
+            </Nav.Link>
+          </Nav.Item>
+        </Nav>
+
+        {/* ── TAB: DANH SÁCH BÀN ── */}
+        {activeTab === "tables" && (
+          <>
+            <Row className="mb-3 align-items-center">
+              <Col>
+                {error && (
+                  <Alert variant="danger" dismissible onClose={() => setError("")}>
+                    {error}
+                  </Alert>
+                )}
+                {success && (
+                  <Alert variant="success" dismissible onClose={() => setSuccess("")}>
+                    {success}
+                  </Alert>
+                )}
+              </Col>
+              <Col xs="auto">
+                <Button variant="primary" onClick={openAdd}>
+                  <i className="bi bi-plus-circle me-2"></i>
+                  Thêm bàn mới
+                </Button>
+              </Col>
+            </Row>
+
+            <Card className="shadow-sm border-0">
+              <Card.Body className="p-0">
+                {loading ? (
+                  <div className="text-center py-5">
+                    <Spinner animation="border" variant="primary" />
+                    <p className="text-muted mt-3 mb-0">Đang tải...</p>
+                  </div>
+                ) : tables.length === 0 ? (
+                  <div className="text-center py-5">
+                    <i className="bi bi-inbox text-muted" style={{ fontSize: "3rem" }}></i>
+                    <p className="text-muted mt-3 mb-2">Chưa có bàn nào.</p>
+                    <Button variant="primary" onClick={openAdd}>
+                      Thêm bàn đầu tiên
+                    </Button>
+                  </div>
+                ) : (
+                  <Table responsive hover className="mb-0">
+                    <thead className="table-light">
+                      <tr>
+                        <th className="px-4 py-3">Tên bàn</th>
+                        <th className="px-4 py-3">Loại</th>
+                        <th className="px-4 py-3">Sức chứa</th>
+                        <th className="px-4 py-3">Giá/Giờ</th>
+                        <th className="px-4 py-3">Giá/Ngày</th>
+                        <th className="px-4 py-3">Trạng thái</th>
+                        <th className="px-4 py-3 text-end">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tables.map((table) => (
+                        <tr key={table.sourceId}>
+                          <td className="px-4 py-3 fw-bold">{table.name}</td>
+                          <td className="px-4 py-3">{table.tableType}</td>
+                          <td className="px-4 py-3">{table.capacity} người</td>
+                          <td className="px-4 py-3">{formatPrice(table.pricePerHour)}</td>
+                          <td className="px-4 py-3">{formatPrice(table.pricePerDay)}</td>
+                          <td className="px-4 py-3">{getStatusBadge(table.status)}</td>
+                          <td className="px-4 py-3 text-end">
+                            <Button
+                              variant="outline-primary"
+                              size="sm"
+                              className="me-2"
+                              onClick={() => openEdit(table)}
+                            >
+                              <i className="bi bi-pencil"></i>
+                            </Button>
+                            <Button
+                              variant="outline-danger"
+                              size="sm"
+                              onClick={() => openDelete(table)}
+                            >
+                              <i className="bi bi-trash"></i>
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                )}
+              </Card.Body>
+            </Card>
+          </>
         )}
 
-        <Card className="shadow-sm border-0">
-          <Card.Body className="p-0">
-            {loading ? (
-              <div className="text-center py-5">
-                <Spinner animation="border" variant="primary" />
-                <p className="text-muted mt-3 mb-0">Đang tải...</p>
-              </div>
-            ) : tables.length === 0 ? (
-              <div className="text-center py-5">
-                <i
-                  className="bi bi-inbox text-muted"
-                  style={{ fontSize: "3rem" }}
-                ></i>
-                <p className="text-muted mt-3 mb-2">Chưa có bàn nào.</p>
-                <Button variant="primary" onClick={openAdd}>
-                  Thêm bàn đầu tiên
+        {/* ── TAB: LOẠI BÀN ── */}
+        {activeTab === "types" && (
+          <>
+            <Row className="mb-3 align-items-center">
+              <Col>
+                {typeError && (
+                  <Alert variant="danger" dismissible onClose={() => setTypeError("")}>
+                    {typeError}
+                  </Alert>
+                )}
+                {typeSuccess && (
+                  <Alert variant="success" dismissible onClose={() => setTypeSuccess("")}>
+                    {typeSuccess}
+                  </Alert>
+                )}
+              </Col>
+              <Col xs="auto">
+                <Button variant="success" onClick={openAddType}>
+                  <i className="bi bi-plus-circle me-2"></i>
+                  Thêm loại bàn
                 </Button>
-              </div>
-            ) : (
-              <Table responsive hover className="mb-0">
-                <thead className="table-light">
-                  <tr>
-                    <th className="px-4 py-3">Tên bàn</th>
-                    <th className="px-4 py-3">Loại</th>
-                    <th className="px-4 py-3">Sức chứa</th>
-                    <th className="px-4 py-3">Giá/Giờ</th>
-                    <th className="px-4 py-3">Giá/Ngày</th>
-                    <th className="px-4 py-3">Trạng thái</th>
-                    <th className="px-4 py-3 text-end">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tables.map((table) => (
-                    <tr key={table.sourceId}>
-                      <td className="px-4 py-3 fw-bold">{table.name}</td>
-                      <td className="px-4 py-3">{table.tableType}</td>
-                      <td className="px-4 py-3">{table.capacity} người</td>
-                      <td className="px-4 py-3">
-                        {formatPrice(table.pricePerHour)}
-                      </td>
-                      <td className="px-4 py-3">
-                        {formatPrice(table.pricePerDay)}
-                      </td>
-                      <td className="px-4 py-3">
-                        {getStatusBadge(table.status)}
-                      </td>
-                      <td className="px-4 py-3 text-end">
-                        <Button
-                          variant="outline-primary"
-                          size="sm"
-                          className="me-2"
-                          onClick={() => openEdit(table)}
-                        >
-                          <i className="bi bi-pencil"></i>
-                        </Button>
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          onClick={() => openDelete(table)}
-                        >
-                          <i className="bi bi-trash"></i>
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            )}
-          </Card.Body>
-        </Card>
+              </Col>
+            </Row>
+
+            <Card className="shadow-sm border-0">
+              <Card.Body className="p-0">
+                {typeLoading ? (
+                  <div className="text-center py-5">
+                    <Spinner animation="border" variant="success" />
+                    <p className="text-muted mt-3 mb-0">Đang tải...</p>
+                  </div>
+                ) : tableTypes.length === 0 ? (
+                  <div className="text-center py-5">
+                    <i className="bi bi-tags text-muted" style={{ fontSize: "3rem" }}></i>
+                    <p className="text-muted mt-3 mb-2">Chưa có loại bàn nào.</p>
+                    <p className="text-muted small mb-3">
+                      Ví dụ: Khu A, Khu B, Khu C, VIP, Standard...
+                    </p>
+                    <Button variant="success" onClick={openAddType}>
+                      Thêm loại bàn đầu tiên
+                    </Button>
+                  </div>
+                ) : (
+                  <Table responsive hover className="mb-0">
+                    <thead className="table-light">
+                      <tr>
+                        <th className="px-4 py-3">#</th>
+                        <th className="px-4 py-3">Tên loại bàn</th>
+                        <th className="px-4 py-3">Mô tả</th>
+                        <th className="px-4 py-3">Số bàn sử dụng</th>
+                        <th className="px-4 py-3 text-end">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tableTypes.map((type, idx) => {
+                        const usedCount = tables.filter(
+                          (t) => t.tableType === type.name
+                        ).length;
+                        return (
+                          <tr key={type.sourceId}>
+                            <td className="px-4 py-3 text-muted">{idx + 1}</td>
+                            <td className="px-4 py-3 fw-bold">
+                              <i className="bi bi-tag me-2 text-success"></i>
+                              {type.name}
+                            </td>
+                            <td className="px-4 py-3 text-muted">
+                              {type.description || <span className="fst-italic">—</span>}
+                            </td>
+                            <td className="px-4 py-3">
+                              <Badge bg={usedCount > 0 ? "primary" : "secondary"}>
+                                {usedCount} bàn
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3 text-end">
+                              <Button
+                                variant="outline-warning"
+                                size="sm"
+                                className="me-2"
+                                onClick={() => openEditType(type)}
+                              >
+                                <i className="bi bi-pencil"></i>
+                              </Button>
+                              <Button
+                                variant="outline-danger"
+                                size="sm"
+                                onClick={() => openDeleteType(type)}
+                              >
+                                <i className="bi bi-trash"></i>
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </Table>
+                )}
+              </Card.Body>
+            </Card>
+          </>
+        )}
       </Container>
 
-      {/* Add Modal */}
-      <Modal
-        show={showAddModal}
-        onHide={() => setShowAddModal(false)}
-        size="lg"
-      >
+      {/* ══ Table Modals ══════════════════════════════════════════════ */}
+
+      {/* Add Table Modal */}
+      <Modal show={showAddModal} onHide={() => setShowAddModal(false)} size="lg">
         <Modal.Header closeButton>
           <Modal.Title>
             <i className="bi bi-plus-circle me-2 text-primary"></i>
@@ -339,106 +646,7 @@ export default function TableManagementPage() {
         </Modal.Header>
         <Form onSubmit={submitAdd}>
           <Modal.Body>
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>
-                    Tên bàn <span className="text-danger">*</span>
-                  </Form.Label>
-                  <Form.Control
-                    type="text"
-                    placeholder="VD: Bàn 1, Phòng VIP A..."
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    required
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>
-                    Loại bàn <span className="text-danger">*</span>
-                  </Form.Label>
-                  <Form.Select
-                    value={formData.tableType}
-                    onChange={(e) =>
-                      setFormData({ ...formData, tableType: e.target.value })
-                    }
-                    required
-                  >
-                    <option value="">-- Chọn loại --</option>
-                    <option value="Standard">Standard</option>
-                    <option value="VIP">VIP</option>
-                    <option value="Meeting Room">Meeting Room</option>
-                    <option value="Private Booth">Private Booth</option>
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-            </Row>
-
-            <Row>
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>
-                    Sức chứa <span className="text-danger">*</span>
-                  </Form.Label>
-                  <Form.Control
-                    type="number"
-                    min="1"
-                    placeholder="Số người"
-                    value={formData.capacity}
-                    onChange={(e) =>
-                      setFormData({ ...formData, capacity: e.target.value })
-                    }
-                    required
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Giá/Giờ (đ)</Form.Label>
-                  <Form.Control
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={formData.pricePerHour}
-                    onChange={(e) =>
-                      setFormData({ ...formData, pricePerHour: e.target.value })
-                    }
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Giá/Ngày (đ)</Form.Label>
-                  <Form.Control
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={formData.pricePerDay}
-                    onChange={(e) =>
-                      setFormData({ ...formData, pricePerDay: e.target.value })
-                    }
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Trạng thái</Form.Label>
-              <Form.Select
-                value={formData.status}
-                onChange={(e) =>
-                  setFormData({ ...formData, status: e.target.value })
-                }
-              >
-                <option value="Available">Available</option>
-                <option value="Occupied">Occupied</option>
-                <option value="Maintenance">Maintenance</option>
-              </Form.Select>
-            </Form.Group>
+            <TableFormBody />
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={() => setShowAddModal(false)}>
@@ -452,12 +660,8 @@ export default function TableManagementPage() {
         </Form>
       </Modal>
 
-      {/* Edit Modal */}
-      <Modal
-        show={showEditModal}
-        onHide={() => setShowEditModal(false)}
-        size="lg"
-      >
+      {/* Edit Table Modal */}
+      <Modal show={showEditModal} onHide={() => setShowEditModal(false)} size="lg">
         <Modal.Header closeButton>
           <Modal.Title>
             <i className="bi bi-pencil me-2 text-warning"></i>
@@ -466,106 +670,7 @@ export default function TableManagementPage() {
         </Modal.Header>
         <Form onSubmit={submitEdit}>
           <Modal.Body>
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>
-                    Tên bàn <span className="text-danger">*</span>
-                  </Form.Label>
-                  <Form.Control
-                    type="text"
-                    placeholder="VD: Bàn 1, Phòng VIP A..."
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    required
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>
-                    Loại bàn <span className="text-danger">*</span>
-                  </Form.Label>
-                  <Form.Select
-                    value={formData.tableType}
-                    onChange={(e) =>
-                      setFormData({ ...formData, tableType: e.target.value })
-                    }
-                    required
-                  >
-                    <option value="">-- Chọn loại --</option>
-                    <option value="Standard">Standard</option>
-                    <option value="VIP">VIP</option>
-                    <option value="Meeting Room">Meeting Room</option>
-                    <option value="Private Booth">Private Booth</option>
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-            </Row>
-
-            <Row>
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>
-                    Sức chứa <span className="text-danger">*</span>
-                  </Form.Label>
-                  <Form.Control
-                    type="number"
-                    min="1"
-                    placeholder="Số người"
-                    value={formData.capacity}
-                    onChange={(e) =>
-                      setFormData({ ...formData, capacity: e.target.value })
-                    }
-                    required
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Giá/Giờ (đ)</Form.Label>
-                  <Form.Control
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={formData.pricePerHour}
-                    onChange={(e) =>
-                      setFormData({ ...formData, pricePerHour: e.target.value })
-                    }
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Giá/Ngày (đ)</Form.Label>
-                  <Form.Control
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={formData.pricePerDay}
-                    onChange={(e) =>
-                      setFormData({ ...formData, pricePerDay: e.target.value })
-                    }
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Trạng thái</Form.Label>
-              <Form.Select
-                value={formData.status}
-                onChange={(e) =>
-                  setFormData({ ...formData, status: e.target.value })
-                }
-              >
-                <option value="Available">Available</option>
-                <option value="Occupied">Occupied</option>
-                <option value="Maintenance">Maintenance</option>
-              </Form.Select>
-            </Form.Group>
+            <TableFormBody />
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={() => setShowEditModal(false)}>
@@ -579,7 +684,7 @@ export default function TableManagementPage() {
         </Form>
       </Modal>
 
-      {/* Delete Modal */}
+      {/* Delete Table Modal */}
       <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>
@@ -589,8 +694,7 @@ export default function TableManagementPage() {
         </Modal.Header>
         <Modal.Body>
           <p className="mb-0">
-            Bạn có chắc chắn muốn xoá bàn <strong>{deletingTable?.name}</strong>
-            ?
+            Bạn có chắc chắn muốn xoá bàn <strong>{deletingTable?.name}</strong>?
           </p>
           <p className="text-muted small mb-0 mt-2">
             <i className="bi bi-info-circle me-1"></i>
@@ -604,6 +708,144 @@ export default function TableManagementPage() {
           <Button variant="danger" onClick={submitDelete}>
             <i className="bi bi-trash me-2"></i>
             Xoá bàn
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* ══ Table Type Modals ═════════════════════════════════════════ */}
+
+      {/* Add Type Modal */}
+      <Modal show={showAddTypeModal} onHide={() => setShowAddTypeModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <i className="bi bi-plus-circle me-2 text-success"></i>
+            Thêm loại bàn mới
+          </Modal.Title>
+        </Modal.Header>
+        <Form onSubmit={submitAddType}>
+          <Modal.Body>
+            <Form.Group className="mb-3">
+              <Form.Label>
+                Tên loại bàn <span className="text-danger">*</span>
+              </Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="VD: Khu A, Khu B, VIP, Standard..."
+                value={typeFormData.name}
+                onChange={(e) => setTypeFormData({ ...typeFormData, name: e.target.value })}
+                required
+                autoFocus
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Mô tả (tuỳ chọn)</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={2}
+                placeholder="Mô tả ngắn về loại bàn này..."
+                value={typeFormData.description}
+                onChange={(e) =>
+                  setTypeFormData({ ...typeFormData, description: e.target.value })
+                }
+              />
+            </Form.Group>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowAddTypeModal(false)}>
+              Hủy
+            </Button>
+            <Button variant="success" type="submit">
+              <i className="bi bi-check-circle me-2"></i>
+              Thêm loại bàn
+            </Button>
+          </Modal.Footer>
+        </Form>
+      </Modal>
+
+      {/* Edit Type Modal */}
+      <Modal show={showEditTypeModal} onHide={() => setShowEditTypeModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <i className="bi bi-pencil me-2 text-warning"></i>
+            Chỉnh sửa loại bàn
+          </Modal.Title>
+        </Modal.Header>
+        <Form onSubmit={submitEditType}>
+          <Modal.Body>
+            <Form.Group className="mb-3">
+              <Form.Label>
+                Tên loại bàn <span className="text-danger">*</span>
+              </Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="VD: Khu A, Khu B, VIP, Standard..."
+                value={typeFormData.name}
+                onChange={(e) => setTypeFormData({ ...typeFormData, name: e.target.value })}
+                required
+                autoFocus
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Mô tả (tuỳ chọn)</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={2}
+                placeholder="Mô tả ngắn về loại bàn này..."
+                value={typeFormData.description}
+                onChange={(e) =>
+                  setTypeFormData({ ...typeFormData, description: e.target.value })
+                }
+              />
+            </Form.Group>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowEditTypeModal(false)}>
+              Hủy
+            </Button>
+            <Button variant="warning" type="submit">
+              <i className="bi bi-check-circle me-2"></i>
+              Cập nhật
+            </Button>
+          </Modal.Footer>
+        </Form>
+      </Modal>
+
+      {/* Delete Type Modal */}
+      <Modal show={showDeleteTypeModal} onHide={() => setShowDeleteTypeModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <i className="bi bi-exclamation-triangle me-2 text-danger"></i>
+            Xác nhận xoá loại bàn
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p className="mb-0">
+            Bạn có chắc chắn muốn xoá loại bàn{" "}
+            <strong>{deletingType?.name}</strong>?
+          </p>
+          {tables.filter((t) => t.tableType === deletingType?.name).length > 0 && (
+            <Alert variant="warning" className="mt-3 mb-0">
+              <i className="bi bi-exclamation-triangle me-2"></i>
+              Có{" "}
+              <strong>
+                {tables.filter((t) => t.tableType === deletingType?.name).length}
+              </strong>{" "}
+              bàn đang sử dụng loại này. Bạn vẫn có thể xoá, nhưng các bàn đó sẽ không còn
+              loại bàn hợp lệ.
+            </Alert>
+          )}
+          <p className="text-muted small mb-0 mt-2">
+            <i className="bi bi-info-circle me-1"></i>
+            Thao tác này không thể hoàn tác.
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDeleteTypeModal(false)}>
+            Hủy
+          </Button>
+          <Button variant="danger" onClick={submitDeleteType}>
+            <i className="bi bi-trash me-2"></i>
+            Xoá loại bàn
           </Button>
         </Modal.Footer>
       </Modal>
