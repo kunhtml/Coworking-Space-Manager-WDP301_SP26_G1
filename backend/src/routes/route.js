@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   login,
+  register,
   getMe,
   updateProfile,
   changePassword,
@@ -36,6 +37,7 @@ import { requireAuth, requireStaff } from "../middleware/middleware.js";
 const router = Router();
 
 // Auth
+router.post("/auth/register", register);
 router.post("/auth/login", login);
 router.get("/auth/me", requireAuth, getMe);
 router.put("/auth/profile", requireAuth, updateProfile);
