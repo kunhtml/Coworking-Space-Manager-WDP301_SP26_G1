@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { animate, stagger } from "animejs";
 import {
-  Badge,
   Button,
   Card,
   Col,
@@ -10,10 +9,10 @@ import {
   Row,
   Modal,
   Form,
-  Dropdown,
 } from "react-bootstrap";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 import { useAuth } from "../../hooks/useAuth";
+import AuthNavActions from "../../components/common/AuthNavActions";
 
 export function meta() {
   return [
@@ -33,15 +32,9 @@ const ROLE_LABELS = {
 };
 
 export default function Home() {
-  const { isAuthenticated, user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [showBookingModal, setShowBookingModal] = useState(false);
   const menuScrollRef = useRef(null);
-
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
 
   const handleClose = () => setShowBookingModal(false);
   const handleShow = () => setShowBookingModal(true);
@@ -99,89 +92,18 @@ export default function Home() {
                 Không gian
               </Link>
               <Link
+                to="/order-table"
+                className="text-decoration-none text-light fw-medium px-2 py-1 hover-primary transition-all text-uppercase"
+              >
+                Đặt bàn
+              </Link>
+              <Link
                 to="/menu"
                 className="text-decoration-none text-light fw-medium px-2 py-1 hover-primary transition-all text-uppercase"
               >
                 Thực đơn
               </Link>
-              <a
-                href="#booking"
-                className="text-decoration-none text-light fw-medium px-2 py-1 hover-primary transition-all text-uppercase"
-              >
-                Hướng dẫn đặt bàn
-              </a>
-              <div className="d-flex gap-2 ms-lg-3 mt-2 mt-lg-0">
-                {isAuthenticated && user ? (
-                  <Dropdown align="end">
-                    <Dropdown.Toggle
-                      variant="outline-secondary"
-                      className="px-3 rounded-0 fw-medium text-light border-secondary d-flex align-items-center gap-2"
-                      style={{ backgroundColor: "transparent" }}
-                    >
-                      <i
-                        className={`bi ${
-                          ROLE_LABELS[user.role]?.icon ?? "bi-person-circle"
-                        }`}
-                        style={{
-                          color: ROLE_LABELS[user.role]?.color ?? "#aaa",
-                        }}
-                      ></i>
-                      <span>{user.fullName}</span>
-                      <Badge
-                        pill
-                        style={{
-                          backgroundColor:
-                            ROLE_LABELS[user.role]?.color ?? "#aaa",
-                          color: "#000",
-                          fontSize: "0.65rem",
-                        }}
-                      >
-                        {ROLE_LABELS[user.role]?.label ?? user.role}
-                      </Badge>
-                    </Dropdown.Toggle>
-                    <Dropdown.Menu
-                      className="bg-dark border-secondary"
-                      style={{ minWidth: "180px" }}
-                    >
-                      {user.role !== "Admin" && (
-                        <Dropdown.Item
-                          as={Link}
-                          to="/profile"
-                          className="text-light"
-                        >
-                          <i className="bi bi-person me-2"></i>Hồ sơ cá nhân
-                        </Dropdown.Item>
-                      )}
-                      {(user.role === "Admin" || user.role === "Staff") && (
-                        <Dropdown.Item
-                          as={Link}
-                          to={user.role === "Admin" ? "/admin" : "/dashboard"}
-                          className="text-light"
-                        >
-                          <i className="bi bi-speedometer2 me-2"></i>
-                          {user.role === "Admin" ? "Quản trị" : "Dashboard"}
-                        </Dropdown.Item>
-                      )}
-                      <Dropdown.Divider className="border-secondary" />
-                      <Dropdown.Item
-                        onClick={handleLogout}
-                        className="text-danger"
-                      >
-                        <i className="bi bi-box-arrow-right me-2"></i>Đăng xuất
-                      </Dropdown.Item>
-                    </Dropdown.Menu>
-                  </Dropdown>
-                ) : (
-                  <Button
-                    as={Link}
-                    to="/login"
-                    variant="outline-secondary"
-                    className="px-4 rounded-0 fw-medium text-uppercase text-light border-secondary"
-                  >
-                    Đăng nhập
-                  </Button>
-                )}
-              </div>
+              <AuthNavActions roleLabels={ROLE_LABELS} />
             </div>
           </Navbar.Collapse>
         </Container>
