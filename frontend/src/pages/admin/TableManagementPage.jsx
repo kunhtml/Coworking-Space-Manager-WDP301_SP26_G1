@@ -64,7 +64,7 @@ export default function TableManagementPage() {
   const [showEditTypeModal, setShowEditTypeModal] = useState(false);
   const [showDeleteTypeModal, setShowDeleteTypeModal] = useState(false);
 
-  const [typeFormData, setTypeFormData] = useState({ name: "", description: "" });
+  const [typeFormData, setTypeFormData] = useState({ name: "", description: "", capacity: "" });
   const [editingTypeId, setEditingTypeId] = useState(null);
   const [deletingType, setDeletingType] = useState(null);
 
@@ -101,6 +101,17 @@ export default function TableManagementPage() {
       pricePerDay: "",
     });
     setEditingId(null);
+  };
+
+  const handleTableTypeChange = (e) => {
+    const selectedTypeName = e.target.value;
+    const selectedType = tableTypes.find((t) => t.name === selectedTypeName);
+    
+    setFormData((prev) => ({
+      ...prev,
+      tableType: selectedTypeName,
+      capacity: selectedType?.capacity ? selectedType.capacity : prev.capacity,
+    }));
   };
 
   const openAdd = () => {
@@ -184,7 +195,7 @@ export default function TableManagementPage() {
   };
 
   const resetTypeForm = () => {
-    setTypeFormData({ name: "", description: "" });
+    setTypeFormData({ name: "", description: "", capacity: "" });
     setEditingTypeId(null);
   };
 
@@ -209,7 +220,7 @@ export default function TableManagementPage() {
   };
 
   const openEditType = (type) => {
-    setTypeFormData({ name: type.name, description: type.description || "" });
+    setTypeFormData({ name: type.name, description: type.description || "", capacity: type.capacity || "" });
     setEditingTypeId(type.sourceId);
     setShowEditTypeModal(true);
   };
@@ -488,6 +499,7 @@ export default function TableManagementPage() {
                         <th className="px-4 py-3">#</th>
                         <th className="px-4 py-3">Tên loại bàn</th>
                         <th className="px-4 py-3">Mô tả</th>
+                        <th className="px-4 py-3">Sức chứa</th>
                         <th className="px-4 py-3">Số bàn sử dụng</th>
                         <th className="px-4 py-3 text-end">Thao tác</th>
                       </tr>
@@ -506,6 +518,9 @@ export default function TableManagementPage() {
                             </td>
                             <td className="px-4 py-3 text-muted">
                               {type.description || <span className="fst-italic">—</span>}
+                            </td>
+                            <td className="px-4 py-3 fw-medium">
+                              {type.capacity ? `${type.capacity} người` : "—"}
                             </td>
                             <td className="px-4 py-3">
                               <Badge bg={usedCount > 0 ? "primary" : "secondary"}>
@@ -571,7 +586,7 @@ export default function TableManagementPage() {
                   <Form.Label>Loại bàn <span className="text-danger">*</span></Form.Label>
                   <Form.Select
                     value={formData.tableType}
-                    onChange={(e) => setFormData({ ...formData, tableType: e.target.value })}
+                    onChange={handleTableTypeChange}
                     required
                   >
                     <option value="">-- Chọn loại --</option>
@@ -659,7 +674,7 @@ export default function TableManagementPage() {
                   <Form.Label>Loại bàn <span className="text-danger">*</span></Form.Label>
                   <Form.Select
                     value={formData.tableType}
-                    onChange={(e) => setFormData({ ...formData, tableType: e.target.value })}
+                    onChange={handleTableTypeChange}
                     required
                   >
                     <option value="">-- Chọn loại --</option>
@@ -784,6 +799,19 @@ export default function TableManagementPage() {
                 }
               />
             </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Sức chứa (người) <span className="text-danger">*</span></Form.Label>
+              <Form.Control
+                type="number"
+                min="1"
+                placeholder="VD: 1, 4, 10..."
+                value={typeFormData.capacity}
+                onChange={(e) =>
+                  setTypeFormData({ ...typeFormData, capacity: e.target.value })
+                }
+                required
+              />
+            </Form.Group>
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={() => setShowAddTypeModal(false)}>
@@ -830,6 +858,19 @@ export default function TableManagementPage() {
                 onChange={(e) =>
                   setTypeFormData({ ...typeFormData, description: e.target.value })
                 }
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Sức chứa (người) <span className="text-danger">*</span></Form.Label>
+              <Form.Control
+                type="number"
+                min="1"
+                placeholder="VD: 1, 4, 10..."
+                value={typeFormData.capacity}
+                onChange={(e) =>
+                  setTypeFormData({ ...typeFormData, capacity: e.target.value })
+                }
+                required
               />
             </Form.Group>
           </Modal.Body>

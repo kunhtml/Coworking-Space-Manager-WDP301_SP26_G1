@@ -299,6 +299,7 @@ export const getTableTypes = async (req, res) => {
         sourceId: t._id.toString(),
         name: t.name,
         description: t.description || "",
+        capacity: t.capacity || 1,
         createdAt: t.createdAt,
       }))
     );
@@ -321,6 +322,7 @@ export const createTableType = async (req, res) => {
     const tableType = await TableType.create({
       name: name.trim(),
       description: description?.trim() || "",
+      capacity: Number(req.body.capacity) || 1,
     });
     res.status(201).json({ message: "Thêm loại bàn thành công!", tableType });
   } catch (err) {
@@ -345,7 +347,11 @@ export const updateTableType = async (req, res) => {
     }
     const tableType = await TableType.findByIdAndUpdate(
       req.params.id,
-      { name: name.trim(), description: description?.trim() || "" },
+      { 
+        name: name.trim(), 
+        description: description?.trim() || "",
+        capacity: Number(req.body.capacity) || 1,
+      },
       { new: true, runValidators: true }
     );
     if (!tableType) return res.status(404).json({ message: "Không tìm thấy loại bàn." });

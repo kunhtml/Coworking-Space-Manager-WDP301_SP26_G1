@@ -26,6 +26,9 @@ import {
   createPayment,
   cancelPayment,
   payosWebhook,
+  getMyOrders,
+  createOrder,
+  updateMyOrder,
   getMenuItems,
   getMenuItem,
   createMenuItem,
@@ -86,6 +89,11 @@ router.post("/payments/cancel", requireAuth, cancelPayment);
 
 // PayOS webhook (no auth — called by PayOS server)
 router.post("/payos/webhook", payosWebhook);
+
+// Orders
+router.get("/orders/my", requireAuth, getMyOrders);
+router.post("/orders", requireAuth, createOrder);
+router.put("/orders/:id", requireAuth, updateMyOrder);
 
 // Menu Management — staff / admin
 router.get("/menu/items", getMenuItems);
