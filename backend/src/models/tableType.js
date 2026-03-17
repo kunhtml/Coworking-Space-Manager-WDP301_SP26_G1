@@ -12,6 +12,12 @@ const tableTypeSchema = new Schema({
     type: String,
     default: "",
   },
+  capacity: {
+    type: Number,
+    required: true,
+    min: 1,
+    default: 1,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
