@@ -132,6 +132,10 @@ export default function Dashboard() {
   const [targetBookingId, setTargetBookingId] = useState("");
   const [editingOrderId, setEditingOrderId] = useState("");
   const [orderLines, setOrderLines] = useState([emptyOrderLine()]);
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [invoiceOrder, setInvoiceOrder] = useState(null);
+  const [showBookingInvoiceModal, setShowBookingInvoiceModal] = useState(false);
+  const [invoiceBooking, setInvoiceBooking] = useState(null);
 
   const canEditBooking = (status) => !["Confirmed", "Cancelled"].includes(status);
   const canEditOrder = (status) => !["Confirmed", "Cancelled"].includes(status);
@@ -411,6 +415,16 @@ export default function Dashboard() {
                                 <i className="bi bi-pencil-square me-1"></i>Edit booking
                               </Button>
                             )}
+                            <Button
+                              size="sm"
+                              variant="outline-secondary"
+                              onClick={() => {
+                                setInvoiceBooking(booking);
+                                setShowBookingInvoiceModal(true);
+                              }}
+                            >
+                              <i className="bi bi-receipt me-1"></i>Hóa đơn
+                            </Button>
                             <Button size="sm" variant="primary" onClick={() => openCreateOrder(booking.id)} disabled={booking.status === "Cancelled"}>
                               <i className="bi bi-receipt me-1"></i>Tạo order
                             </Button>
@@ -519,6 +533,16 @@ export default function Dashboard() {
                               <i className="bi bi-pencil-square me-1"></i>Edit order
                             </Button>
                           )}
+                          <Button
+                            size="sm"
+                            variant="outline-secondary"
+                            onClick={() => {
+                              setInvoiceOrder({ order, relatedBooking });
+                              setShowInvoiceModal(true);
+                            }}
+                          >
+                            <i className="bi bi-receipt me-1"></i>Hóa đơn
+                          </Button>
                         </Accordion.Body>
                       </Accordion.Item>
                     );
@@ -619,6 +643,145 @@ export default function Dashboard() {
             <Button type="submit" variant="primary" disabled={savingOrder}>{savingOrder ? "Đang lưu..." : "Lưu đơn hàng"}</Button>
           </Modal.Footer>
         </Form>
+      </Modal>
+
+      <Modal
+        show={showBookingInvoiceModal}
+        onHide={() => {
+          setShowBookingInvoiceModal(false);
+          setInvoiceBooking(null);
+        }}
+        centered
+        size="lg"
+      >
+        <Modal.Body className="p-4">
+          <div className="border rounded-4 p-4">
+            <h3 className="fw-bold mb-0">NEXUS COFFEE</h3>
+            <div className="text-secondary fw-semibold">HÓA ĐƠN BOOKING</div>
+            <hr />
+            <div className="fw-bold mb-2">THÔNG TIN BOOKING</div>
+            <div className="d-flex justify-content-between">
+              <span>Mã booking</span>
+              <strong>{invoiceBooking?.bookingCode || "--"}</strong>
+            </div>
+            <div className="d-flex justify-content-between">
+              <span>Không gian</span>
+              <strong>{invoiceBooking?.spaceName || "--"}</strong>
+            </div>
+            <div className="d-flex justify-content-between">
+              <span>Bắt đầu</span>
+              <strong>{formatDateTime(invoiceBooking?.startTime)}</strong>
+            </div>
+            <div className="d-flex justify-content-between">
+              <span>Kết thúc</span>
+              <strong>{formatDateTime(invoiceBooking?.endTime)}</strong>
+            </div>
+            <div className="d-flex justify-content-between">
+              <span>Trạng thái</span>
+              <strong>{BOOKING_STATUS_MAP[invoiceBooking?.status]?.label || invoiceBooking?.status || "--"}</strong>
+            </div>
+            <div className="d-flex justify-content-between">
+              <span>Số order liên quan</span>
+              <strong>{orderCountByBooking.get(String(invoiceBooking?.id || "")) || 0}</strong>
+            </div>
+
+            <hr />
+            <div className="d-flex justify-content-between align-items-center">
+              <h5 className="mb-0 text-secondary">TỔNG BOOKING</h5>
+              <h3 className="text-primary fw-bold mb-0">
+                {fmt(invoiceBooking?.depositAmount)}đ
+              </h3>
+            </div>
+          </div>
+        </Modal.Body>
+        <Modal.Footer className="border-0 d-flex gap-2">
+          <Button
+            variant="outline-secondary"
+            className="w-100"
+            onClick={() => {
+              setShowBookingInvoiceModal(false);
+              setInvoiceBooking(null);
+            }}
+          >
+            Đóng
+          </Button>
+          <Button className="w-100" variant="primary" onClick={() => window.print()}>
+            <i className="bi bi-printer me-2"></i>In hóa đơn booking
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal
+        show={showInvoiceModal}
+        onHide={() => {
+          setShowInvoiceModal(false);
+          setInvoiceOrder(null);
+        }}
+        centered
+        size="lg"
+      >
+        <Modal.Body className="p-4">
+          <div className="border rounded-4 p-4">
+            <h3 className="fw-bold mb-0">NEXUS COFFEE</h3>
+            <div className="text-secondary fw-semibold">HÓA ĐƠN ĐIỆN TỬ</div>
+            <hr />
+            <div className="fw-bold mb-2">THÔNG TIN ĐƠN HÀNG</div>
+            <div className="d-flex justify-content-between">
+              <span>Mã đơn</span>
+              <strong>
+                #{String(invoiceOrder?.order?.id || "").slice(-6).toUpperCase()}
+              </strong>
+            </div>
+            <div className="d-flex justify-content-between">
+              <span>Ngày tạo</span>
+              <strong>{formatDateTime(invoiceOrder?.order?.createdAt)}</strong>
+            </div>
+            <div className="d-flex justify-content-between">
+              <span>Mã booking</span>
+              <strong>{invoiceOrder?.relatedBooking?.bookingCode || "--"}</strong>
+            </div>
+            <div className="d-flex justify-content-between">
+              <span>Không gian</span>
+              <strong>{invoiceOrder?.relatedBooking?.spaceName || "--"}</strong>
+            </div>
+
+            <div className="fw-bold mt-3 mb-2">CHI TIẾT MÓN</div>
+            {(invoiceOrder?.order?.items || []).map((item) => (
+              <div
+                key={item.id}
+                className="d-flex justify-content-between border-bottom py-2"
+              >
+                <span>
+                  {item.menuName} x{item.quantity}
+                </span>
+                <strong>{fmt(item.lineTotal)}đ</strong>
+              </div>
+            ))}
+
+            <hr />
+            <div className="d-flex justify-content-between align-items-center">
+              <h5 className="mb-0 text-secondary">TỔNG CỘNG</h5>
+              <h3 className="text-primary fw-bold mb-0">
+                {fmt(invoiceOrder?.order?.totalAmount)}đ
+              </h3>
+            </div>
+          </div>
+        </Modal.Body>
+        <Modal.Footer className="border-0 d-flex gap-2">
+          <Button
+            variant="outline-secondary"
+            className="w-100"
+            onClick={() => {
+              setShowInvoiceModal(false);
+              setInvoiceOrder(null);
+            }}
+          >
+            Đóng
+          </Button>
+          <Button className="w-100" variant="primary" onClick={() => window.print()}>
+            <i className="bi bi-printer me-2"></i>In hóa đơn
+          </Button>
+        </Modal.Footer>
       </Modal>
     </div>
   );
