@@ -50,7 +50,50 @@ const EMPTY_CAT_FORM = {
   isActive: true,
 };
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+const fmtPrice = (n) =>
+  new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(n || 0);
+
 export default function AdminServiceListPage() {
+  // ─── Tab ──────────────────────────────────────────────────
+  const [tab, setTab] = useState("items");
+
+  // ─── Items state ──────────────────────────────────────────
+  const [items, setItems] = useState([]);
+  const [itemsLoading, setItemsLoading] = useState(false);
+  const [searchItem, setSearchItem] = useState("");
+  const [filterCat, setFilterCat] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+
+  // ─── Categories state ─────────────────────────────────────
+  const [categories, setCategories] = useState([]);
+  const [catsLoading, setCatsLoading] = useState(false);
+
+  // ─── Global feedback ──────────────────────────────────────
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  // ─── Item modals ──────────────────────────────────────────
+  const [showItemAdd, setShowItemAdd] = useState(false);
+  const [showItemEdit, setShowItemEdit] = useState(false);
+  const [showItemDelete, setShowItemDelete] = useState(false);
+  const [itemForm, setItemForm] = useState(EMPTY_ITEM_FORM);
+  const [editingItemId, setEditingItemId] = useState(null);
+  const [deletingItem, setDeletingItem] = useState(null);
+  const [itemFormLoading, setItemFormLoading] = useState(false);
+
+  // ─── Category modals ──────────────────────────────────────
+  const [showCatAdd, setShowCatAdd] = useState(false);
+  const [showCatEdit, setShowCatEdit] = useState(false);
+  const [showCatDelete, setShowCatDelete] = useState(false);
+  const [catForm, setCatForm] = useState(EMPTY_CAT_FORM);
+  const [editingCatId, setEditingCatId] = useState(null);
+  const [deletingCat, setDeletingCat] = useState(null);
+  const [catFormLoading, setCatFormLoading] = useState(false);
+
   return (
     <AdminLayout>
       <div className="mb-5 pb-3">
