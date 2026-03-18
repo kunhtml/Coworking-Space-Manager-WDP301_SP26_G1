@@ -267,6 +267,56 @@ export default function AdminServiceListPage() {
     setShowCatDelete(true);
   };
 
+  const submitCatAdd = async (e) => {
+    e.preventDefault();
+    setError("");
+    setCatFormLoading(true);
+    try {
+      const res = await api.post("/menu/categories", catForm);
+      showSuccess(res.message || "Thêm danh mục thành công!");
+      setShowCatAdd(false);
+      loadCategories();
+    } catch (err) {
+      setError(err.message || "Lỗi khi thêm danh mục");
+    } finally {
+      setCatFormLoading(false);
+    }
+  };
+
+  const submitCatEdit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setCatFormLoading(true);
+    try {
+      const res = await api.put(`/menu/categories/${editingCatId}`, catForm);
+      showSuccess(res.message || "Cập nhật danh mục thành công!");
+      setShowCatEdit(false);
+      loadCategories();
+    } catch (err) {
+      setError(err.message || "Lỗi khi cập nhật danh mục");
+    } finally {
+      setCatFormLoading(false);
+    }
+  };
+
+  const confirmCatDelete = async () => {
+    if (!deletingCat) return;
+    setError("");
+    setCatFormLoading(true);
+    try {
+      const res = await api.delete(`/menu/categories/${deletingCat._id}`);
+      showSuccess(res.message || "Xóa danh mục thành công!");
+      setShowCatDelete(false);
+      setDeletingCat(null);
+      loadCategories();
+    } catch (err) {
+      setError(err.message || "Lỗi khi xóa danh mục");
+      setShowCatDelete(false);
+    } finally {
+      setCatFormLoading(false);
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="mb-5 pb-3">
