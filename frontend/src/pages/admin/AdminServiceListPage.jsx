@@ -94,6 +94,41 @@ export default function AdminServiceListPage() {
   const [deletingCat, setDeletingCat] = useState(null);
   const [catFormLoading, setCatFormLoading] = useState(false);
 
+  // ─── Load data ────────────────────────────────────────────
+  const loadCategories = useCallback(async () => {
+    setCatsLoading(true);
+    try {
+      const data = await api.get("/menu/categories");
+      setCategories(data);
+    } catch (err) {
+      setError(err.message || "Lỗi khi tải danh mục");
+    } finally {
+      setCatsLoading(false);
+    }
+  }, []);
+
+  const loadItems = useCallback(async () => {
+    setItemsLoading(true);
+    try {
+      const data = await api.get("/menu/items");
+      setItems(data);
+    } catch (err) {
+      setError(err.message || "Lỗi khi tải danh sách món");
+    } finally {
+      setItemsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCategories();
+    loadItems();
+  }, [loadCategories, loadItems]);
+
+  const showSuccess = (msg) => {
+    setSuccess(msg);
+    setTimeout(() => setSuccess(""), 4000);
+  };
+
   return (
     <AdminLayout>
       <div className="mb-5 pb-3">
