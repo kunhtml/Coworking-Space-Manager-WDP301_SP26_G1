@@ -427,6 +427,58 @@ export default function AdminServiceListPage() {
     </Row>
   );
 
+  // ─── Category Form Component ──────────────────────────────
+  const CatFormBody = () => (
+    <Row className="g-3">
+      {error && (
+        <Col xs={12}>
+          <Alert variant="danger" dismissible onClose={() => setError("")} className="py-2">
+            {error}
+          </Alert>
+        </Col>
+      )}
+      <Col md={12}>
+        <Form.Group>
+          <Form.Label className="fw-semibold">
+            Tên danh mục <span className="text-danger">*</span>
+          </Form.Label>
+          <Form.Control
+            type="text"
+            placeholder="Ví dụ: Đồ uống, Đồ ăn nhẹ..."
+            value={catForm.name}
+            onChange={(e) => setCatForm({ ...catForm, name: e.target.value })}
+            required
+          />
+        </Form.Group>
+      </Col>
+      <Col md={12}>
+        <Form.Group>
+          <Form.Label className="fw-semibold">Mô tả</Form.Label>
+          <Form.Control
+            as="textarea"
+            rows={2}
+            placeholder="Mô tả ngắn về danh mục..."
+            value={catForm.description}
+            onChange={(e) =>
+              setCatForm({ ...catForm, description: e.target.value })
+            }
+          />
+        </Form.Group>
+      </Col>
+      <Col md={12}>
+        <Form.Check
+          type="switch"
+          id="cat-isActive"
+          label="Danh mục đang hoạt động"
+          checked={catForm.isActive}
+          onChange={(e) =>
+            setCatForm({ ...catForm, isActive: e.target.checked })
+          }
+        />
+      </Col>
+    </Row>
+  );
+
   return (
     <AdminLayout>
       <div className="mb-5 pb-3">
