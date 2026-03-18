@@ -143,6 +143,18 @@ export default function AdminServiceListPage() {
     return matchSearch && matchCat && matchStatus;
   });
 
+  // ─── Stats ────────────────────────────────────────────────
+  const statsAvailable = items.filter(
+    (i) => i.availabilityStatus === "Available"
+  ).length;
+  const statsUnavailable = items.filter(
+    (i) => i.availabilityStatus === "Unavailable"
+  ).length;
+  const statsOutOfStock = items.filter(
+    (i) => i.availabilityStatus === "OutOfStock"
+  ).length;
+
+
   return (
     <AdminLayout>
       <div className="mb-5 pb-3">
