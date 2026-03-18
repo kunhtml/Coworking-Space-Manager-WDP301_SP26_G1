@@ -154,6 +154,33 @@ export default function AdminServiceListPage() {
     (i) => i.availabilityStatus === "OutOfStock"
   ).length;
 
+  // ═══════════════════════════════════════════════════════════
+  // MENU ITEM CRUD
+  // ═══════════════════════════════════════════════════════════
+
+  const openItemAdd = () => {
+    setItemForm(EMPTY_ITEM_FORM);
+    setEditingItemId(null);
+    setShowItemAdd(true);
+  };
+
+  const openItemEdit = (item) => {
+    setEditingItemId(item._id);
+    setItemForm({
+      name: item.name || "",
+      categoryId: item.categoryId?._id || item.categoryId || "",
+      description: item.description || "",
+      price: item.price ?? "",
+      stockQuantity: item.stockQuantity ?? "",
+      availabilityStatus: item.availabilityStatus || "Available",
+    });
+    setShowItemEdit(true);
+  };
+
+  const openItemDelete = (item) => {
+    setDeletingItem(item);
+    setShowItemDelete(true);
+  };
 
   return (
     <AdminLayout>
