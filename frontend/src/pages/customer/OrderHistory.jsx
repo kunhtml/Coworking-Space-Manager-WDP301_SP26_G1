@@ -115,6 +115,12 @@ export default function Dashboard() {
   const [activeOrderKey, setActiveOrderKey] = useState(null);
   const [bookingPage, setBookingPage] = useState(1);
   const [orderPage, setOrderPage] = useState(1);
+  const [bookingSearch, setBookingSearch] = useState("");
+  const [bookingDateFilter, setBookingDateFilter] = useState("");
+  const [bookingStatusFilter, setBookingStatusFilter] = useState("all");
+  const [orderSearch, setOrderSearch] = useState("");
+  const [orderDateFilter, setOrderDateFilter] = useState("");
+  const [orderStatusFilter, setOrderStatusFilter] = useState("all");
 
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [savingBooking, setSavingBooking] = useState(false);
@@ -191,18 +197,72 @@ export default function Dashboard() {
     return map;
   }, [orders]);
 
-  const bookingTotalPages = Math.max(1, Math.ceil(bookings.length / PAGE_SIZE));
-  const orderTotalPages = Math.max(1, Math.ceil(orders.length / PAGE_SIZE));
+  const filteredBookings = useMemo(() => {
+    const q = bookingSearch.trim().toLowerCase();
+    return bookings.filter((booking) => {
+      const bookingCode = String(booking.bookingCode || "").toLowerCase();
+      const bookingDate = toDateInput(booking.startTime);
+      const byCode = !q || bookingCode.includes(q);
+      const byDate = !bookingDateFilter || bookingDate === bookingDateFilter;
+      const byStatus = bookingStatusFilter === "all" || booking.status === bookingStatusFilter;
+      return byCode && byDate && byStatus;
+    });
+  }, [bookings, bookingSearch, bookingDateFilter, bookingStatusFilter]);
+
+  const filteredOrders = useMemo(() => {
+    const q = orderSearch.trim().toLowerCase();
+    return orders.filter((order) => {
+      const orderCode = String(order.id || "").slice(-6).toUpperCase().toLowerCase();
+      const orderDate = toDateInput(order.createdAt);
+      const byCode = !q || orderCode.includes(q);
+      const byDate = !orderDateFilter || orderDate === orderDateFilter;
+      const byStatus = orderStatusFilter === "all" || order.status === orderStatusFilter;
+      return byCode && byDate && byStatus;
+    });
+  }, [orders, orderSearch, orderDateFilter, orderStatusFilter]);
+
+  const bookingTotalPages = Math.max(1, Math.ceil(filteredBookings.length / PAGE_SIZE));
+  const orderTotalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE));
 
   const pagedBookings = useMemo(() => {
     const start = (bookingPage - 1) * PAGE_SIZE;
-    return bookings.slice(start, start + PAGE_SIZE);
-  }, [bookings, bookingPage]);
+    return filteredBookings.slice(start, start + PAGE_SIZE);
+  }, [filteredBookings, bookingPage]);
 
   const pagedOrders = useMemo(() => {
     const start = (orderPage - 1) * PAGE_SIZE;
-    return orders.slice(start, start + PAGE_SIZE);
-  }, [orders, orderPage]);
+    return filteredOrders.slice(start, start + PAGE_SIZE);
+  }, [filteredOrders, orderPage]);
+
+  useEffect(() => {
+    setBookingPage(1);
+  }, [bookingSearch, bookingDateFilter, bookingStatusFilter]);
+
+  useEffect(() => {
+    setOrderPage(1);
+  }, [orderSearch, orderDateFilter, orderStatusFilter]);
+
+  useEffect(() => {
+    if (!filteredBookings.length) {
+      setActiveBookingKey(null);
+      return;
+    }
+    const exists = filteredBookings.some((b) => String(b.id) === String(activeBookingKey));
+    if (!exists) {
+      setActiveBookingKey(String(filteredBookings[0].id));
+    }
+  }, [filteredBookings, activeBookingKey]);
+
+  useEffect(() => {
+    if (!filteredOrders.length) {
+      setActiveOrderKey(null);
+      return;
+    }
+    const exists = filteredOrders.some((o) => String(o.id) === String(activeOrderKey));
+    if (!exists) {
+      setActiveOrderKey(String(filteredOrders[0].id));
+    }
+  }, [filteredOrders, activeOrderKey]);
 
   useEffect(() => {
     if (bookingPage > bookingTotalPages) {
@@ -396,11 +456,52 @@ export default function Dashboard() {
               <h5 className="fw-bold mb-0 text-dark">Booking</h5>
             </Card.Header>
             <Card.Body className="p-4">
+              <Row className="g-3 mb-3">
+                <Col md={5}>
+                  <Form.Control
+                    placeholder="Tìm theo mã booking..."
+                    value={bookingSearch}
+                    onChange={(e) => setBookingSearch(e.target.value)}
+                  />
+                </Col>
+                <Col md={3}>
+                  <Form.Control
+                    type="date"
+                    value={bookingDateFilter}
+                    onChange={(e) => setBookingDateFilter(e.target.value)}
+                  />
+                </Col>
+                <Col md={3}>
+                  <Form.Select
+                    value={bookingStatusFilter}
+                    onChange={(e) => setBookingStatusFilter(e.target.value)}
+                  >
+                    <option value="all">Tất cả trạng thái</option>
+                    {Object.entries(BOOKING_STATUS_MAP).map(([value, cfg]) => (
+                      <option key={value} value={value}>{cfg.label}</option>
+                    ))}
+                  </Form.Select>
+                </Col>
+                <Col md={1}>
+                  <Button
+                    variant="outline-secondary"
+                    className="w-100"
+                    onClick={() => {
+                      setBookingSearch("");
+                      setBookingDateFilter("");
+                      setBookingStatusFilter("all");
+                    }}
+                  >
+                    <i className="bi bi-arrow-counterclockwise"></i>
+                  </Button>
+                </Col>
+              </Row>
+
               {loading ? (
                 <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>
-              ) : bookings.length === 0 ? (
+              ) : filteredBookings.length === 0 ? (
                 <div className="text-center py-5">
-                  <p className="text-muted mb-3">Bạn chưa có booking nào.</p>
+                  <p className="text-muted mb-3">Không tìm thấy booking phù hợp bộ lọc.</p>
                   <Button as={Link} to="/order-table" variant="primary" className="rounded-pill px-4">Đặt chỗ ngay</Button>
                 </div>
               ) : (
@@ -463,7 +564,7 @@ export default function Dashboard() {
                 </Accordion>
               )}
 
-              {!loading && bookings.length > 0 && (
+              {!loading && filteredBookings.length > 0 && (
                 <div className="d-flex justify-content-center mt-3">
                   <Pagination className="mb-0">
                     <Pagination.Prev
@@ -494,10 +595,51 @@ export default function Dashboard() {
               <h5 className="fw-bold mb-0 text-dark">Order History</h5>
             </Card.Header>
             <Card.Body className="p-4">
+              <Row className="g-3 mb-3">
+                <Col md={5}>
+                  <Form.Control
+                    placeholder="Tìm theo mã order..."
+                    value={orderSearch}
+                    onChange={(e) => setOrderSearch(e.target.value)}
+                  />
+                </Col>
+                <Col md={3}>
+                  <Form.Control
+                    type="date"
+                    value={orderDateFilter}
+                    onChange={(e) => setOrderDateFilter(e.target.value)}
+                  />
+                </Col>
+                <Col md={3}>
+                  <Form.Select
+                    value={orderStatusFilter}
+                    onChange={(e) => setOrderStatusFilter(e.target.value)}
+                  >
+                    <option value="all">Tất cả trạng thái</option>
+                    {Object.entries(ORDER_STATUS_MAP).map(([value, cfg]) => (
+                      <option key={value} value={value}>{cfg.label}</option>
+                    ))}
+                  </Form.Select>
+                </Col>
+                <Col md={1}>
+                  <Button
+                    variant="outline-secondary"
+                    className="w-100"
+                    onClick={() => {
+                      setOrderSearch("");
+                      setOrderDateFilter("");
+                      setOrderStatusFilter("all");
+                    }}
+                  >
+                    <i className="bi bi-arrow-counterclockwise"></i>
+                  </Button>
+                </Col>
+              </Row>
+
               {loading ? (
                 <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>
-              ) : orders.length === 0 ? (
-                <Alert variant="secondary" className="mb-0">Chưa có order nào.</Alert>
+              ) : filteredOrders.length === 0 ? (
+                <Alert variant="secondary" className="mb-0">Không tìm thấy order phù hợp bộ lọc.</Alert>
               ) : (
                 <Accordion activeKey={activeOrderKey} onSelect={(k) => setActiveOrderKey(k)}>
                   {pagedOrders.map((order) => {
@@ -572,7 +714,7 @@ export default function Dashboard() {
                 </Accordion>
               )}
 
-              {!loading && orders.length > 0 && (
+              {!loading && filteredOrders.length > 0 && (
                 <div className="d-flex justify-content-center mt-3">
                   <Pagination className="mb-0">
                     <Pagination.Prev
