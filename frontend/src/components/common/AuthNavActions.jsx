@@ -10,7 +10,8 @@ const DEFAULT_ROLE_LABELS = {
 
 function getDashboardPath(role) {
   if (role === "Admin") return "/admin";
-  if (role === "Staff" || role === "Customer") return "/dashboard";
+  if (role === "Staff") return "/dashboard";
+  if (role === "Customer") return "/customer-dashboard";
   return null;
 }
 
