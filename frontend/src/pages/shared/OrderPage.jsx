@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Container, Navbar, Row, Col, Badge, Spinner } from "react-bootstrap";
+import { Badge, Button, Container, Navbar, Row, Col, Spinner } from "react-bootstrap";
 import { Link } from "react-router"; // Lưu ý: Nếu dùng react-router-dom bản mới, import từ "react-router-dom"
+import AuthNavActions from "../../components/common/AuthNavActions";
 
 export function meta() {
   return [
@@ -90,20 +91,25 @@ export default function Menu() {
           <Navbar.Toggle aria-controls="basic-navbar-nav" className="border-0 shadow-none" />
           <Navbar.Collapse id="basic-navbar-nav">
             <div className="ms-auto d-flex flex-column flex-lg-row gap-4 align-items-lg-center mt-3 mt-lg-0">
-              <Link to="/#spaces" className="text-decoration-none text-light fw-medium px-2 py-1 hover-primary transition-all text-uppercase">
+              <Link
+                to="/spaces"
+                className="text-decoration-none text-light fw-medium px-2 py-1 hover-primary transition-all text-uppercase"
+              >
                 Không gian
               </Link>
-              <Link to="/menu" className="text-decoration-none text-warning fw-bold px-2 py-1 hover-primary transition-all text-uppercase">
+              <Link
+                to="/order-table"
+                className="text-decoration-none text-light fw-medium px-2 py-1 hover-primary transition-all text-uppercase"
+              >
+                Đặt bàn
+              </Link>
+              <Link
+                to="/menu"
+                className="text-decoration-none text-warning fw-bold px-2 py-1 hover-primary transition-all text-uppercase"
+              >
                 Thực đơn
               </Link>
-              <Link to="/#booking" className="text-decoration-none text-light fw-medium px-2 py-1 hover-primary transition-all text-uppercase">
-                Hướng dẫn đặt bàn
-              </Link>
-              <div className="d-flex gap-2 ms-lg-3 mt-2 mt-lg-0">
-                <Link to="/" className="btn btn-outline-light px-4 rounded-0 fw-medium text-uppercase">
-                  Về trang chủ
-                </Link>
-              </div>
+              <AuthNavActions />
             </div>
           </Navbar.Collapse>
         </Container>

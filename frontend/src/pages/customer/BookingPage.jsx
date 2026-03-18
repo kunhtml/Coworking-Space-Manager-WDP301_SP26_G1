@@ -15,6 +15,7 @@ import {
 } from "react-bootstrap";
 import { Link, useNavigate } from "react-router";
 import { useAuth } from "../../hooks/useAuth";
+import AuthNavActions from "../../components/common/AuthNavActions";
 import {
   searchAvailableTables,
   createBookingApi,
@@ -55,7 +56,7 @@ const typeIcons = {
 const fmt = (n) => new Intl.NumberFormat("vi-VN").format(n);
 
 export default function Spaces() {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
   // ── Step 1 form state ──
@@ -140,11 +141,6 @@ export default function Spaces() {
     setBookingSuccess(null);
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
-
   return (
     <div className="d-flex flex-column min-vh-100 bg-dark text-light font-monospace">
       {/* Navbar */}
@@ -169,6 +165,12 @@ export default function Spaces() {
           <Navbar.Collapse id="basic-navbar-nav">
             <div className="ms-auto d-flex flex-column flex-lg-row gap-4 align-items-lg-center mt-3 mt-lg-0">
               <Link
+                to="/spaces"
+                className="text-decoration-none text-light fw-medium px-2 py-1 hover-primary transition-all text-uppercase"
+              >
+                Không gian
+              </Link>
+              <Link
                 to="/order-table"
                 className="text-decoration-none text-warning fw-bold px-2 py-1 text-uppercase"
               >
@@ -180,37 +182,7 @@ export default function Spaces() {
               >
                 Thực đơn
               </Link>
-              <div className="d-flex gap-2 ms-lg-3 mt-2 mt-lg-0">
-                {isAuthenticated && user ? (
-                  <>
-                    <Button
-                      as={Link}
-                      to="/dashboard"
-                      variant="outline-light"
-                      className="px-4 rounded-0 fw-medium text-uppercase"
-                    >
-                      Chào {user.fullName?.split(" ").pop()}
-                    </Button>
-                    <Button
-                      variant="outline-secondary"
-                      className="px-3 rounded-0 fw-medium text-uppercase text-light border-secondary"
-                      onClick={handleLogout}
-                      title="Đăng xuất"
-                    >
-                      <i className="bi bi-box-arrow-right"></i>
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    as={Link}
-                    to="/login"
-                    variant="outline-secondary"
-                    className="px-4 rounded-0 fw-medium text-uppercase text-light border-secondary"
-                  >
-                    Đăng nhập
-                  </Button>
-                )}
-              </div>
+              <AuthNavActions />
             </div>
           </Navbar.Collapse>
         </Container>

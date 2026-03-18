@@ -1,0 +1,26 @@
+[
+  {
+    "_id": { "$oid": "65e6e1000000000000000001" },
+    "name": "Khu A",
+    "description": "khu cho bàn 1 người",
+    "capacity": 1,
+    "createdAt": { "$date": "2026-01-01T08:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6e1000000000000000002" },
+    "name": "Khu B",
+    "description": "khu cho bàn 2 người",
+    "capacity": 2,
+    "createdAt": { "$date": "2026-01-01T08:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6e1000000000000000003" },
+    "name": "Khu C",
+    "description": "khu cho bàn 5 người",
+    "capacity": 5,
+    "createdAt": { "$date": "2026-01-01T08:00:00.000Z" },
+    "__v": 0
+  }
+]

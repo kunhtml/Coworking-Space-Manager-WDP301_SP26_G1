@@ -2,10 +2,34 @@ import { useEffect, useState } from "react";
 import { Container, Row, Col, Card, Button, Navbar, Form, Alert, Spinner, Badge } from "react-bootstrap";
 import { Link, useNavigate } from "react-router";
 import { useAuth } from "../../hooks/useAuth";
-import { getMeApi, updateProfileApi, changePasswordApi } from "../../services/api";
+import AuthNavActions from "../../components/common/AuthNavActions";
+import {
+  getMeApi,
+  updateProfileApi,
+  changePasswordApi,
+} from "../../services/api";
+
+export function meta() {
+  return [{ title: "Thông tin cá nhân | Nexus Coworking" }];
+}
+
+function formatDate(iso) {
+  if (!iso) return "--";
+  return new Date(iso).toLocaleDateString("vi-VN", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+const MEMBERSHIP_MAP = {
+  Active: { label: "Đang hoạt động", bg: "success" },
+  Inactive: { label: "Chưa kích hoạt", bg: "secondary" },
+  Suspended: { label: "Tạm khóa", bg: "danger" },
+};
 
 export default function Profile() {
-  const { user: authUser, logout, isAuthenticated } = useAuth();
+  const { user: authUser, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -59,25 +83,77 @@ export default function Profile() {
       setPwMsg({ type: "success", text: "Đã đổi mật khẩu thành công." });
       setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
     } catch (err) {
-      setPwMsg({ type: "danger", text: err.message });
-    } finally { setChangingPw(false); }
+      setPwMsg({
+        type: "danger",
+        text: err.message || "Đổi mật khẩu thất bại.",
+      });
+    } finally {
+      setChangingPw(false);
+    }
   };
 
-  const avatarLetter = (fullName || "?").charAt(0).toUpperCase();
+  const avatarLetter = (profile?.fullName || authUser?.fullName || "?")
+    .charAt(0)
+    .toUpperCase();
+  const membership = MEMBERSHIP_MAP[profile?.membershipStatus] || {
+    label: profile?.membershipStatus || "--",
+    bg: "secondary",
+  };
 
   return (
-    <div className="bg-dark text-light font-monospace min-vh-100 d-flex flex-column">
-      {/* Navbar đồng bộ với Home */}
-      <Navbar className="bg-dark border-bottom border-secondary py-3">
+    <div
+      className="d-flex flex-column min-vh-100 bg-dark text-light font-monospace"
+      style={{ overflowX: "hidden" }}
+    >
+      {/* Navbar */}
+      <Navbar
+        expand="lg"
+        className="bg-dark border-bottom border-secondary sticky-top py-3"
+        variant="dark"
+      >
         <Container>
-          <Navbar.Brand as={Link} to="/" className="fw-bold text-white d-flex align-items-center">
-            <i className="bi bi-cup-hot-fill me-2 fs-3"></i> NEXUS COFFEE
+          <Navbar.Brand
+            as={Link}
+            to="/"
+            className="fw-bold text-white fs-4 d-flex align-items-center"
+          >
+            <i className="bi bi-cup-hot-fill me-2 fs-3"></i>
+            NEXUS COFFEE
           </Navbar.Brand>
-          <div className="ms-auto">
-            <Button variant="outline-secondary" size="sm" onClick={() => logout()} className="rounded-0 text-uppercase">
-              Đăng xuất
-            </Button>
-          </div>
+          <Navbar.Toggle
+            aria-controls="basic-navbar-nav"
+            className="border-0 shadow-none"
+          />
+          <Navbar.Collapse id="basic-navbar-nav">
+            <div className="ms-auto d-flex flex-column flex-lg-row gap-4 align-items-lg-center mt-3 mt-lg-0">
+              <Link
+                to="/spaces"
+                className="text-decoration-none text-light fw-medium px-2 py-1 hover-primary transition-all text-uppercase"
+              >
+                Không gian
+              </Link>
+              <Link
+                to="/menu"
+                className="text-decoration-none text-light fw-medium px-2 py-1 hover-primary transition-all text-uppercase"
+              >
+                Thực đơn
+              </Link>
+              <Link
+                to="/profile"
+                className="text-decoration-none text-warning fw-bold px-2 py-1 text-uppercase"
+              >
+                Hồ sơ
+              </Link>
+              <AuthNavActions
+                displayName={
+                  profile?.fullName ||
+                  authUser?.fullName ||
+                  authUser?.email ||
+                  "Profile"
+                }
+              />
+            </div>
+          </Navbar.Collapse>
         </Container>
       </Navbar>
 
@@ -142,7 +218,6 @@ export default function Profile() {
                   </Card.Body>
                 </Card>
 
-                {/* Form Mật khẩu */}
                 {/* Form Mật khẩu */}
                 <Card className="bg-dark border-secondary rounded-0">
                   <Card.Header className="bg-secondary bg-opacity-10 border-bottom border-secondary text-uppercase fw-bold py-3">
