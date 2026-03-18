@@ -8,8 +8,9 @@ import {
   Row,
   Nav,
   Badge,
+  Alert,
 } from "react-bootstrap";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, EffectCards } from "swiper/modules";
 import "swiper/css";
@@ -181,8 +182,18 @@ const categories = [
 ];
 
 export default function Home() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState("all");
+
+  // Auto-redirect Admin/Staff về đúng dashboard
+  useEffect(() => {
+    if (user?.role === "Admin") {
+      navigate("/admin-dashboard", { replace: true });
+    } else if (user?.role === "Staff") {
+      navigate("/staff-dashboard", { replace: true });
+    }
+  }, [user, navigate]);
 
   const filteredMenuItems =
     selectedCategory === "all"
