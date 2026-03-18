@@ -10,7 +10,6 @@ export default [
 
   route("order-table", "pages/customer/BookingPage.jsx"),
   route("customer-dashboard", "pages/customer/OrderHistory.jsx"),
-  // route("dashboard", "pages/customer/OrderHistory.jsx"),
   route("profile", "pages/customer/Profile.jsx"),
 
 ];

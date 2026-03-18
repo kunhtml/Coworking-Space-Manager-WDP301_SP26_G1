@@ -9,6 +9,7 @@ import {
   Container,
   Form,
   Modal,
+  Nav,
   Navbar,
   Pagination,
   Row,
@@ -314,25 +315,46 @@ export default function Dashboard() {
   const completedCount = bookings.filter((b) => b.status === "Completed").length;
 
   return (
-    <div className="d-flex flex-column min-vh-100 font-monospace">
-      <Navbar expand="lg" className="bg-dark border-bottom border-secondary sticky-top py-3" variant="dark">
+    <div className="d-flex flex-column min-vh-100">
+      <Navbar bg="white" expand="lg" className="py-3 shadow-sm border-0">
         <Container>
-          <Navbar.Brand as={Link} to="/" className="fw-bold text-white fs-4 d-flex align-items-center">
-            <i className="bi bi-cup-hot-fill me-2 fs-3"></i>
-            NEXUS COFFEE
+          <Navbar.Brand
+            as={Link}
+            to="/"
+            className="fw-bold d-flex align-items-center"
+          >
+            <div
+              className="studyspace-logo me-2 d-flex align-items-center justify-content-center rounded-3"
+              style={{ background: "#6366f1", width: "40px", height: "40px" }}
+            >
+              <i className="bi bi-cup-hot-fill text-white"></i>
+            </div>
+            <span style={{ color: "#1f2937" }}>NEXUS COFFEE</span>
           </Navbar.Brand>
-          <Navbar.Toggle aria-controls="basic-navbar-nav" className="border-0 shadow-none" />
-          <Navbar.Collapse id="basic-navbar-nav">
-            <div className="ms-auto d-flex flex-column flex-lg-row gap-4 align-items-lg-center mt-3 mt-lg-0">
-              <Link to="/spaces" className="text-decoration-none text-light fw-medium px-2 py-1 hover-primary transition-all text-uppercase">
-                Không gian
-              </Link>
-              <Link to="/order-table" className="text-decoration-none text-light fw-medium px-2 py-1 hover-primary transition-all text-uppercase">
-                Đặt bàn
-              </Link>
-              <Link to="/menu" className="text-decoration-none text-light fw-medium px-2 py-1 hover-primary transition-all text-uppercase">
+
+          <Navbar.Toggle />
+          <Navbar.Collapse>
+            <Nav className="me-auto ms-5">
+              <Nav.Link as={Link} to="/" className="fw-medium text-muted px-3">
+                Trang chủ
+              </Nav.Link>
+              <Nav.Link
+                as={Link}
+                to="/order-table"
+                className="fw-medium text-muted px-3"
+              >
+                Đặt chỗ
+              </Nav.Link>
+              <Nav.Link
+                as={Link}
+                to="/menu"
+                className="fw-medium text-muted px-3"
+              >
                 Thực đơn
-              </Link>
+              </Nav.Link>
+            </Nav>
+
+            <div className="d-flex gap-3 align-items-center">
               <AuthNavActions />
             </div>
           </Navbar.Collapse>
