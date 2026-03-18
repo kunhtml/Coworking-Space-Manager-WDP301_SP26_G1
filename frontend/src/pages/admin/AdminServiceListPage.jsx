@@ -129,6 +129,20 @@ export default function AdminServiceListPage() {
     setTimeout(() => setSuccess(""), 4000);
   };
 
+  // ─── Filtered items ───────────────────────────────────────
+  const filteredItems = items.filter((item) => {
+    const matchSearch =
+      !searchItem ||
+      item.name?.toLowerCase().includes(searchItem.toLowerCase()) ||
+      item.description?.toLowerCase().includes(searchItem.toLowerCase());
+    const matchCat =
+      !filterCat ||
+      (item.categoryId && item.categoryId._id === filterCat);
+    const matchStatus =
+      !filterStatus || item.availabilityStatus === filterStatus;
+    return matchSearch && matchCat && matchStatus;
+  });
+
   return (
     <AdminLayout>
       <div className="mb-5 pb-3">
