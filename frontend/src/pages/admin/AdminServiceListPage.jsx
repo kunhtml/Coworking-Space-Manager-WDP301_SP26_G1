@@ -17,6 +17,39 @@ import {
 import { apiClient as api } from "../../services/api";
 import AdminLayout from "../../components/admin/AdminLayout";
 
+export function meta() {
+  return [
+    { title: "Quản lý Menu | Nexus Admin" },
+    { name: "description", content: "Quản lý menu và danh mục Nexus Coworking" },
+  ];
+}
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+const STATUS_OPTIONS = [
+  { value: "Available", label: "Còn hàng", bg: "success" },
+  { value: "Unavailable", label: "Hết hàng", bg: "danger" },
+  { value: "OutOfStock", label: "Tạm hết", bg: "warning" },
+];
+
+const STATUS_MAP = Object.fromEntries(
+  STATUS_OPTIONS.map((s) => [s.value, s])
+);
+
+const EMPTY_ITEM_FORM = {
+  name: "",
+  categoryId: "",
+  description: "",
+  price: "",
+  stockQuantity: "",
+  availabilityStatus: "Available",
+};
+
+const EMPTY_CAT_FORM = {
+  name: "",
+  description: "",
+  isActive: true,
+};
+
 export default function AdminServiceListPage() {
   return (
     <AdminLayout>
