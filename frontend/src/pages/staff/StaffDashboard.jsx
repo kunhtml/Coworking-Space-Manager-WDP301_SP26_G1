@@ -138,7 +138,9 @@ export default function StaffDashboard() {
                   <i className={`bi ${card.icon}`}></i>
                 </div>
                 <h3 className="fw-bold mb-1 mt-3">{card.value}</h3>
-                <div className="text-secondary fw-semibold mb-2">{card.label}</div>
+                <div className="text-secondary fw-semibold mb-2">
+                  {card.label}
+                </div>
                 <small className={`${card.trendClass} fw-semibold`}>
                   {card.trend}
                 </small>
@@ -156,7 +158,11 @@ export default function StaffDashboard() {
                 <i className="bi bi-list-ul me-2 text-primary"></i>
                 Hoạt động gần đây
               </h5>
-              <Button variant="outline-secondary" size="sm" className="rounded-3 fw-semibold">
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                className="rounded-3 fw-semibold"
+              >
                 Xem tất cả
               </Button>
             </Card.Header>
@@ -179,7 +185,9 @@ export default function StaffDashboard() {
                       <td className="fw-semibold">{item.seat}</td>
                       <td className="fw-semibold">{item.type}</td>
                       <td>
-                        <Badge className={`rounded-pill border-0 px-3 py-2 ${item.statusClass}`}>
+                        <Badge
+                          className={`rounded-pill border-0 px-3 py-2 ${item.statusClass}`}
+                        >
                           {item.status}
                         </Badge>
                       </td>
@@ -210,7 +218,9 @@ export default function StaffDashboard() {
                   </div>
                   <div>
                     <div className="fw-semibold mb-1">{item.title}</div>
-                    <small className="text-secondary fw-semibold">{item.time}</small>
+                    <small className="text-secondary fw-semibold">
+                      {item.time}
+                    </small>
                   </div>
                 </div>
               ))}

@@ -113,7 +113,9 @@ export default function StaffOrderManagementPage() {
                   <td className="fw-semibold">{order.service}</td>
                   <td className="fw-bold">{order.total}</td>
                   <td>
-                    <Badge className={`rounded-pill border-0 px-3 py-2 ${order.statusClass}`}>
+                    <Badge
+                      className={`rounded-pill border-0 px-3 py-2 ${order.statusClass}`}
+                    >
                       {order.status}
                     </Badge>
                   </td>
@@ -123,7 +125,10 @@ export default function StaffOrderManagementPage() {
                       <button className="staff-icon-btn" type="button">
                         <i className="bi bi-pencil-square"></i>
                       </button>
-                      <button className="staff-icon-btn staff-icon-btn-success" type="button">
+                      <button
+                        className="staff-icon-btn staff-icon-btn-success"
+                        type="button"
+                      >
                         <i className="bi bi-eye"></i>
                       </button>
                     </div>

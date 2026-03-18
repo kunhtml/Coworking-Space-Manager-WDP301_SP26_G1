@@ -78,16 +78,22 @@ export default function StaffCheckinPage() {
       <Row className="g-3">
         {bookings.map((booking) => (
           <Col lg={4} key={`${booking.code}-${booking.guest}`}>
-            <Card className={`border-0 shadow-sm staff-booking-card ${booking.accent}`}>
+            <Card
+              className={`border-0 shadow-sm staff-booking-card ${booking.accent}`}
+            >
               <Card.Body>
                 <div className="d-flex justify-content-between align-items-start mb-2">
                   <h5 className="fw-bold mb-0">
                     {booking.code} · {booking.guest}
                   </h5>
-                  <small className="text-secondary fw-semibold">{booking.time}</small>
+                  <small className="text-secondary fw-semibold">
+                    {booking.time}
+                  </small>
                 </div>
 
-                <Badge className={`rounded-pill border-0 px-3 py-2 mb-3 ${booking.statusClass}`}>
+                <Badge
+                  className={`rounded-pill border-0 px-3 py-2 mb-3 ${booking.statusClass}`}
+                >
                   {booking.status}
                 </Badge>
 
@@ -111,8 +117,13 @@ export default function StaffCheckinPage() {
                 </div>
 
                 <div className="d-flex gap-2">
-                  <Button className="staff-primary-btn flex-grow-1">{booking.actions[0]}</Button>
-                  <Button variant="outline-secondary" className="flex-grow-1 fw-semibold rounded-3">
+                  <Button className="staff-primary-btn flex-grow-1">
+                    {booking.actions[0]}
+                  </Button>
+                  <Button
+                    variant="outline-secondary"
+                    className="flex-grow-1 fw-semibold rounded-3"
+                  >
                     {booking.actions[1]}
                   </Button>
                 </div>

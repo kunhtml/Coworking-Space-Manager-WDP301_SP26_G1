@@ -73,7 +73,15 @@ export default function Login() {
       const data = await loginApi(identifier, password);
       saveAuth(data.token, data.user);
       setSuccess(`Chào mừng ${data.user.fullName}! Đang chuyển hướng...`);
-      setTimeout(() => navigate("/"), 1500);
+      const redirectPath =
+        data.user?.role === "Admin"
+          ? "/admin-dashboard"
+          : data.user?.role === "Staff"
+            ? "/staff-dashboard"
+            : data.user?.role === "Customer"
+              ? "/customer-dashboard"
+              : "/";
+      setTimeout(() => navigate(redirectPath), 1500);
     } catch (err) {
       setError(err.message || "Đăng nhập thất bại, vui lòng thử lại.");
     } finally {

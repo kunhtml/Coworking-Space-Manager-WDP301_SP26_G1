@@ -27,6 +27,10 @@ function formatDate(iso) {
 
 export default function AdminProfile() {
   const { user: authUser, isAuthenticated } = useAuth();
+  const passwordPath =
+    authUser?.role === "Admin"
+      ? "/admin-dashboard/password"
+      : "/staff-dashboard/password";
 
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -379,7 +383,7 @@ export default function AdminProfile() {
                         variant="outline-warning"
                         size="sm"
                         className="w-100"
-                        href="/dashboard/password"
+                        href={passwordPath}
                       >
                         <i className="bi bi-key me-2"></i>
                         Đổi mật khẩu

@@ -344,20 +344,36 @@ body {
   display: inline-block;
 }
 
-.staff-dot-green { background: #10b981; }
-.staff-dot-red { background: #ef4444; }
-.staff-dot-yellow { background: #f59e0b; }
-.staff-dot-blue { background: #3b82f6; }
+.staff-dot-green {
+  background: #10b981;
+}
+.staff-dot-red {
+  background: #ef4444;
+}
+.staff-dot-yellow {
+  background: #f59e0b;
+}
+.staff-dot-blue {
+  background: #3b82f6;
+}
 
 .staff-seat-card {
   border-radius: 14px;
   min-height: 205px;
 }
 
-.staff-seat-green { border-color: #10b981 !important; }
-.staff-seat-red { border-color: #ef4444 !important; }
-.staff-seat-yellow { border-color: #f59e0b !important; }
-.staff-seat-blue { border-color: #3b82f6 !important; }
+.staff-seat-green {
+  border-color: #10b981 !important;
+}
+.staff-seat-red {
+  border-color: #ef4444 !important;
+}
+.staff-seat-yellow {
+  border-color: #f59e0b !important;
+}
+.staff-seat-blue {
+  border-color: #3b82f6 !important;
+}
 
 .staff-seat-icon {
   width: 46px;
@@ -496,13 +512,14 @@ body {
 }
 
 .hero-section::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")
+    repeat;
   pointer-events: none;
 }
 
@@ -516,7 +533,8 @@ body {
   z-index: 2;
 }
 
-.workspace-icon, .menu-icon {
+.workspace-icon,
+.menu-icon {
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
 }
 
@@ -535,13 +553,18 @@ body {
 }
 
 .card-header::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 70%
+  );
   transform: translateX(-100%);
   transition: transform 0.6s;
 }
@@ -566,21 +589,51 @@ body {
   transform: rotate(12deg);
 }
 
-.workspace-options .card:nth-child(1) .card-header { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0.2) 100%); }
-.workspace-options .card:nth-child(2) .card-header { background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(251, 191, 36, 0.2) 100%); }
-.workspace-options .card:nth-child(3) .card-header { background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.2) 100%); }
-.workspace-options .card:nth-child(4) .card-header { background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.2) 100%); }
-.workspace-options .card:nth-child(5) .card-header { background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(139, 92, 246, 0.2) 100%); }
+.workspace-options .card:nth-child(1) .card-header {
+  background: linear-gradient(
+    135deg,
+    rgba(99, 102, 241, 0.1) 0%,
+    rgba(99, 102, 241, 0.2) 100%
+  );
+}
+.workspace-options .card:nth-child(2) .card-header {
+  background: linear-gradient(
+    135deg,
+    rgba(251, 191, 36, 0.1) 0%,
+    rgba(251, 191, 36, 0.2) 100%
+  );
+}
+.workspace-options .card:nth-child(3) .card-header {
+  background: linear-gradient(
+    135deg,
+    rgba(34, 197, 94, 0.1) 0%,
+    rgba(34, 197, 94, 0.2) 100%
+  );
+}
+.workspace-options .card:nth-child(4) .card-header {
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.1) 0%,
+    rgba(59, 130, 246, 0.2) 100%
+  );
+}
+.workspace-options .card:nth-child(5) .card-header {
+  background: linear-gradient(
+    135deg,
+    rgba(139, 92, 246, 0.1) 0%,
+    rgba(139, 92, 246, 0.2) 100%
+  );
+}
 
 @media (max-width: 768px) {
   .hero-section {
     text-align: center;
   }
-  
+
   .hero-card-preview {
     margin-top: 3rem;
   }
-  
+
   .display-4 {
     font-size: 2.5rem;
   }

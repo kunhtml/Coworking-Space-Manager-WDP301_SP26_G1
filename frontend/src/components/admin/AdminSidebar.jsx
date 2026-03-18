@@ -3,19 +3,33 @@ import { Link, useLocation } from "react-router";
 
 export default function AdminSidebar({ user, onLogout }) {
   const location = useLocation();
+  const dashboardPath =
+    user?.role === "Admin" ? "/admin-dashboard" : "/staff-dashboard";
+  const dashboardPrefix =
+    user?.role === "Admin" ? "/admin-dashboard" : "/staff-dashboard";
 
   const isActive = (path) => {
-    if (path === "/dashboard") {
-      return location.pathname === "/dashboard" || location.pathname === "/admin";
+    if (path === "/staff-dashboard" || path === "/admin-dashboard") {
+      return [
+        "/dashboard",
+        "/admin",
+        "/staff-dashboard",
+        "/admin-dashboard",
+      ].includes(location.pathname);
     }
 
     if (location.pathname.startsWith(path)) {
       return true;
     }
 
-    if (path.startsWith("/dashboard/")) {
-      const adminAlias = path.replace("/dashboard/", "/admin/");
-      return location.pathname.startsWith(adminAlias);
+    if (path.startsWith("/staff-dashboard/")) {
+      const adminPath = path.replace("/staff-dashboard/", "/admin-dashboard/");
+      return location.pathname.startsWith(adminPath);
+    }
+
+    if (path.startsWith("/admin-dashboard/")) {
+      const staffPath = path.replace("/admin-dashboard/", "/staff-dashboard/");
+      return location.pathname.startsWith(staffPath);
     }
 
     return false;
@@ -24,13 +38,13 @@ export default function AdminSidebar({ user, onLogout }) {
   const menuSections = [
     {
       title: "TỔNG QUAN",
-      items: [{ path: "/dashboard", icon: "bi-grid", label: "Dashboard" }],
+      items: [{ path: dashboardPath, icon: "bi-grid", label: "Dashboard" }],
     },
     {
       title: "CHECK-IN / CHECK-OUT",
       items: [
         {
-          path: "/dashboard/checkin",
+          path: `${dashboardPrefix}/checkin`,
           icon: "bi-clipboard-check",
           label: "Check-in đơn",
           badge: 3,
@@ -41,7 +55,7 @@ export default function AdminSidebar({ user, onLogout }) {
       title: "QUẢN LÝ KHÔNG GIAN",
       items: [
         {
-          path: "/dashboard/tables",
+          path: `${dashboardPrefix}/tables`,
           icon: "bi-map",
           label: "Sơ đồ chỗ ngồi",
         },
@@ -51,18 +65,18 @@ export default function AdminSidebar({ user, onLogout }) {
       title: "ĐƠN HÀNG & DỊCH VỤ",
       items: [
         {
-          path: "/dashboard/orders",
+          path: `${dashboardPrefix}/orders`,
           icon: "bi-receipt",
           label: "Quản lý đơn hàng",
           badge: 5,
         },
         {
-          path: "/dashboard/create-service",
+          path: `${dashboardPrefix}/create-service`,
           icon: "bi-plus-circle",
           label: "Tạo đơn dịch vụ",
         },
         {
-          path: "/dashboard/services",
+          path: `${dashboardPrefix}/services`,
           icon: "bi-book",
           label: "Danh sách dịch vụ",
         },
@@ -72,12 +86,12 @@ export default function AdminSidebar({ user, onLogout }) {
       title: "TÀI KHOẢN",
       items: [
         {
-          path: "/dashboard/profile",
+          path: `${dashboardPrefix}/profile`,
           icon: "bi-person-circle",
           label: "Hồ sơ cá nhân",
         },
         {
-          path: "/dashboard/password",
+          path: `${dashboardPrefix}/password`,
           icon: "bi-key-fill",
           label: "Đổi mật khẩu",
         },

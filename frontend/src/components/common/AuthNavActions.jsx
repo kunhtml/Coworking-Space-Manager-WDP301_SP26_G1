@@ -9,8 +9,9 @@ const DEFAULT_ROLE_LABELS = {
 };
 
 function getDashboardPath(role) {
-  if (role === "Admin") return "/admin";
-  if (role === "Staff" || role === "Customer") return "/dashboard";
+  if (role === "Admin") return "/admin-dashboard";
+  if (role === "Staff") return "/staff-dashboard";
+  if (role === "Customer") return "/customer-dashboard";
   return null;
 }
 
@@ -59,7 +60,10 @@ export default function AuthNavActions({
             </span>
             <span className="d-flex flex-column align-items-start lh-sm me-1">
               <span className="small text-secondary">Tài khoản</span>
-              <span className="fw-semibold text-truncate" style={{ maxWidth: "140px" }}>
+              <span
+                className="fw-semibold text-truncate"
+                style={{ maxWidth: "140px" }}
+              >
                 {displayName || user.fullName}
               </span>
             </span>

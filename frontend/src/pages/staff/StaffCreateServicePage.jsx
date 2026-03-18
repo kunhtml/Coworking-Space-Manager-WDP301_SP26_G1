@@ -1,18 +1,66 @@
 import { Badge, Card, Col, Form, Row } from "react-bootstrap";
 import AdminLayout from "../../components/admin/AdminLayout";
 
-const categories = ["Tất cả", "☕ Đồ uống", "🥐 Đồ ăn nhẹ", "🖨 In ấn", "🔌 Thiết bị", "📦 Gói giờ"];
+const categories = [
+  "Tất cả",
+  "☕ Đồ uống",
+  "🥐 Đồ ăn nhẹ",
+  "🖨 In ấn",
+  "🔌 Thiết bị",
+  "📦 Gói giờ",
+];
 
 const services = [
-  { name: "Cà phê sữa đá", desc: "Phin truyền thống", price: "30,000đ", emoji: "☕" },
-  { name: "Trà đào cam sả", desc: "Thanh mát, giải khát", price: "35,000đ", emoji: "🍑" },
+  {
+    name: "Cà phê sữa đá",
+    desc: "Phin truyền thống",
+    price: "30,000đ",
+    emoji: "☕",
+  },
+  {
+    name: "Trà đào cam sả",
+    desc: "Thanh mát, giải khát",
+    price: "35,000đ",
+    emoji: "🍑",
+  },
   { name: "Latte", desc: "Espresso + sữa tươi", price: "40,000đ", emoji: "🥛" },
-  { name: "Americano", desc: "Espresso pha nước", price: "35,000đ", emoji: "☕" },
-  { name: "Bánh mì croissant", desc: "Croissant bơ Pháp", price: "25,000đ", emoji: "🥐" },
-  { name: "In tài liệu (10 trang)", desc: "Đen trắng / Màu", price: "10,000đ", emoji: "🖨" },
-  { name: "Thuê sạc laptop", desc: "Type-C / Magsafe", price: "20,000đ", emoji: "🔌" },
-  { name: "Thuê máy chiếu", desc: "Full HD, HDMI", price: "50,000đ/h", emoji: "🎥" },
-  { name: "Thuê tai nghe chống ồn", desc: "Chống ồn cao cấp", price: "15,000đ", emoji: "🎧", outOfStock: true },
+  {
+    name: "Americano",
+    desc: "Espresso pha nước",
+    price: "35,000đ",
+    emoji: "☕",
+  },
+  {
+    name: "Bánh mì croissant",
+    desc: "Croissant bơ Pháp",
+    price: "25,000đ",
+    emoji: "🥐",
+  },
+  {
+    name: "In tài liệu (10 trang)",
+    desc: "Đen trắng / Màu",
+    price: "10,000đ",
+    emoji: "🖨",
+  },
+  {
+    name: "Thuê sạc laptop",
+    desc: "Type-C / Magsafe",
+    price: "20,000đ",
+    emoji: "🔌",
+  },
+  {
+    name: "Thuê máy chiếu",
+    desc: "Full HD, HDMI",
+    price: "50,000đ/h",
+    emoji: "🎥",
+  },
+  {
+    name: "Thuê tai nghe chống ồn",
+    desc: "Chống ồn cao cấp",
+    price: "15,000đ",
+    emoji: "🎧",
+    outOfStock: true,
+  },
 ];
 
 export default function StaffCreateServicePage() {
@@ -53,12 +101,18 @@ export default function StaffCreateServicePage() {
                   <Card.Body>
                     <div className="d-flex justify-content-between align-items-start mb-1">
                       <h6 className="fw-bold mb-0">{service.name}</h6>
-                      <Badge className="staff-price-badge">{service.price}</Badge>
+                      <Badge className="staff-price-badge">
+                        {service.price}
+                      </Badge>
                     </div>
-                    <small className="text-secondary fw-semibold">{service.desc}</small>
+                    <small className="text-secondary fw-semibold">
+                      {service.desc}
+                    </small>
                     {service.outOfStock && (
                       <div className="mt-2">
-                        <Badge className="bg-danger-subtle text-danger border-0">Hết hàng</Badge>
+                        <Badge className="bg-danger-subtle text-danger border-0">
+                          Hết hàng
+                        </Badge>
                       </div>
                     )}
                   </Card.Body>
