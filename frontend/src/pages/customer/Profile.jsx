@@ -178,7 +178,7 @@ export default function Profile() {
                 Thực đơn
               </Link>
               <Link
-                to="/profile"
+                to="/customer-dashboard/profile"
                 className="text-decoration-none text-warning fw-bold px-2 py-1 text-uppercase"
               >
                 Hồ sơ
@@ -208,7 +208,7 @@ export default function Profile() {
             <Col xs="auto">
               <Button
                 as={Link}
-                to="/dashboard"
+                to="/customer-dashboard/orders"
                 variant="outline-secondary"
                 className="rounded-pill px-4 fw-medium"
               >

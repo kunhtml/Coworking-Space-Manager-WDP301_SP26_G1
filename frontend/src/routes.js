@@ -11,9 +11,12 @@ export default [
 
   // Customer pages
   route("order-table", "pages/customer/BookingPageNew.jsx"),
-  route("customer-dashboard", "pages/customer/OrderHistory.jsx"),
+  route("customer-dashboard", "pages/customer/routes/CustomerDashboardRedirect.jsx"),
+  route("customer-dashboard/orders", "pages/customer/routes/CustomerOrdersPage.jsx"),
+  route("customer-dashboard/profile", "pages/customer/routes/CustomerProfilePage.jsx"),
+  route("customer-dashboard/password", "pages/customer/CustomerPassword.jsx"),
   route("dashboard", "pages/shared/DashboardEntry.jsx"),
-  route("profile", "pages/customer/Profile.jsx"),
+  route("profile", "pages/customer/routes/LegacyCustomerProfilePage.jsx"),
 
   // Staff pages
   route("staff-dashboard", "pages/staff/StaffDashboard.jsx"),

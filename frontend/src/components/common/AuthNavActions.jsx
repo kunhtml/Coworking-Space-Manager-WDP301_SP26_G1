@@ -35,6 +35,7 @@ export default function AuthNavActions({
     color: "#aaa",
   };
   const dashboardPath = getDashboardPath(role);
+  const isCustomer = role === "Customer";
 
   return (
     <div className="d-flex gap-2 ms-lg-3 mt-2 mt-lg-0">
@@ -69,11 +70,11 @@ export default function AuthNavActions({
             </span>
           </Dropdown.Toggle>
           <Dropdown.Menu
-            className="bg-dark border-secondary"
+            className={isCustomer ? "bg-white border-0 shadow-sm" : "bg-dark border-secondary"}
             style={{ minWidth: "180px" }}
           >
-            <div className="px-3 py-2 border-bottom border-secondary-subtle">
-              <div className="text-light fw-semibold small text-truncate">
+            <div className={`px-3 py-2 border-bottom ${isCustomer ? "border-light" : "border-secondary-subtle"}`}>
+              <div className={`${isCustomer ? "text-dark" : "text-light"} fw-semibold small text-truncate`}>
                 {displayName || user.fullName}
               </div>
               <Badge
@@ -88,17 +89,30 @@ export default function AuthNavActions({
               </Badge>
             </div>
             {dashboardPath && (
-              <Dropdown.Item
-                as={Link}
-                to={dashboardPath}
-                className="text-light"
-              >
-                <i className="bi bi-speedometer2 me-2"></i>
-                {role === "Admin" ? "Quản trị" : "Dashboard"}
-              </Dropdown.Item>
+              isCustomer ? (
+                <>
+                  <Dropdown.Item as={Link} to="/customer-dashboard/profile" className="text-secondary py-2">
+                    <i className="bi bi-person-circle me-2"></i>
+                    Hồ sơ cá nhân
+                  </Dropdown.Item>
+                  <Dropdown.Item as={Link} to="/customer-dashboard/orders" className="text-secondary py-2">
+                    <i className="bi bi-card-list me-2"></i>
+                    Đơn hàng của tôi
+                  </Dropdown.Item>
+                  <Dropdown.Item as={Link} to="/customer-dashboard/password" className="text-secondary py-2">
+                    <i className="bi bi-key-fill me-2"></i>
+                    Đổi mật khẩu
+                  </Dropdown.Item>
+                </>
+              ) : (
+                <Dropdown.Item as={Link} to={dashboardPath} className="text-light">
+                  <i className="bi bi-speedometer2 me-2"></i>
+                  {role === "Admin" ? "Quản trị" : "Dashboard"}
+                </Dropdown.Item>
+              )
             )}
-            <Dropdown.Divider className="border-secondary" />
-            <Dropdown.Item onClick={handleLogout} className="text-danger">
+            <Dropdown.Divider className={isCustomer ? "border-light" : "border-secondary"} />
+            <Dropdown.Item onClick={handleLogout} className="text-danger py-2">
               <i className="bi bi-box-arrow-right me-2"></i>Đăng xuất
             </Dropdown.Item>
           </Dropdown.Menu>
