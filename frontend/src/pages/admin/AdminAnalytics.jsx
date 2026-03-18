@@ -13,21 +13,109 @@ export function meta() {
 }
 
 export default function AdminAnalytics() {
-  const [analytics, setAnalytics] = useState({
-    occupancyRate: 75,
-    peakHours: "14:00 - 16:00",
-    avgSessionTime: "2.5 giờ",
-    popularTables: ["A1", "B3", "C2"],
-    weeklyUsage: [
-      { day: "T2", usage: 65 },
-      { day: "T3", usage: 78 },
-      { day: "T4", usage: 82 },
-      { day: "T5", usage: 90 },
-      { day: "T6", usage: 95 },
-      { day: "T7", usage: 70 },
-      { day: "CN", usage: 45 },
-    ],
-  });
+  const [filterTab, setFilterTab] = useState("today");
+  
+  const metrics = {
+    occupancy: 72,
+    avgTime: "2h 45p",
+    peakHours: "14:00-17:00",
+    noShowRate: 3.2,
+  };
+
+  const hourlyCapacity = [
+    { time: "7h", usage: 15 },
+    { time: "8h", usage: 30 },
+    { time: "9h", usage: 55 },
+    { time: "10h", usage: 65 },
+    { time: "11h", usage: 50 },
+    { time: "12h", usage: 40 },
+    { time: "13h", usage: 60 },
+    { time: "14h", usage: 85 },
+    { time: "15h", usage: 88 },
+    { time: "16h", usage: 70 },
+    { time: "17h", usage: 48 },
+    { time: "18h", usage: 45 },
+  ];
+
+  // Heatmap data - space usage by day and type
+  const heatmapData = [
+    { type: "Sáng", days: [65, 72, 78, 85, 82, 75, 45] },
+    { type: "Trưa", days: [48, 55, 62, 68, 70, 58, 32] },
+    { type: "Chiều", days: [72, 80, 85, 88, 92, 80, 50] },
+    { type: "Tối", days: [55, 60, 65, 70, 72, 65, 40] },
+  ];
+
+  const topSpaces = [
+    {
+      rank: 1,
+      space: "A3",
+      type: "Ghế cá nhân",
+      sessions: 45,
+      totalHours: "112h",
+      revenue: "2,800,000đ",
+      usageRate: 92,
+    },
+    {
+      rank: 2,
+      space: "B1",
+      type: "Bàn nhóm",
+      sessions: 38,
+      totalHours: "95h",
+      revenue: "3,800,000đ",
+      usageRate: 85,
+    },
+    {
+      rank: 3,
+      space: "A1",
+      type: "Ghế cá nhân",
+      sessions: 42,
+      totalHours: "98h",
+      revenue: "2,450,000đ",
+      usageRate: 82,
+    },
+    {
+      rank: 4,
+      space: "C1",
+      type: "Phòng họp",
+      sessions: 22,
+      totalHours: "66h",
+      revenue: "7,920,000đ",
+      usageRate: 75,
+    },
+    {
+      rank: 5,
+      space: "VIP-1",
+      type: "Phòng VIP",
+      sessions: 12,
+      totalHours: "48h",
+      revenue: "9,600,000đ",
+      usageRate: 60,
+    },
+    {
+      rank: 6,
+      space: "VIP-2",
+      type: "Phòng VIP",
+      sessions: 8,
+      totalHours: "32h",
+      revenue: "6,400,000đ",
+      usageRate: 40,
+    },
+  ];
+
+  const getColorForUsage = (rate) => {
+    if (rate >= 80) return "#8b5cf6"; // purple
+    if (rate >= 60) return "#3b82f6"; // blue
+    if (rate >= 40) return "#f59e0b"; // orange
+    return "#ef4444"; // red
+  };
+
+  const getHeatmapColor = (value) => {
+    if (value >= 80) return "#4f46e5";
+    if (value >= 65) return "#6366f1";
+    if (value >= 50) return "#818cf8";
+    if (value >= 35) return "#c7d2fe";
+    return "#f3f4f6";
+  };
 
   return (
     <AdminLayout>
@@ -38,212 +126,178 @@ export default function AdminAnalytics() {
             className="fw-bold mb-2"
             style={{ fontSize: "28px", color: "#1e293b" }}
           >
-            <i className="bi bi-graph-up me-2" style={{ color: "#3b82f6" }}></i>
             Công suất & Sử dụng
           </h1>
           <p 
             className="mb-0"
             style={{ fontSize: "15px", color: "#64748b" }}
           >
-            Phân tích hiệu suất và mức độ sử dụng không gian
+            Tỷ lệ lấp đầy, khung giờ cao điểm, xếp hạng không gian
           </p>
         </div>
 
-        {/* Key Metrics */}
-        <Row className="g-4 mb-5">
-          <Col lg={6} md={12}>
+        {/* Filter Tabs */}
+        <div className="mb-5 d-flex gap-3" style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "0" }}>
+          {[
+            { value: "today", label: "Hôm nay", text: "Today" },
+            { value: "week", label: "Tuần này", text: "This Week" },
+            { value: "month", label: "Tháng này", text: "This Month" },
+          ].map((tab) => (
+            <button
+              key={tab.value}
+              onClick={() => setFilterTab(tab.value)}
+              style={{
+                padding: "12px 20px",
+                border: "none",
+                backgroundColor: "transparent",
+                borderBottom: filterTab === tab.value ? "3px solid #8b5cf6" : "none",
+                color: filterTab === tab.value ? "#8b5cf6" : "#94a3b8",
+                fontWeight: filterTab === tab.value ? "600" : "500",
+                fontSize: "14px",
+                cursor: "pointer",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                if (filterTab !== tab.value) {
+                  e.target.style.color = "#64748b";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (filterTab !== tab.value) {
+                  e.target.style.color = "#94a3b8";
+                }
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Metric Cards */}
+        <Row className="g-3 mb-5">
+          <Col lg={3} md={6}>
             <Card 
-              className="border-0 h-100"
+              className="border-0"
               style={{
                 backgroundColor: "white",
                 boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08)",
                 borderRadius: "12px",
-                overflow: "hidden",
               }}
             >
               <Card.Body className="p-4">
-                <div className="d-flex align-items-center justify-content-between mb-3">
+                <div className="d-flex align-items-start justify-content-between">
                   <div>
-                    <div style={{ fontSize: "13px", color: "#64748b", fontWeight: "600" }}>
-                      Tỷ lệ sử dụng
+                    <div style={{ fontSize: "12px", color: "#94a3b8", fontWeight: "600", marginBottom: "8px" }}>
+                      Tỷ lệ lấp đầy trung bình
                     </div>
-                    <div style={{ fontSize: "36px", fontWeight: "700", color: "#3b82f6", marginTop: "8px" }}>
-                      {analytics.occupancyRate}%
+                    <div style={{ fontSize: "32px", fontWeight: "700", color: "#8b5cf6", marginBottom: "6px" }}>
+                      {metrics.occupancy}%
                     </div>
-                  </div>
-                  <div 
-                    style={{
-                      width: "80px",
-                      height: "80px",
-                      borderRadius: "50%",
-                      background: `conic-gradient(#3b82f6 ${analytics.occupancyRate * 3.6}deg, #e2e8f0 0deg)`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "68px",
-                        height: "68px",
-                        borderRadius: "50%",
-                        backgroundColor: "white",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "#3b82f6",
-                        fontWeight: "700",
-                        fontSize: "18px",
-                      }}
-                    >
-                      {analytics.occupancyRate}%
+                    <div style={{ fontSize: "12px", color: "#22c55e", fontWeight: "600" }}>
+                      <i className="bi bi-arrow-up me-1"></i>
+                      +15% vs tuần trước
                     </div>
                   </div>
-                </div>
-                <div style={{ fontSize: "13px", color: "#22c55e" }}>
-                  <i className="bi bi-arrow-up me-1"></i>
-                  +12% so với ngày hôm qua
+                  <div style={{ fontSize: "28px" }}>📊</div>
                 </div>
               </Card.Body>
             </Card>
           </Col>
 
-          <Col lg={6} md={12}>
-            <Row className="g-3">
-              <Col md={6}>
-                <Card 
-                  className="border-0 h-100"
-                  style={{
-                    backgroundColor: "white",
-                    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08)",
-                    borderRadius: "12px",
-                  }}
-                >
-                  <Card.Body className="p-4">
-                    <div style={{ fontSize: "13px", color: "#64748b", fontWeight: "600", marginBottom: "12px" }}>
-                      Giờ cao điểm
+          <Col lg={3} md={6}>
+            <Card 
+              className="border-0"
+              style={{
+                backgroundColor: "white",
+                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08)",
+                borderRadius: "12px",
+              }}
+            >
+              <Card.Body className="p-4">
+                <div className="d-flex align-items-start justify-content-between">
+                  <div>
+                    <div style={{ fontSize: "12px", color: "#94a3b8", fontWeight: "600", marginBottom: "8px" }}>
+                      Thời gian nghỉ trung bình
                     </div>
-                    <div style={{ fontSize: "24px", fontWeight: "700", color: "#8b5cf6", marginBottom: "8px" }}>
-                      {analytics.peakHours}
+                    <div style={{ fontSize: "32px", fontWeight: "700", color: "#10b981", marginBottom: "6px" }}>
+                      {metrics.avgTime}
                     </div>
-                    <div style={{ fontSize: "12px", color: "#94a3b8" }}>
-                      <i className="bi bi-clock me-1"></i>
-                      Lưu lượng cao nhất
+                    <div style={{ fontSize: "12px", color: "#22c55e", fontWeight: "600" }}>
+                      <i className="bi bi-arrow-up me-1"></i>
+                      +16 phút
                     </div>
-                  </Card.Body>
-                </Card>
-              </Col>
+                  </div>
+                  <div style={{ fontSize: "28px" }}>⏱️</div>
+                </div>
+              </Card.Body>
+            </Card>
+          </Col>
 
-              <Col md={6}>
-                <Card 
-                  className="border-0 h-100"
-                  style={{
-                    backgroundColor: "white",
-                    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08)",
-                    borderRadius: "12px",
-                  }}
-                >
-                  <Card.Body className="p-4">
-                    <div style={{ fontSize: "13px", color: "#64748b", fontWeight: "600", marginBottom: "12px" }}>
-                      Thời gian TB
+          <Col lg={3} md={6}>
+            <Card 
+              className="border-0"
+              style={{
+                backgroundColor: "white",
+                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08)",
+                borderRadius: "12px",
+              }}
+            >
+              <Card.Body className="p-4">
+                <div className="d-flex align-items-start justify-content-between">
+                  <div>
+                    <div style={{ fontSize: "12px", color: "#94a3b8", fontWeight: "600", marginBottom: "8px" }}>
+                      Khung giờ cao điểm
                     </div>
-                    <div style={{ fontSize: "24px", fontWeight: "700", color: "#ec4899", marginBottom: "8px" }}>
-                      {analytics.avgSessionTime}
+                    <div style={{ fontSize: "32px", fontWeight: "700", color: "#f59e0b", marginBottom: "6px" }}>
+                      {metrics.peakHours}
                     </div>
-                    <div style={{ fontSize: "12px", color: "#94a3b8" }}>
-                      <i className="bi bi-hourglass-split me-1"></i>
-                      Mỗi phiên làm việc
+                    <div style={{ fontSize: "12px", color: "#22c55e", fontWeight: "600" }}>
+                      <i className="bi bi-arrow-up me-1"></i>
+                      92% lấp đầy
                     </div>
-                  </Card.Body>
-                </Card>
-              </Col>
-            </Row>
+                  </div>
+                  <div style={{ fontSize: "28px" }}>🔥</div>
+                </div>
+              </Card.Body>
+            </Card>
+          </Col>
+
+          <Col lg={3} md={6}>
+            <Card 
+              className="border-0"
+              style={{
+                backgroundColor: "white",
+                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08)",
+                borderRadius: "12px",
+              }}
+            >
+              <Card.Body className="p-4">
+                <div className="d-flex align-items-start justify-content-between">
+                  <div>
+                    <div style={{ fontSize: "12px", color: "#94a3b8", fontWeight: "600", marginBottom: "8px" }}>
+                      Tỷ lệ No-show
+                    </div>
+                    <div style={{ fontSize: "32px", fontWeight: "700", color: "#ef4444", marginBottom: "6px" }}>
+                      {metrics.noShowRate}%
+                    </div>
+                    <div style={{ fontSize: "12px", color: "#ef4444", fontWeight: "600" }}>
+                      <i className="bi bi-arrow-down me-1"></i>
+                      -1.5%
+                    </div>
+                  </div>
+                  <div style={{ fontSize: "28px" }}>👥</div>
+                </div>
+              </Card.Body>
+            </Card>
           </Col>
         </Row>
 
-        {/* Charts Row */}
+        {/* Main Content */}
         <Row className="g-4 mb-5">
-          {/* Weekly Usage Chart */}
-          <Col lg={8}>
+          {/* Hourly Capacity Chart */}
+          <Col lg={7}>
             <Card 
-              className="border-0 h-100"
-              style={{
-                backgroundColor: "white",
-                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08)",
-                borderRadius: "12px",
-              }}
-            >
-              <Card.Body className="p-4">
-                <div className="d-flex align-items-center justify-content-between mb-5">
-                  <h5 
-                    className="mb-0 fw-bold"
-                    style={{ fontSize: "16px", color: "#1e293b" }}
-                  >
-                    <i className="bi bi-bar-chart" style={{ color: "#3b82f6", marginRight: "8px" }}></i>
-                    Mức sử dụng theo tuần
-                  </h5>
-                  <select 
-                    className="form-select form-select-sm w-auto"
-                    style={{ borderColor: "#e2e8f0", fontSize: "13px" }}
-                  >
-                    <option>Tuần này</option>
-                    <option>Tuần trước</option>
-                    <option>4 tuần trước</option>
-                  </select>
-                </div>
-
-                {/* Chart */}
-                <div className="chart-container" style={{ height: "300px" }}>
-                  <div className="d-flex align-items-end justify-content-around h-100 pb-3">
-                    {analytics.weeklyUsage.map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="text-center"
-                        style={{ width: "12%" }}
-                      >
-                        <div
-                          className="rounded-top position-relative"
-                          style={{
-                            height: `${item.usage}%`,
-                            background: `linear-gradient(to top, #3b82f6, #93c5fd)`,
-                            marginBottom: "8px",
-                            minHeight: "20px",
-                            boxShadow: "0 2px 4px rgba(59, 130, 246, 0.2)",
-                            transition: "all 0.2s",
-                            cursor: "pointer",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.boxShadow = "0 4px 8px rgba(59, 130, 246, 0.3)";
-                            e.currentTarget.style.transform = "translateY(-2px)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.boxShadow = "0 2px 4px rgba(59, 130, 246, 0.2)";
-                            e.currentTarget.style.transform = "none";
-                          }}
-                        >
-                          <small
-                            className="position-absolute top-0 start-50 translate-middle-x fw-semibold"
-                            style={{ marginTop: "-20px", color: "#3b82f6" }}
-                          >
-                            {item.usage}%
-                          </small>
-                        </div>
-                        <small style={{ color: "#64748b", fontWeight: "600" }}>
-                          {item.day}
-                        </small>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-
-          {/* Hourly Usage */}
-          <Col lg={4}>
-            <Card 
-              className="border-0 h-100"
+              className="border-0"
               style={{
                 backgroundColor: "white",
                 boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08)",
@@ -255,58 +309,52 @@ export default function AdminAnalytics() {
                   className="mb-4 fw-bold"
                   style={{ fontSize: "16px", color: "#1e293b" }}
                 >
-                  <i className="bi bi-clock-history" style={{ color: "#3b82f6", marginRight: "8px" }}></i>
-                  Sử dụng theo giờ
+                  <i className="bi bi-bar-chart" style={{ color: "#8b5cf6", marginRight: "8px" }}></i>
+                  Công suất theo khung giờ
                 </h5>
 
-                <div className="hourly-usage">
-                  {[
-                    { time: "08:00-10:00", rate: 45, color: "#10b981" },
-                    { time: "10:00-12:00", rate: 70, color: "#3b82f6" },
-                    { time: "12:00-14:00", rate: 85, color: "#f59e0b" },
-                    { time: "14:00-16:00", rate: 95, color: "#ef4444" },
-                    { time: "16:00-18:00", rate: 80, color: "#f59e0b" },
-                    { time: "18:00-20:00", rate: 60, color: "#3b82f6" },
-                    { time: "20:00-22:00", rate: 35, color: "#10b981" },
-                  ].map((slot, idx) => (
-                    <div key={idx} className="d-flex align-items-center mb-3">
-                      <div style={{ width: "90px", flexShrink: 0 }}>
-                        <small style={{ color: "#64748b", fontWeight: "600", fontSize: "12px" }}>
-                          {slot.time}
-                        </small>
-                      </div>
-                      <div className="flex-grow-1 me-3">
-                        <div 
-                          className="progress"
-                          style={{ height: "6px", backgroundColor: "#e2e8f0", borderRadius: "3px" }}
-                        >
-                          <div
-                            style={{
-                              width: `${slot.rate}%`,
-                              backgroundColor: slot.color,
-                              height: "100%",
-                              borderRadius: "3px",
-                              transition: "width 0.3s ease",
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-                      <div style={{ width: "40px", flexShrink: 0, textAlign: "right" }}>
-                        <small style={{ fontWeight: "600", color: "#1e293b" }}>{slot.rate}%</small>
-                      </div>
+                <div style={{ height: "300px", display: "flex", alignItems: "flex-end", gap: "8px" }}>
+                  {hourlyCapacity.map((item, idx) => (
+                    <div key={idx} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                      <div
+                        style={{
+                          width: "100%",
+                          height: `${Math.max(30, item.usage * 3)}px`,
+                          backgroundColor: "#c7d2fe",
+                          borderRadius: "4px 4px 0 0",
+                          transition: "all 0.2s",
+                          cursor: "pointer",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = "#8b5cf6";
+                          e.currentTarget.style.boxShadow = "0 4px 12px rgba(139, 92, 246, 0.3)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = "#c7d2fe";
+                          e.currentTarget.style.boxShadow = "none";
+                        }}
+                      />
+                      <small style={{ color: "#94a3b8", fontWeight: "600", marginTop: "8px", fontSize: "11px" }}>
+                        {item.time}
+                      </small>
                     </div>
                   ))}
                 </div>
+
+                <div style={{ marginTop: "20px", paddingTop: "20px", borderTop: "1px solid #f1f5f9" }}>
+                  <small style={{ color: "#f59e0b", fontWeight: "600" }}>
+                    <i className="bi bi-exclamation-circle me-1"></i>
+                    Cao điểm: 14:00 - 16:00 (88–95% lấp đầy)
+                  </small>
+                </div>
               </Card.Body>
             </Card>
           </Col>
-        </Row>
 
-        {/* Bottom Row - Table Performance */}
-        <Row className="g-4">
-          <Col lg={6}>
+          {/* Heatmap */}
+          <Col lg={5}>
             <Card 
-              className="border-0 h-100"
+              className="border-0"
               style={{
                 backgroundColor: "white",
                 boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08)",
@@ -315,211 +363,167 @@ export default function AdminAnalytics() {
             >
               <Card.Body className="p-4">
                 <h5 
-                  className="mb-4 fw-bold"
+                  className="mb-3 fw-bold"
                   style={{ fontSize: "16px", color: "#1e293b" }}
                 >
-                  <i className="bi bi-trophy" style={{ color: "#f59e0b", marginRight: "8px" }}></i>
-                  Top bàn được sử dụng
+                  <i className="bi bi-calendar-heat" style={{ color: "#8b5cf6", marginRight: "8px" }}></i>
+                  Heatmap tuần này
                 </h5>
 
-                <div className="table-performance">
-                  {[
-                    {
-                      name: "Bàn A1",
-                      usage: 95,
-                      hours: "8.2h",
-                      revenue: "820k",
-                    },
-                    {
-                      name: "Bàn B3",
-                      usage: 89,
-                      hours: "7.8h",
-                      revenue: "780k",
-                    },
-                    {
-                      name: "Bàn C2",
-                      usage: 85,
-                      hours: "7.1h",
-                      revenue: "710k",
-                    },
-                    {
-                      name: "Bàn A5",
-                      usage: 78,
-                      hours: "6.5h",
-                      revenue: "650k",
-                    },
-                    {
-                      name: "Bàn D1",
-                      usage: 72,
-                      hours: "6.0h",
-                      revenue: "600k",
-                    },
-                  ].map((table, idx) => (
-                    <div
+                <small style={{ color: "#64748b", fontSize: "12px", display: "block", marginBottom: "16px" }}>
+                  Mức độ sử dụng theo ngày & khung giờ:
+                </small>
+
+                {heatmapData.map((row, rowIdx) => (
+                  <div key={rowIdx} style={{ marginBottom: "16px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                      <small style={{ width: "40px", color: "#64748b", fontWeight: "600", fontSize: "11px" }}>
+                        {row.type}
+                      </small>
+                      <div style={{ display: "flex", gap: "4px", flex: 1 }}>
+                        {row.days.map((day, dayIdx) => (
+                          <div
+                            key={dayIdx}
+                            style={{
+                              flex: 1,
+                              height: "28px",
+                              backgroundColor: getHeatmapColor(day),
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              transition: "all 0.2s",
+                              title: `${day}%`,
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.transform = "scale(1.1)";
+                              e.currentTarget.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.15)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.transform = "none";
+                              e.currentTarget.style.boxShadow = "none";
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <div style={{ marginTop: "16px", paddingTop: "12px", borderTop: "1px solid #f1f5f9" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "11px" }}>
+                    <div>
+                      <div style={{ width: "16px", height: "16px", backgroundColor: "#f3f4f6", borderRadius: "2px" }} />
+                    </div>
+                    <span style={{ color: "#94a3b8" }}>15%</span>
+                    <div style={{ display: "flex", gap: "4px" }}>
+                      {[4, 3, 2, 1].map((idx) => (
+                        <div 
+                          key={idx}
+                          style={{
+                            width: "16px",
+                            height: "16px",
+                            backgroundColor: getHeatmapColor(10 + idx * 20),
+                            borderRadius: "2px",
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <span style={{ color: "#94a3b8" }}>Nối điều</span>
+                  </div>
+                </div>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Top Spaces Table */}
+        <Card 
+          className="border-0"
+          style={{
+            backgroundColor: "white",
+            boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08)",
+            borderRadius: "12px",
+          }}
+        >
+          <Card.Body className="p-4">
+            <h5 
+              className="mb-4 fw-bold"
+              style={{ fontSize: "16px", color: "#1e293b" }}
+            >
+              <i className="bi bi-trophy" style={{ color: "#f59e0b", marginRight: "8px" }}></i>
+              Xếp hạng không gian được sử dụng nhiều nhất
+            </h5>
+
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <th style={{ padding: "12px", textAlign: "left", color: "#64748b", fontWeight: "600", fontSize: "12px" }}>#</th>
+                    <th style={{ padding: "12px", textAlign: "left", color: "#64748b", fontWeight: "600", fontSize: "12px" }}>KHÔNG GIAN</th>
+                    <th style={{ padding: "12px", textAlign: "left", color: "#64748b", fontWeight: "600", fontSize: "12px" }}>LOẠI</th>
+                    <th style={{ padding: "12px", textAlign: "left", color: "#64748b", fontWeight: "600", fontSize: "12px" }}>SỐ PHIÊN</th>
+                    <th style={{ padding: "12px", textAlign: "left", color: "#64748b", fontWeight: "600", fontSize: "12px" }}>TỔNG GIỜ</th>
+                    <th style={{ padding: "12px", textAlign: "left", color: "#64748b", fontWeight: "600", fontSize: "12px" }}>DOANH THU</th>
+                    <th style={{ padding: "12px", textAlign: "left", color: "#64748b", fontWeight: "600", fontSize: "12px" }}>TỶ LỆ SỬ DỤNG</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topSpaces.map((space, idx) => (
+                    <tr 
                       key={idx}
-                      className="d-flex align-items-center justify-content-between p-4 rounded-lg mb-2"
                       style={{
-                        backgroundColor: "#f8fafc",
-                        borderLeft: `3px solid ${["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899"][idx]}`,
-                        transition: "all 0.2s",
-                        cursor: "pointer",
+                        borderBottom: "1px solid #f1f5f9",
+                        backgroundColor: idx % 2 === 0 ? "transparent" : "#f9fafb",
+                        transition: "background-color 0.2s",
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = "#f1f5f9";
-                        e.currentTarget.style.transform = "translateX(4px)";
+                        e.currentTarget.style.backgroundColor = "#f3f4f6";
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = "#f8fafc";
-                        e.currentTarget.style.transform = "none";
+                        e.currentTarget.style.backgroundColor = idx % 2 === 0 ? "transparent" : "#f9fafb";
                       }}
                     >
-                      <div>
-                        <h6 className="mb-1 fw-semibold" style={{ color: "#1e293b" }}>
-                          {table.name}
-                        </h6>
-                        <small style={{ color: "#64748b", fontSize: "12px" }}>
-                          {table.hours} • {table.revenue}
-                        </small>
-                      </div>
-                      <div className="text-end">
-                        <div style={{ fontWeight: "700", color: "#3b82f6", marginBottom: "6px" }}>
-                          {table.usage}%
+                      <td style={{ padding: "12px", color: "#64748b", fontSize: "13px", fontWeight: "600" }}>
+                        {space.rank}
+                      </td>
+                      <td style={{ padding: "12px", color: "#1e293b", fontSize: "13px", fontWeight: "600" }}>
+                        {space.space}
+                      </td>
+                      <td style={{ padding: "12px", color: "#64748b", fontSize: "13px" }}>
+                        {space.type}
+                      </td>
+                      <td style={{ padding: "12px", color: "#64748b", fontSize: "13px" }}>
+                        {space.sessions} phiên
+                      </td>
+                      <td style={{ padding: "12px", color: "#64748b", fontSize: "13px" }}>
+                        {space.totalHours}
+                      </td>
+                      <td style={{ padding: "12px", color: "#1e293b", fontSize: "13px", fontWeight: "600" }}>
+                        {space.revenue}
+                      </td>
+                      <td style={{ padding: "12px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <div style={{ flex: 1, height: "4px", backgroundColor: "#e2e8f0", borderRadius: "2px" }}>
+                            <div
+                              style={{
+                                height: "100%",
+                                width: `${space.usageRate}%`,
+                                backgroundColor: getColorForUsage(space.usageRate),
+                                borderRadius: "2px",
+                              }}
+                            />
+                          </div>
+                          <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e293b", minWidth: "32px" }}>
+                            {space.usageRate}%
+                          </span>
                         </div>
-                        <div
-                          className="progress"
-                          style={{ width: "60px", height: "4px", borderRadius: "2px", backgroundColor: "#e2e8f0" }}
-                        >
-                          <div
-                            style={{
-                              width: `${table.usage}%`,
-                              backgroundColor: ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899"][idx],
-                              height: "100%",
-                              borderRadius: "2px",
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
+                      </td>
+                    </tr>
                   ))}
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-
-          <Col lg={6}>
-            <Card 
-              className="border-0 h-100"
-              style={{
-                backgroundColor: "white",
-                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08)",
-                borderRadius: "12px",
-              }}
-            >
-              <Card.Body className="p-4">
-                <h5 
-                  className="mb-4 fw-bold"
-                  style={{ fontSize: "16px", color: "#1e293b" }}
-                >
-                  <i className="bi bi-exclamation-triangle" style={{ color: "#f59e0b", marginRight: "8px" }}></i>
-                  Cần chú ý
-                </h5>
-
-                <div className="attention-items">
-                  <div 
-                    className="d-flex align-items-start p-4 rounded-lg mb-3"
-                    style={{
-                      borderLeft: "3px solid #f59e0b",
-                      backgroundColor: "#fffbeb",
-                    }}
-                  >
-                    <i 
-                      className="bi bi-exclamation-triangle me-3 mt-1"
-                      style={{
-                        fontSize: "18px",
-                        color: "#f59e0b",
-                        flexShrink: 0,
-                      }}
-                    ></i>
-                    <div>
-                      <h6 className="mb-1 fw-semibold" style={{ color: "#1e293b" }}>
-                        Bàn F2 - Sử dụng thấp
-                      </h6>
-                      <p className="text-muted mb-0 small">
-                        Chỉ 25% thời gian sử dụng trong tuần qua
-                      </p>
-                    </div>
-                  </div>
-
-                  <div 
-                    className="d-flex align-items-start p-4 rounded-lg mb-3"
-                    style={{
-                      borderLeft: "3px solid #3b82f6",
-                      backgroundColor: "#eff6ff",
-                    }}
-                  >
-                    <i 
-                      className="bi bi-lightbulb me-3 mt-1"
-                      style={{
-                        fontSize: "18px",
-                        color: "#3b82f6",
-                        flexShrink: 0,
-                      }}
-                    ></i>
-                    <div>
-                      <h6 className="mb-1 fw-semibold" style={{ color: "#1e293b" }}>
-                        Khuyến nghị
-                      </h6>
-                      <p className="text-muted mb-0 small">
-                        Thêm bàn nhóm (4-6 người) vào giờ cao điểm
-                      </p>
-                    </div>
-                  </div>
-
-                  <div 
-                    className="d-flex align-items-start p-4 rounded-lg"
-                    style={{
-                      borderLeft: "3px solid #10b981",
-                      backgroundColor: "#ecfdf5",
-                    }}
-                  >
-                    <i 
-                      className="bi bi-check-circle me-3 mt-1"
-                      style={{
-                        fontSize: "18px",
-                        color: "#10b981",
-                        flexShrink: 0,
-                      }}
-                    ></i>
-                    <div>
-                      <h6 className="mb-1 fw-semibold" style={{ color: "#1e293b" }}>
-                        Hiệu suất tốt
-                      </h6>
-                      <p className="text-muted mb-0 small">
-                        Khu vực A đạt 90% công suất sử dụng
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-center mt-5">
-                  <Button 
-                    style={{
-                      backgroundColor: "#3b82f6",
-                      border: "none",
-                      borderRadius: "8px",
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      padding: "10px 20px",
-                    }}
-                  >
-                    <i className="bi bi-download me-2"></i>
-                    Xuất báo cáo chi tiết
-                  </Button>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
+                </tbody>
+              </table>
+            </div>
+          </Card.Body>
+        </Card>
       </div>
     </AdminLayout>
   );
