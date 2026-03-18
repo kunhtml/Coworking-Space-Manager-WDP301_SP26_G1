@@ -317,6 +317,116 @@ export default function AdminServiceListPage() {
     }
   };
 
+  // ─── Item Form Component (reused for Add & Edit) ──────────
+  const ItemFormBody = ({ inModal }) => (
+    <Row className="g-3">
+      {inModal && error && (
+        <Col xs={12}>
+          <Alert variant="danger" dismissible onClose={() => setError("")} className="py-2">
+            {error}
+          </Alert>
+        </Col>
+      )}
+      <Col md={6}>
+        <Form.Group>
+          <Form.Label className="fw-semibold">
+            Tên món <span className="text-danger">*</span>
+          </Form.Label>
+          <Form.Control
+            type="text"
+            placeholder="Ví dụ: Cà phê sữa đá"
+            value={itemForm.name}
+            onChange={(e) => setItemForm({ ...itemForm, name: e.target.value })}
+            required
+          />
+        </Form.Group>
+      </Col>
+      <Col md={6}>
+        <Form.Group>
+          <Form.Label className="fw-semibold">Danh mục</Form.Label>
+          <Form.Select
+            value={itemForm.categoryId}
+            onChange={(e) =>
+              setItemForm({ ...itemForm, categoryId: e.target.value })
+            }
+          >
+            <option value="">-- Không có danh mục --</option>
+            {categories.map((c) => (
+              <option key={c._id} value={c._id}>
+                {c.name}
+              </option>
+            ))}
+          </Form.Select>
+        </Form.Group>
+      </Col>
+      <Col md={12}>
+        <Form.Group>
+          <Form.Label className="fw-semibold">Mô tả</Form.Label>
+          <Form.Control
+            as="textarea"
+            rows={2}
+            placeholder="Mô tả ngắn về món..."
+            value={itemForm.description}
+            onChange={(e) =>
+              setItemForm({ ...itemForm, description: e.target.value })
+            }
+          />
+        </Form.Group>
+      </Col>
+      <Col md={4}>
+        <Form.Group>
+          <Form.Label className="fw-semibold">
+            Giá (VNĐ) <span className="text-danger">*</span>
+          </Form.Label>
+          <InputGroup>
+            <Form.Control
+              type="number"
+              min={0}
+              placeholder="0"
+              value={itemForm.price}
+              onChange={(e) =>
+                setItemForm({ ...itemForm, price: e.target.value })
+              }
+              required
+            />
+            <InputGroup.Text>₫</InputGroup.Text>
+          </InputGroup>
+        </Form.Group>
+      </Col>
+      <Col md={4}>
+        <Form.Group>
+          <Form.Label className="fw-semibold">Số lượng tồn kho</Form.Label>
+          <Form.Control
+            type="number"
+            min={0}
+            placeholder="0"
+            value={itemForm.stockQuantity}
+            onChange={(e) =>
+              setItemForm({ ...itemForm, stockQuantity: e.target.value })
+            }
+          />
+        </Form.Group>
+      </Col>
+      <Col md={4}>
+        <Form.Group>
+          <Form.Label className="fw-semibold">Trạng thái</Form.Label>
+          <Form.Select
+            value={itemForm.availabilityStatus}
+            onChange={(e) =>
+              setItemForm({ ...itemForm, availabilityStatus: e.target.value })
+            }
+          >
+            {STATUS_OPTIONS.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </Form.Select>
+        </Form.Group>
+      </Col>
+    </Row>
+  );
+
   return (
     <AdminLayout>
       <div className="mb-5 pb-3">
