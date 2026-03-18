@@ -1,17 +1,21 @@
 import { Badge, Button, Dropdown } from "react-bootstrap";
 import { Link, useNavigate } from "react-router";
+// Sửa lại đường dẫn import useAuth cho đúng với file của bạn nếu cần
 import { useAuth } from "../../hooks/useAuth";
 
+// 1. Sửa lại key thành chữ thường (lowercase) để khớp 100% với Database
 const DEFAULT_ROLE_LABELS = {
-  Admin: { label: "Quản trị", icon: "bi-shield-lock-fill", color: "#ffc107" },
-  Staff: { label: "Nhân viên", icon: "bi-briefcase-fill", color: "#4dabf7" },
-  Customer: { label: "Tài khoản", icon: "bi-person-circle", color: "#74c0fc" },
+  admin: { label: "Quản trị", icon: "bi-shield-lock-fill", color: "#ffc107" },
+  staff: { label: "Nhân viên", icon: "bi-briefcase-fill", color: "#4dabf7" },
+  customer: { label: "Khách hàng", icon: "bi-person-circle", color: "#74c0fc" },
 };
 
 function getDashboardPath(role) {
-  if (role === "Admin") return "/admin-dashboard";
-  if (role === "Staff") return "/staff-dashboard";
-  if (role === "Customer") return "/customer-dashboard";
+  // Chuẩn hóa về chữ thường trước khi check
+  const r = role?.toLowerCase();
+  if (r === "admin") return "/admin-dashboard";
+  if (r === "staff") return "/staff-dashboard";
+  if (r === "customer") return "/customer-dashboard";
   return null;
 }
 
@@ -28,23 +32,26 @@ export default function AuthNavActions({
     navigate("/");
   };
 
-  const role = user?.role;
+  // 2. Chuẩn hóa role của user về chữ thường
+  const role = user?.role?.toLowerCase();
   const roleMeta = roleLabels[role] ?? {
     label: role,
     icon: "bi-person-circle",
     color: "#aaa",
   };
+  
   const dashboardPath = getDashboardPath(role);
-  const isCustomer = role === "Customer";
+  const isCustomer = role === "customer";
 
   return (
     <div className="d-flex gap-2 ms-lg-3 mt-2 mt-lg-0">
       {isAuthenticated && user ? (
         <Dropdown align="end">
+          {/* 3. Đổi text-light thành text-dark để dễ nhìn trên nền trắng */}
           <Dropdown.Toggle
             variant="outline-secondary"
-            className="px-3 py-2 rounded-1 fw-medium text-light border-secondary d-flex align-items-center gap-2"
-            style={{ backgroundColor: "rgba(255, 255, 255, 0.04)" }}
+            className="px-3 py-2 rounded-1 fw-medium text-dark border-secondary d-flex align-items-center gap-2"
+            style={{ backgroundColor: "transparent" }}
           >
             <span
               className="d-inline-flex align-items-center justify-content-center rounded-circle border border-secondary"
@@ -60,7 +67,7 @@ export default function AuthNavActions({
               ></i>
             </span>
             <span className="d-flex flex-column align-items-start lh-sm me-1">
-              <span className="small text-secondary">Tài khoản</span>
+              <span className="small text-muted">Tài khoản</span>
               <span
                 className="fw-semibold text-truncate"
                 style={{ maxWidth: "140px" }}
@@ -69,19 +76,24 @@ export default function AuthNavActions({
               </span>
             </span>
           </Dropdown.Toggle>
+
           <Dropdown.Menu
             className={
               isCustomer
-                ? "bg-white border-0 shadow-sm"
-                : "bg-dark border-secondary"
+                ? "bg-white border-0 shadow-sm mt-2"
+                : "bg-dark border-secondary mt-2"
             }
-            style={{ minWidth: "180px" }}
+            style={{ minWidth: "200px" }}
           >
             <div
-              className={`px-3 py-2 border-bottom ${isCustomer ? "border-light" : "border-secondary-subtle"}`}
+              className={`px-3 py-2 border-bottom ${
+                isCustomer ? "border-light" : "border-secondary-subtle"
+              }`}
             >
               <div
-                className={`${isCustomer ? "text-dark" : "text-light"} fw-semibold small text-truncate`}
+                className={`${
+                  isCustomer ? "text-dark" : "text-light"
+                } fw-semibold small text-truncate`}
               >
                 {displayName || user.fullName}
               </div>
@@ -90,12 +102,14 @@ export default function AuthNavActions({
                 style={{
                   backgroundColor: roleMeta.color ?? "#aaa",
                   color: "#000",
-                  fontSize: "0.65rem",
+                  fontSize: "0.7rem",
+                  marginTop: "4px"
                 }}
               >
                 {roleMeta.label ?? role}
               </Badge>
             </div>
+            
             {dashboardPath &&
               (isCustomer ? (
                 <>
@@ -128,16 +142,16 @@ export default function AuthNavActions({
                 <Dropdown.Item
                   as={Link}
                   to={dashboardPath}
-                  className="text-light"
+                  className="text-light py-2"
                 >
                   <i className="bi bi-speedometer2 me-2"></i>
-                  {role === "Admin" ? "Quản trị" : "Dashboard"}
+                  {role === "admin" ? "Trang Quản trị" : "Dashboard"}
                 </Dropdown.Item>
               ))}
             <Dropdown.Divider
               className={isCustomer ? "border-light" : "border-secondary"}
             />
-            <Dropdown.Item onClick={handleLogout} className="text-danger py-2">
+            <Dropdown.Item onClick={handleLogout} className="text-danger py-2 fw-medium">
               <i className="bi bi-box-arrow-right me-2"></i>Đăng xuất
             </Dropdown.Item>
           </Dropdown.Menu>
