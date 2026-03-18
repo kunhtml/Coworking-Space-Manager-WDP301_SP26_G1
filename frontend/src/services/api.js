@@ -33,6 +33,16 @@ export const apiClient = {
     if (!res.ok) throw new Error(data.message || "Lỗi server");
     return data;
   },
+  patch: async (path, body) => {
+    const res = await fetch(`${BASE_URL}${path}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...authHeader() },
+      body: JSON.stringify(body || {}),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Lỗi server");
+    return data;
+  },
   delete: async (path) => {
     const res = await fetch(`${BASE_URL}${path}`, {
       method: "DELETE",
@@ -46,6 +56,16 @@ export const apiClient = {
 
 export const loginApi = (identifier, password) =>
   apiClient.post("/auth/login", { identifier, password });
+
+export const registerApi = (fullName, email, phone, passwordHash) =>
+  apiClient.post("/auth/register", {
+    fullName,
+    email,
+    phone,
+    passwordHash,
+    role: "customer",
+    membershipStatus: "active",
+  });
 
 export const getMeApi = () => apiClient.get("/auth/me");
 

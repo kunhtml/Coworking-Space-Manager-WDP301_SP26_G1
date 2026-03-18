@@ -1,23 +1,21 @@
 import { useEffect, useState } from "react";
 import {
-  Container,
-  Row,
-  Col,
   Card,
   Form,
   Button,
   Alert,
   Spinner,
+  InputGroup,
 } from "react-bootstrap";
 import { Link, useNavigate } from "react-router";
-import { animate, stagger } from "animejs";
+import { animate } from "animejs";
 import { loginApi } from "../../services/api";
 import { saveAuth } from "../../store/authSlice";
 
 export function meta() {
   return [
-    { title: "Đăng nhập | Nexus Coffee" },
-    { name: "description", content: "Đăng nhập vào hệ thống Nexus Coffee" },
+    { title: "Đăng nhập | StudySpace" },
+    { name: "description", content: "Đăng nhập vào hệ thống StudySpace" },
   ];
 }
 
@@ -25,6 +23,7 @@ export default function Login() {
   const navigate = useNavigate();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -37,22 +36,6 @@ export default function Login() {
       easing: "easeOutExpo",
       delay: 200,
     });
-
-    animate(".login-header-item", {
-      translateY: [20, 0],
-      opacity: [0, 1],
-      duration: 800,
-      easing: "easeOutExpo",
-      delay: stagger(150, { start: 500 }),
-    });
-
-    animate(".login-form-item", {
-      translateX: [-20, 0],
-      opacity: [0, 1],
-      duration: 800,
-      easing: "easeOutExpo",
-      delay: stagger(100, { start: 800 }),
-    });
   }, []);
 
   const handleSubmit = async (e) => {
@@ -61,7 +44,7 @@ export default function Login() {
     setSuccess("");
 
     if (!identifier.trim() || !password.trim()) {
-      setError("Vui lòng nhập đầy đủ email/số điện thoại và mật khẩu.");
+      setError("Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.");
       return;
     }
 
@@ -70,7 +53,15 @@ export default function Login() {
       const data = await loginApi(identifier, password);
       saveAuth(data.token, data.user);
       setSuccess(`Chào mừng ${data.user.fullName}! Đang chuyển hướng...`);
-      setTimeout(() => navigate("/"), 1500);
+      const redirectPath =
+        data.user?.role === "Admin"
+          ? "/admin-dashboard"
+          : data.user?.role === "Staff"
+            ? "/staff-dashboard"
+            : data.user?.role === "Customer"
+              ? "/customer-dashboard"
+              : "/";
+      setTimeout(() => navigate(redirectPath), 1500);
     } catch (err) {
       setError(err.message || "Đăng nhập thất bại, vui lòng thử lại.");
     } finally {
@@ -79,178 +70,193 @@ export default function Login() {
   };
 
   return (
-    <div
-      className="d-flex flex-column min-vh-100 text-light font-monospace position-relative overflow-hidden"
-      style={{
-        backgroundImage: "url('/login-bg.png')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }}
-    >
-      {/* Dark overlay for readability */}
-      <div
-        className="position-absolute top-0 start-0 w-100 h-100"
-        style={{
-          zIndex: 0,
-          backgroundColor: "rgba(0,0,0,0.65)",
-          pointerEvents: "none",
-        }}
-      />
+    <div className="login-bg">
+      <div className="login-circle-1"></div>
+      <div className="login-circle-2"></div>
 
-      <Container
-        className="flex-grow-1 d-flex align-items-center justify-content-center py-5 position-relative"
-        style={{ zIndex: 1 }}
-      >
-        <Row className="w-100 justify-content-center">
-          <Col md={8} lg={6} xl={5}>
-            <Card
-              className="bg-dark border-secondary shadow-lg text-light login-card"
-              style={{ opacity: 0 }}
+      <Card className="login-card bg-white" style={{ opacity: 0 }}>
+        <Card.Body className="p-0">
+          <div className="text-center px-4 pt-4 pb-3">
+            <div
+              className="mx-auto rounded-3 d-flex align-items-center justify-content-center mb-3"
+              style={{
+                width: "64px",
+                height: "64px",
+                background: "#6366f1",
+                color: "white",
+                fontSize: "1.75rem",
+              }}
             >
-              <Card.Body className="p-5">
-                <div className="text-center mb-4">
-                  <Link
-                    to="/"
-                    className="text-decoration-none text-light d-inline-block mb-3 login-header-item"
-                    style={{ opacity: 0 }}
-                  >
-                    <h2 className="fw-bold mb-0 d-flex align-items-center justify-content-center">
-                      <i
-                        className="bi bi-cup-hot-fill me-2"
-                        style={{ color: "#d4a373" }}
-                      ></i>
-                      NEXUS COFFEE
-                    </h2>
-                  </Link>
-                  <h4
-                    className="text-uppercase letter-spacing-1 mb-2 login-header-item"
-                    style={{ opacity: 0 }}
-                  >
-                    Đăng nhập
-                  </h4>
-                  <p
-                    className="text-secondary small login-header-item"
-                    style={{ opacity: 0 }}
-                  >
-                    Chào mừng bạn quay trở lại!
-                  </p>
-                </div>
+              <i className="bi bi-cup-hot-fill"></i>
+            </div>
+            <h2
+              className="fw-bold mb-0"
+              style={{ color: "#2b2b2b", fontSize: "1.5rem" }}
+            >
+              Study<span style={{ color: "#a78bfa" }}>Space</span>
+            </h2>
+            <p
+              className="text-muted small mb-2"
+              style={{ fontSize: "0.85rem" }}
+            >
+              Coworking Space Management System
+            </p>
+            <Link
+              to="/"
+              className="btn btn-sm fw-bold rounded-pill px-3 py-2"
+              style={{
+                background: "linear-gradient(135deg, #c94caf, #d96cc5)",
+                color: "white",
+                textDecoration: "none",
+                display: "inline-block",
+              }}
+            >
+              <i className="bi bi-house-fill me-2"></i> Trang chủ
+            </Link>
+          </div>
 
-                {error && (
-                  <Alert
-                    variant="danger"
-                    dismissible
-                    onClose={() => setError("")}
-                    className="py-2 small"
-                  >
-                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
-                    {error}
-                  </Alert>
-                )}
-                {success && (
-                  <Alert variant="success" className="py-2 small">
-                    <i className="bi bi-check-circle-fill me-2"></i>
-                    {success}
-                  </Alert>
-                )}
+          <div className="px-4 py-4">
+            {error && (
+              <Alert
+                variant="danger"
+                dismissible
+                onClose={() => setError("")}
+                className="py-2 small mb-3"
+              >
+                <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                {error}
+              </Alert>
+            )}
+            {success && (
+              <Alert variant="success" className="py-2 small mb-3">
+                <i className="bi bi-check-circle-fill me-2"></i>
+                {success}
+              </Alert>
+            )}
 
-                <Form onSubmit={handleSubmit}>
-                  <Form.Group
-                    className="mb-4 login-form-item"
-                    controlId="formBasicEmail"
-                    style={{ opacity: 0 }}
+            <Form onSubmit={handleSubmit}>
+              <Form.Group className="mb-3">
+                <Form.Label
+                  className="small fw-bold text-dark mb-2"
+                  style={{ fontSize: "0.9rem" }}
+                >
+                  Tên đăng nhập
+                </Form.Label>
+                <InputGroup className="login-input-group">
+                  <InputGroup.Text
+                    style={{ background: "transparent", border: "none" }}
                   >
-                    <Form.Label className="text-uppercase small fw-bold text-secondary">
-                      Email / Số điện thoại
-                    </Form.Label>
-                    <Form.Control
-                      type="text"
-                      placeholder="Nhập email hoặc số điện thoại"
-                      className="bg-dark text-light border-secondary py-2 px-3 shadow-none focus-ring focus-ring-primary transition-all"
-                      style={{ backgroundColor: "#212529" }}
-                      value={identifier}
-                      onChange={(e) => setIdentifier(e.target.value)}
-                      disabled={loading}
-                    />
-                  </Form.Group>
-
-                  <Form.Group
-                    className="mb-4 login-form-item"
-                    controlId="formBasicPassword"
-                    style={{ opacity: 0 }}
-                  >
-                    <div className="d-flex justify-content-between align-items-center mb-1">
-                      <Form.Label className="text-uppercase small fw-bold text-secondary mb-0">
-                        Mật khẩu
-                      </Form.Label>
-                      <Link
-                        to="/forgot-password"
-                        className="text-primary text-decoration-none small hover-primary transition-all"
-                      >
-                        Quên mật khẩu?
-                      </Link>
-                    </div>
-                    <Form.Control
-                      type="password"
-                      placeholder="Nhập mật khẩu"
-                      className="bg-dark text-light border-secondary py-2 px-3 shadow-none focus-ring focus-ring-primary transition-all"
-                      style={{ backgroundColor: "#212529" }}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      disabled={loading}
-                    />
-                  </Form.Group>
-
-                  <Form.Group
-                    className="mb-4 login-form-item"
-                    controlId="formBasicCheckbox"
-                    style={{ opacity: 0 }}
-                  >
-                    <Form.Check
-                      type="checkbox"
-                      label="Ghi nhớ đăng nhập"
-                      className="text-secondary small"
-                    />
-                  </Form.Group>
-
-                  <Button
-                    variant="primary"
-                    type="submit"
-                    className="w-100 py-2 fw-bold text-uppercase mb-4 rounded-0 border-0 login-form-item transition-all hover-scale d-flex align-items-center justify-content-center gap-2"
-                    style={{ backgroundColor: "#d4a373", opacity: 0 }}
+                    <i
+                      className="bi bi-person-fill"
+                      style={{ color: "#a0a0a0" }}
+                    ></i>
+                  </InputGroup.Text>
+                  <Form.Control
+                    type="text"
+                    placeholder="admin"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
                     disabled={loading}
-                  >
-                    {loading ? (
-                      <>
-                        <Spinner animation="border" size="sm" />
-                        Đang đăng nhập...
-                      </>
-                    ) : (
-                      "Đăng nhập"
-                    )}
-                  </Button>
+                    autoComplete="username"
+                    style={{
+                      background: "#f5f5f5",
+                      border: "none",
+                      fontSize: "0.95rem",
+                    }}
+                  />
+                </InputGroup>
+              </Form.Group>
 
-                  <div
-                    className="text-center login-form-item"
-                    style={{ opacity: 0 }}
+              <Form.Group className="mb-3">
+                <Form.Label
+                  className="small fw-bold text-dark mb-2"
+                  style={{ fontSize: "0.9rem" }}
+                >
+                  Mật khẩu
+                </Form.Label>
+                <InputGroup className="login-input-group">
+                  <InputGroup.Text
+                    style={{ background: "transparent", border: "none" }}
                   >
-                    <p className="text-secondary small mb-0">
-                      Chưa có tài khoản?{" "}
-                      <Link
-                        to="/register"
-                        className="text-primary text-decoration-none fw-bold hover-primary transition-all"
-                      >
-                        Đăng ký ngay
-                      </Link>
-                    </p>
-                  </div>
-                </Form>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      </Container>
+                    <i
+                      className="bi bi-lock-fill"
+                      style={{ color: "#a0a0a0" }}
+                    ></i>
+                  </InputGroup.Text>
+                  <Form.Control
+                    type={showPassword ? "text" : "password"}
+                    placeholder="admin123"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={loading}
+                    autoComplete="current-password"
+                    style={{
+                      background: "#f5f5f5",
+                      border: "none",
+                      fontSize: "0.95rem",
+                    }}
+                  />
+                  <Button
+                    variant="link"
+                    className="text-muted text-decoration-none"
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      pointerEvents: "auto",
+                      color: "#a0a0a0",
+                    }}
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    <i
+                      className={showPassword ? "bi bi-eye-slash" : "bi bi-eye"}
+                    ></i>
+                  </Button>
+                </InputGroup>
+              </Form.Group>
+
+              <div className="d-flex justify-content-between align-items-center mb-4">
+                <Form.Check
+                  type="checkbox"
+                  label={<span style={{ fontSize: "0.85rem" }}>Ghi nhớ</span>}
+                  className="text-muted"
+                />
+                <Link
+                  to="/forgot-password"
+                  className="small text-decoration-none"
+                  style={{ color: "#a78bfa", fontSize: "0.85rem" }}
+                >
+                  Quên mật khẩu?
+                </Link>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-100 fw-bold mb-3 rounded-2"
+                style={{
+                  background: "linear-gradient(135deg, #8b5cf6, #a78bfa)",
+                  border: "none",
+                  padding: "0.7rem",
+                  fontSize: "0.95rem",
+                  color: "white",
+                }}
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Spinner animation="border" size="sm" className="me-2" />
+                    Đang đăng nhập...
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-box-arrow-in-right me-2"></i>
+                    Đăng Nhập
+                  </>
+                )}
+              </Button>
+            </Form>
+          </div>
+        </Card.Body>
+      </Card>
     </div>
   );
 }

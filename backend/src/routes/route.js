@@ -1,18 +1,27 @@
 import { Router } from "express";
 import {
   login,
+  register,
   getMe,
   updateProfile,
   changePassword,
   getMyBookings,
+  updateMyBooking,
   getAllBookings,
   checkInBooking,
   createBooking,
+  getMyOrders,
+  createOrder,
+  updateMyOrder,
   getTables,
   getAvailableTables,
   createTable,
   updateTable,
   deleteTable,
+  getTableTypes,
+  createTableType,
+  updateTableType,
+  deleteTableType,
   getReportAnalytics,
   getPaymentData,
   createPayment,
@@ -37,6 +46,7 @@ const router = Router();
 
 // Auth
 router.post("/auth/login", login);
+router.post("/auth/register", register);
 router.get("/auth/me", requireAuth, getMe);
 router.put("/auth/profile", requireAuth, updateProfile);
 router.put("/auth/password", requireAuth, changePassword);
@@ -48,9 +58,21 @@ router.post("/tables", requireStaff, createTable);
 router.put("/tables/:id", requireStaff, updateTable);
 router.delete("/tables/:id", requireStaff, deleteTable);
 
+// Table Types
+router.get("/table-types", getTableTypes);
+router.post("/table-types", requireStaff, createTableType);
+router.put("/table-types/:id", requireStaff, updateTableType);
+router.delete("/table-types/:id", requireStaff, deleteTableType);
+
 // Bookings — customer
 router.get("/bookings/my", requireAuth, getMyBookings);
 router.post("/bookings", requireAuth, createBooking);
+router.patch("/bookings/:id", requireAuth, updateMyBooking);
+
+// Orders — customer
+router.get("/orders/my", requireAuth, getMyOrders);
+router.post("/orders", requireAuth, createOrder);
+router.put("/orders/:id", requireAuth, updateMyOrder);
 
 // Bookings — staff / admin
 router.get("/bookings/all", requireStaff, getAllBookings);
@@ -66,6 +88,11 @@ router.post("/payments/cancel", requireAuth, cancelPayment);
 
 // PayOS webhook (no auth — called by PayOS server)
 router.post("/payos/webhook", payosWebhook);
+
+// Orders
+router.get("/orders/my", requireAuth, getMyOrders);
+router.post("/orders", requireAuth, createOrder);
+router.put("/orders/:id", requireAuth, updateMyOrder);
 
 // Menu Management — staff / admin
 router.get("/menu/items", getMenuItems);
