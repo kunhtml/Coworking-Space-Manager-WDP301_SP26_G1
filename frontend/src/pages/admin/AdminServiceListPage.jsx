@@ -242,6 +242,31 @@ export default function AdminServiceListPage() {
     }
   };
 
+  // ═══════════════════════════════════════════════════════════
+  // CATEGORY CRUD
+  // ═══════════════════════════════════════════════════════════
+
+  const openCatAdd = () => {
+    setCatForm(EMPTY_CAT_FORM);
+    setEditingCatId(null);
+    setShowCatAdd(true);
+  };
+
+  const openCatEdit = (cat) => {
+    setEditingCatId(cat._id);
+    setCatForm({
+      name: cat.name || "",
+      description: cat.description || "",
+      isActive: cat.isActive !== false,
+    });
+    setShowCatEdit(true);
+  };
+
+  const openCatDelete = (cat) => {
+    setDeletingCat(cat);
+    setShowCatDelete(true);
+  };
+
   return (
     <AdminLayout>
       <div className="mb-5 pb-3">
