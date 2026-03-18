@@ -34,6 +34,8 @@ import {
   deleteMenuItem,
   getCategories,
   createCategory,
+  updateCategory,
+  deleteCategory,
   getAllUsers,
   getUserById,
   createUser,
@@ -103,6 +105,8 @@ router.delete("/menu/items/:id", requireStaff, deleteMenuItem);
 
 router.get("/menu/categories", getCategories);
 router.post("/menu/categories", requireStaff, createCategory);
+router.put("/menu/categories/:id", requireStaff, updateCategory);
+router.delete("/menu/categories/:id", requireStaff, deleteCategory);
 
 // User Management — staff / admin
 router.get("/users", requireStaff, getAllUsers);

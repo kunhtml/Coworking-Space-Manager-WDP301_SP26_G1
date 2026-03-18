@@ -57,6 +57,16 @@ export const apiClient = {
 export const loginApi = (identifier, password) =>
   apiClient.post("/auth/login", { identifier, password });
 
+export const registerApi = (fullName, email, phone, passwordHash) =>
+  apiClient.post("/auth/register", {
+    fullName,
+    email,
+    phone,
+    passwordHash,
+    role: "customer",
+    membershipStatus: "active",
+  });
+
 export const getMeApi = () => apiClient.get("/auth/me");
 
 export const updateProfileApi = (data) => apiClient.put("/auth/profile", data);
@@ -65,5 +75,3 @@ export const changePasswordApi = (data) =>
   apiClient.put("/auth/password", data);
 
 export const getMyBookingsApi = () => apiClient.get("/bookings/my");
-
-export const registerApi = (data) => apiClient.post("/auth/register", data);

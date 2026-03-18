@@ -36,7 +36,6 @@ export const login = async (req, res) => {
         { phone: identifier.trim() },
       ],
     });
-
     if (!user) {
       return res
         .status(401)
@@ -48,6 +47,15 @@ export const login = async (req, res) => {
       return res
         .status(401)
         .json({ message: "Email/số điện thoại hoặc mật khẩu không đúng." });
+    }
+
+    // Kiểm tra tài khoản có bị khóa không
+    const status = (user.membershipStatus || "").toLowerCase();
+    if (status === "suspended") {
+      return res.status(403).json({
+        message:
+          "Tài khoản của bạn đã bị tạm khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.",
+      });
     }
 
     const token = jwt.sign(
@@ -74,56 +82,76 @@ export const login = async (req, res) => {
   }
 };
 
+// POST /api/auth/register
 export const register = async (req, res) => {
   try {
-    const { fullName, email, phone, password } = req.body;
+    const { fullName, email, phone, passwordHash, role, membershipStatus } =
+      req.body;
 
-    if (!fullName || !email || !phone || !password) {
+    // Validate required fields
+    if (!email || !passwordHash) {
       return res
         .status(400)
-        .json({ message: "Vui lòng điền đầy đủ thông tin." });
+        .json({ message: "Email và mật khẩu là bắt buộc." });
     }
 
-    const emailLower = email.toLowerCase().trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLower)) {
+    // Validate email format
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return res.status(400).json({ message: "Email không đúng định dạng." });
     }
 
+    if (passwordHash.length < 6) {
+      return res
+        .status(400)
+        .json({ message: "Mật khẩu phải có ít nhất 6 ký tự." });
+    }
+
+    // Check if email already exists
     const existingUser = await User.findOne({
-      $or: [{ email: emailLower }, { phone: phone.trim() }],
+      email: email.toLowerCase().trim(),
     });
 
     if (existingUser) {
-      return res.status(400).json({
-        message: "Email hoặc số điện thoại này đã được sử dụng.",
-      });
+      return res.status(409).json({ message: "Email này đã được đăng ký." });
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
+    // Hash password
+    const hashedPassword = await bcrypt.hash(passwordHash, 10);
 
+    // Create new user
     const newUser = new User({
-      fullName: fullName.trim(),
-      email: emailLower,
-      phone: phone.trim(),
-      passwordHash,
-      role: "Customer",
-      membershipStatus: "Active",
+      fullName: fullName?.trim() || "Người dùng mới",
+      email: email.toLowerCase().trim(),
+      phone: phone?.trim() || null,
+      passwordHash: hashedPassword,
+      role: role || "customer",
+      membershipStatus: membershipStatus || "active",
     });
 
     await newUser.save();
 
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: newUser._id, role: newUser.role },
+      process.env.JWT_SECRET || "nexus_secret",
+      { expiresIn: "7d" },
+    );
+
     res.status(201).json({
-      message: "Đăng ký tài khoản thành công!",
+      message: "Đăng ký thành công!",
+      token,
       user: {
         id: newUser._id,
         fullName: newUser.fullName,
         email: newUser.email,
+        phone: newUser.phone,
+        role: newUser.role,
+        membershipStatus: newUser.membershipStatus,
       },
     });
   } catch (err) {
-    console.error("Register Error:", err);
-    res.status(500).json({ message: "Lỗi server, vui lòng thử lại sau." });
+    console.error(err);
+    res.status(500).json({ message: "Lỗi server, vui lòng thử lại." });
   }
 };
 
@@ -398,7 +426,9 @@ export const createTableType = async (req, res) => {
   try {
     const { name, description } = req.body;
     if (!name?.trim()) {
-      return res.status(400).json({ message: "Tên loại bàn không được để trống." });
+      return res
+        .status(400)
+        .json({ message: "Tên loại bàn không được để trống." });
     }
     const existing = await TableType.findOne({ name: name.trim() }).lean();
     if (existing) {
@@ -421,7 +451,9 @@ export const updateTableType = async (req, res) => {
   try {
     const { name, description } = req.body;
     if (!name?.trim()) {
-      return res.status(400).json({ message: "Tên loại bàn không được để trống." });
+      return res
+        .status(400)
+        .json({ message: "Tên loại bàn không được để trống." });
     }
     const existing = await TableType.findOne({
       name: name.trim(),
@@ -432,14 +464,15 @@ export const updateTableType = async (req, res) => {
     }
     const tableType = await TableType.findByIdAndUpdate(
       req.params.id,
-      { 
-        name: name.trim(), 
+      {
+        name: name.trim(),
         description: description?.trim() || "",
         capacity: Number(req.body.capacity) || 1,
       },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
-    if (!tableType) return res.status(404).json({ message: "Không tìm thấy loại bàn." });
+    if (!tableType)
+      return res.status(404).json({ message: "Không tìm thấy loại bàn." });
     res.json({ message: "Cập nhật loại bàn thành công!", tableType });
   } catch (err) {
     console.error(err);
@@ -451,7 +484,8 @@ export const updateTableType = async (req, res) => {
 export const deleteTableType = async (req, res) => {
   try {
     const tableType = await TableType.findByIdAndDelete(req.params.id);
-    if (!tableType) return res.status(404).json({ message: "Không tìm thấy loại bàn." });
+    if (!tableType)
+      return res.status(404).json({ message: "Không tìm thấy loại bàn." });
     res.json({ message: "Xóa loại bàn thành công!" });
   } catch (err) {
     console.error(err);
@@ -797,13 +831,12 @@ export const createBooking = async (req, res) => {
         .status(400)
         .json({ message: "Vui lòng cung cấp đủ thông tin đặt bàn." });
     }
-
-    const startTime = new Date(`${bookingDate}T${bookingStartTime}:00`);
+    const startTime = new Date(`${arrivalDate}T${arrivalTime}:00`);
     if (!isFinite(startTime.getTime())) {
       return res.status(400).json({ message: "Ngày hoặc giờ không hợp lệ." });
     }
-    const endTime = new Date(startTime.getTime() + bookingDuration * 3600000);
-    const depositAmount = (Number(pricePerHour) || 0) * bookingDuration;
+    const endTime = new Date(startTime.getTime() + Number(duration) * 3600000);
+    const depositAmount = (Number(pricePerHour) || 0) * Number(duration);
 
     const count = await Booking.countDocuments();
     const bookingCode = `BK-${String(count + 1).padStart(4, "0")}`;
@@ -916,7 +949,9 @@ export const updateMyBooking = async (req, res) => {
 // GET /api/orders/my  (Customer)
 export const getMyOrders = async (req, res) => {
   try {
-    const myBookings = await Booking.find({ userId: req.user.id }).select("_id").lean();
+    const myBookings = await Booking.find({ userId: req.user.id })
+      .select("_id")
+      .lean();
     const myBookingIdSet = new Set(myBookings.map((b) => b._id.toString()));
 
     // Keep backward compatibility for old orders that may not have userId set correctly.
@@ -1496,16 +1531,75 @@ export const createCategory = async (req, res) => {
   }
 };
 
+// PUT /api/menu/categories/:id
+export const updateCategory = async (req, res) => {
+  try {
+    const { name, description, isActive } = req.body;
+    if (!name?.trim()) {
+      return res.status(400).json({ message: "Tên danh mục không được để trống." });
+    }
+    const updated = await Category.findByIdAndUpdate(
+      req.params.id,
+      {
+        name: name.trim(),
+        description: description?.trim() || "",
+        isActive: isActive !== false,
+      },
+      { new: true }
+    ).lean();
+
+    if (!updated) return res.status(404).json({ message: "Không tìm thấy danh mục." });
+    res.json({ message: "Cập nhật danh mục thành công!", category: updated });
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi khi cập nhật danh mục." });
+  }
+};
+
+// DELETE /api/menu/categories/:id
+export const deleteCategory = async (req, res) => {
+  try {
+    // Kiểm tra xem có sản phẩm nào đang thuộc danh mục này không trước khi xóa
+    const hasProducts = await MenuItem.findOne({ categoryId: req.params.id });
+    if (hasProducts) {
+      return res.status(400).json({ 
+        message: "Không thể xóa danh mục đang chứa sản phẩm. Vui lòng xóa hoặc chuyển sản phẩm trước." 
+      });
+    }
+
+    const deleted = await Category.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: "Không tìm thấy danh mục." });
+    res.json({ message: "Xoá danh mục thành công!" });
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi khi xoá danh mục." });
+  }
+};
+
 // ==================== USER MANAGEMENT ====================
 
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find()
+    const { search, role, status } = req.query;
+    let query = {};
+
+    // Logic tìm kiếm đa năng: Tên, Email hoặc SĐT
+    if (search) {
+      const searchRegex = new RegExp(search.trim(), "i");
+      query.$or = [
+        { fullName: searchRegex },
+        { email: searchRegex },
+        { phone: searchRegex }
+      ];
+    }
+
+    // Lọc theo vai trò và trạng thái hội viên
+    if (role && role !== "Tất cả") query.role = role;
+    if (status && status !== "Tất cả") query.membershipStatus = status;
+
+    const users = await User.find(query)
       .select("-passwordHash")
       .sort({ createdAt: -1 });
     res.json(users);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: "Lỗi khi tải danh sách người dùng." });
   }
 };

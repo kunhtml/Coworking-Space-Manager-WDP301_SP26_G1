@@ -8,36 +8,34 @@ import {
   Button,
   Alert,
   Spinner,
+  Navbar,
+  Nav,
 } from "react-bootstrap";
 import { Link, useNavigate } from "react-router";
 import { animate, stagger } from "animejs";
-// Giả sử bạn có hàm registerApi trong file api.js, nếu chưa có thì mình sẽ hướng dẫn tạo sau nhé
-import { registerApi } from "../../services/api"; 
+import { registerApi } from "../../services/api";
+import { saveAuth } from "../../store/authSlice";
+import AuthNavActions from "../../components/common/AuthNavActions";
 
 export function meta() {
   return [
-    { title: "Đăng ký | Nexus Coffee" },
-    { name: "description", content: "Đăng ký tài khoản Nexus Coffee" },
+    { title: "Đăng ký | StudySpace" },
+    { name: "description", content: "Đăng ký tài khoản StudySpace" },
   ];
 }
 
 export default function Register() {
   const navigate = useNavigate();
-  
-  // State cho các trường đăng ký
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    password: "",
-    confirmPassword: "",
-  });
-
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [agreedTerms, setAgreedTerms] = useState(false);
 
-  // Animation tương tự màn hình Login
   useEffect(() => {
     animate(".register-card", {
       translateY: [50, 0],
@@ -76,210 +74,345 @@ export default function Register() {
     setError("");
     setSuccess("");
 
-    // Validation cơ bản
-    if (!formData.fullName || !formData.email || !formData.phone || !formData.password) {
-      setError("Vui lòng điền đầy đủ thông tin.");
+    if (!fullName.trim() || !email.trim() || !password.trim()) {
+      setError("Vui lòng điền đầy đủ các trường bắt buộc.");
       return;
     }
 
-    if (formData.password !== formData.confirmPassword) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("Email không đúng định dạng.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Mật khẩu phải có ít nhất 6 ký tự.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
       setError("Mật khẩu xác nhận không khớp.");
+      return;
+    }
+
+    if (!agreedTerms) {
+      setError("Vui lòng đồng ý với điều khoản sử dụng.");
       return;
     }
 
     setLoading(true);
     try {
-      // Gửi dữ liệu xuống backend (loại bỏ confirmPassword vì backend không cần)
-      const { confirmPassword, ...dataToSubmit } = formData;
-      await registerApi(dataToSubmit); 
-      
-      setSuccess("Đăng ký thành công! Đang chuyển hướng đến đăng nhập...");
-      setTimeout(() => navigate("/login"), 2000);
+      const response = await registerApi(
+        fullName.trim(),
+        email.trim().toLowerCase(),
+        phone.trim() || null,
+        password,
+      );
+
+      setSuccess("Đăng ký thành công! Đang chuyển hướng...");
+      saveAuth(response.token, response.user);
+      setTimeout(() => navigate("/"), 1500);
     } catch (err) {
-      setError(err.message || "Đăng ký thất bại, email hoặc số điện thoại có thể đã tồn tại.");
+      setError(err.message || "Đăng ký thất bại. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div
-      className="d-flex flex-column min-vh-100 text-light font-monospace position-relative overflow-hidden"
-      style={{
-        backgroundImage: "url('/login-bg.png')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }}
-    >
-      {/* Dark overlay for readability */}
-      <div
-        className="position-absolute top-0 start-0 w-100 h-100"
-        style={{
-          zIndex: 0,
-          backgroundColor: "rgba(0,0,0,0.65)",
-          pointerEvents: "none",
-        }}
-      />
-
-      <Container
-        className="flex-grow-1 d-flex align-items-center justify-content-center py-5 position-relative"
-        style={{ zIndex: 1 }}
-      >
-        <Row className="w-100 justify-content-center">
-          <Col md={8} lg={6} xl={5}>
-            <Card
-              className="bg-dark border-secondary shadow-lg text-light register-card"
-              style={{ opacity: 0 }}
+    <div className="min-vh-100 bg-light d-flex flex-column">
+      {/* Header Navigation */}
+      <Navbar bg="white" expand="lg" className="py-3 shadow-sm border-0">
+        <Container>
+          <Navbar.Brand
+            as={Link}
+            to="/"
+            className="fw-bold d-flex align-items-center"
+          >
+            <div
+              className="studyspace-logo me-2 d-flex align-items-center justify-content-center rounded-3"
+              style={{ background: "#6366f1", width: "40px", height: "40px" }}
             >
-              <Card.Body className="p-4 p-sm-5">
-                <div className="text-center mb-4">
-                  <Link
-                    to="/"
-                    className="text-decoration-none text-light d-inline-block mb-3 register-header-item"
-                    style={{ opacity: 0 }}
-                  >
-                    <h2 className="fw-bold mb-0 d-flex align-items-center justify-content-center">
-                      <i className="bi bi-cup-hot-fill me-2" style={{ color: "#d4a373" }}></i>
-                      NEXUS COFFEE
+              <i className="bi bi-cup-hot-fill text-white"></i>
+            </div>
+            <span style={{ color: "#1f2937" }}>StudySpace</span>
+          </Navbar.Brand>
+
+          <Navbar.Toggle />
+          <Navbar.Collapse>
+            <Nav className="me-auto ms-5">
+              <Nav.Link as={Link} to="/" className="fw-medium text-muted px-3">
+                Trang chủ
+              </Nav.Link>
+              <Nav.Link href="#spaces" className="fw-medium text-muted px-3">
+                Đặt chỗ
+              </Nav.Link>
+              <Nav.Link href="#menu" className="fw-medium text-muted px-3">
+                Thực đơn
+              </Nav.Link>
+            </Nav>
+
+            <div className="d-flex gap-3 align-items-center">
+              <AuthNavActions />
+            </div>
+          </Navbar.Collapse>
+        </Container>
+      </Navbar>
+
+      {/* Register Section */}
+      <section className="flex-grow-1 d-flex align-items-center py-5">
+        <Container>
+          <Row className="justify-content-center">
+            <Col lg={6} md={8}>
+              <Card
+                className="border-0 shadow-lg rounded-4 overflow-hidden register-card"
+                style={{ opacity: 0 }}
+              >
+                <Card.Body className="p-5">
+                  {/* Header */}
+                  <div className="text-center mb-5">
+                    <div
+                      className="mb-4 register-header-item"
+                      style={{ opacity: 0 }}
+                    >
+                      <i
+                        className="bi bi-person-plus-fill"
+                        style={{ fontSize: "2.5rem", color: "#6366f1" }}
+                      ></i>
+                    </div>
+                    <h2
+                      className="fw-bold mb-2 register-header-item"
+                      style={{ opacity: 0, color: "#1f2937" }}
+                    >
+                      Đăng ký tài khoản
                     </h2>
-                  </Link>
-                  <h4 className="text-uppercase letter-spacing-1 mb-2 register-header-item" style={{ opacity: 0 }}>
-                    Đăng ký tài khoản
-                  </h4>
-                  <p className="text-secondary small register-header-item" style={{ opacity: 0 }}>
-                    Trở thành thành viên để nhận nhiều ưu đãi!
-                  </p>
-                </div>
-
-                {error && (
-                  <Alert variant="danger" dismissible onClose={() => setError("")} className="py-2 small">
-                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
-                    {error}
-                  </Alert>
-                )}
-                {success && (
-                  <Alert variant="success" className="py-2 small">
-                    <i className="bi bi-check-circle-fill me-2"></i>
-                    {success}
-                  </Alert>
-                )}
-
-                <Form onSubmit={handleSubmit}>
-                  <Form.Group className="mb-3 register-form-item" style={{ opacity: 0 }}>
-                    <Form.Label className="text-uppercase small fw-bold text-secondary">
-                      Họ và tên
-                    </Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="fullName"
-                      placeholder="Nhập họ và tên của bạn"
-                      className="bg-dark text-light border-secondary py-2 px-3 shadow-none focus-ring focus-ring-primary transition-all"
-                      style={{ backgroundColor: "#212529" }}
-                      value={formData.fullName}
-                      onChange={handleChange}
-                      disabled={loading}
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-3 register-form-item" style={{ opacity: 0 }}>
-                    <Form.Label className="text-uppercase small fw-bold text-secondary">
-                      Email
-                    </Form.Label>
-                    <Form.Control
-                      type="email"
-                      name="email"
-                      placeholder="Nhập địa chỉ email"
-                      className="bg-dark text-light border-secondary py-2 px-3 shadow-none focus-ring focus-ring-primary transition-all"
-                      style={{ backgroundColor: "#212529" }}
-                      value={formData.email}
-                      onChange={handleChange}
-                      disabled={loading}
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-3 register-form-item" style={{ opacity: 0 }}>
-                    <Form.Label className="text-uppercase small fw-bold text-secondary">
-                      Số điện thoại
-                    </Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="phone"
-                      placeholder="Nhập số điện thoại"
-                      className="bg-dark text-light border-secondary py-2 px-3 shadow-none focus-ring focus-ring-primary transition-all"
-                      style={{ backgroundColor: "#212529" }}
-                      value={formData.phone}
-                      onChange={handleChange}
-                      disabled={loading}
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-3 register-form-item" style={{ opacity: 0 }}>
-                    <Form.Label className="text-uppercase small fw-bold text-secondary">
-                      Mật khẩu
-                    </Form.Label>
-                    <Form.Control
-                      type="password"
-                      name="password"
-                      placeholder="Nhập mật khẩu"
-                      className="bg-dark text-light border-secondary py-2 px-3 shadow-none focus-ring focus-ring-primary transition-all"
-                      style={{ backgroundColor: "#212529" }}
-                      value={formData.password}
-                      onChange={handleChange}
-                      disabled={loading}
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-4 register-form-item" style={{ opacity: 0 }}>
-                    <Form.Label className="text-uppercase small fw-bold text-secondary">
-                      Xác nhận mật khẩu
-                    </Form.Label>
-                    <Form.Control
-                      type="password"
-                      name="confirmPassword"
-                      placeholder="Nhập lại mật khẩu"
-                      className="bg-dark text-light border-secondary py-2 px-3 shadow-none focus-ring focus-ring-primary transition-all"
-                      style={{ backgroundColor: "#212529" }}
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      disabled={loading}
-                    />
-                  </Form.Group>
-
-                  <Button
-                    variant="primary"
-                    type="submit"
-                    className="w-100 py-2 fw-bold text-uppercase mb-4 rounded-0 border-0 register-form-item transition-all hover-scale d-flex align-items-center justify-content-center gap-2"
-                    style={{ backgroundColor: "#d4a373", opacity: 0 }}
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <>
-                        <Spinner animation="border" size="sm" />
-                        Đang đăng ký...
-                      </>
-                    ) : (
-                      "Đăng ký"
-                    )}
-                  </Button>
-
-                  <div className="text-center register-form-item" style={{ opacity: 0 }}>
-                    <p className="text-secondary small mb-0">
-                      Đã có tài khoản?{" "}
-                      <Link
-                        to="/login"
-                        className="text-primary text-decoration-none fw-bold hover-primary transition-all"
-                      >
-                        Đăng nhập ngay
-                      </Link>
+                    <p
+                      className="text-muted small register-header-item"
+                      style={{ opacity: 0 }}
+                    >
+                      Tạo tài khoản mới để bắt đầu trải nghiệm.
                     </p>
                   </div>
-                </Form>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      </Container>
+
+                  {error && (
+                    <Alert
+                      variant="danger"
+                      dismissible
+                      onClose={() => setError("")}
+                      className="py-2 small mb-4"
+                    >
+                      <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                      {error}
+                    </Alert>
+                  )}
+                  {success && (
+                    <Alert variant="success" className="py-2 small mb-4">
+                      <i className="bi bi-check-circle-fill me-2"></i>
+                      {success}
+                    </Alert>
+                  )}
+
+                  <Form onSubmit={handleSubmit}>
+                    {/* Full Name */}
+                    <Form.Group
+                      className="mb-3 register-form-item"
+                      style={{ opacity: 0 }}
+                    >
+                      <Form.Label
+                        className="fw-bold mb-2"
+                        style={{ color: "#1f2937" }}
+                      >
+                        Họ và tên <span style={{ color: "#ef4444" }}>*</span>
+                      </Form.Label>
+                      <Form.Control
+                        type="text"
+                        placeholder="Nhập họ và tên"
+                        className="py-2 px-3 rounded-3 border-2 focus-ring focus-ring-primary transition-all"
+                        style={{
+                          borderColor: "#e5e7eb",
+                          color: "#1f2937",
+                        }}
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        disabled={loading}
+                      />
+                    </Form.Group>
+
+                    {/* Email */}
+                    <Form.Group
+                      className="mb-3 register-form-item"
+                      style={{ opacity: 0 }}
+                    >
+                      <Form.Label
+                        className="fw-bold mb-2"
+                        style={{ color: "#1f2937" }}
+                      >
+                        Email <span style={{ color: "#ef4444" }}>*</span>
+                      </Form.Label>
+                      <Form.Control
+                        type="email"
+                        placeholder="Nhập email"
+                        className="py-2 px-3 rounded-3 border-2 focus-ring focus-ring-primary transition-all"
+                        style={{
+                          borderColor: "#e5e7eb",
+                          color: "#1f2937",
+                        }}
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        disabled={loading}
+                      />
+                    </Form.Group>
+
+                    {/* Phone */}
+                    <Form.Group
+                      className="mb-3 register-form-item"
+                      style={{ opacity: 0 }}
+                    >
+                      <Form.Label
+                        className="fw-bold mb-2"
+                        style={{ color: "#1f2937" }}
+                      >
+                        Số điện thoại
+                      </Form.Label>
+                      <Form.Control
+                        type="tel"
+                        placeholder="Nhập số điện thoại (tùy chọn)"
+                        className="py-2 px-3 rounded-3 border-2 focus-ring focus-ring-primary transition-all"
+                        style={{
+                          borderColor: "#e5e7eb",
+                          color: "#1f2937",
+                        }}
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        disabled={loading}
+                      />
+                    </Form.Group>
+
+                    {/* Password */}
+                    <Form.Group
+                      className="mb-3 register-form-item"
+                      style={{ opacity: 0 }}
+                    >
+                      <Form.Label
+                        className="fw-bold mb-2"
+                        style={{ color: "#1f2937" }}
+                      >
+                        Mật khẩu <span style={{ color: "#ef4444" }}>*</span>
+                      </Form.Label>
+                      <Form.Control
+                        type="password"
+                        placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
+                        className="py-2 px-3 rounded-3 border-2 focus-ring focus-ring-primary transition-all"
+                        style={{
+                          borderColor: "#e5e7eb",
+                          color: "#1f2937",
+                        }}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        disabled={loading}
+                      />
+                    </Form.Group>
+
+                    {/* Confirm Password */}
+                    <Form.Group
+                      className="mb-3 register-form-item"
+                      style={{ opacity: 0 }}
+                    >
+                      <Form.Label
+                        className="fw-bold mb-2"
+                        style={{ color: "#1f2937" }}
+                      >
+                        Xác nhận mật khẩu{" "}
+                        <span style={{ color: "#ef4444" }}>*</span>
+                      </Form.Label>
+                      <Form.Control
+                        type="password"
+                        placeholder="Nhập lại mật khẩu"
+                        className="py-2 px-3 rounded-3 border-2 focus-ring focus-ring-primary transition-all"
+                        style={{
+                          borderColor: "#e5e7eb",
+                          color: "#1f2937",
+                        }}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        disabled={loading}
+                      />
+                    </Form.Group>
+
+                    {/* Terms & Conditions */}
+                    <Form.Group
+                      className="mb-4 register-form-item"
+                      style={{ opacity: 0 }}
+                    >
+                      <Form.Check
+                        type="checkbox"
+                        label={
+                          <span>
+                            Tôi đồng ý với{" "}
+                            <Link
+                              to="#"
+                              className="text-decoration-none fw-bold"
+                              style={{ color: "#6366f1" }}
+                            >
+                              điều khoản sử dụng
+                            </Link>{" "}
+                            và{" "}
+                            <Link
+                              to="#"
+                              className="text-decoration-none fw-bold"
+                              style={{ color: "#6366f1" }}
+                            >
+                              chính sách bảo mật
+                            </Link>
+                          </span>
+                        }
+                        className="text-muted small"
+                        checked={agreedTerms}
+                        onChange={(e) => setAgreedTerms(e.target.checked)}
+                        disabled={loading}
+                      />
+                    </Form.Group>
+
+                    {/* Submit Button */}
+                    <Button
+                      variant="primary"
+                      type="submit"
+                      className="w-100 py-3 fw-bold mb-4 rounded-3 border-0 register-form-item transition-all d-flex align-items-center justify-content-center gap-2"
+                      style={{ backgroundColor: "#6366f1", opacity: 0 }}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <>
+                          <Spinner animation="border" size="sm" />
+                          Đang xử lý...
+                        </>
+                      ) : (
+                        "Đăng ký"
+                      )}
+                    </Button>
+
+                    {/* Login Link */}
+                    <div
+                      className="text-center register-form-item"
+                      style={{ opacity: 0 }}
+                    >
+                      <p className="text-muted small mb-0">
+                        Đã có tài khoản?{" "}
+                        <Link
+                          to="/login"
+                          className="fw-bold text-decoration-none"
+                          style={{ color: "#6366f1" }}
+                        >
+                          Đăng nhập
+                        </Link>
+                      </p>
+                    </div>
+                  </Form>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+        </Container>
+      </section>
     </div>
   );
 }

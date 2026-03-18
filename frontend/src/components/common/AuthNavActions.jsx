@@ -1,5 +1,5 @@
 import { Badge, Button, Dropdown } from "react-bootstrap";
-import { Link, useNavigate } from "react-router"; // Lưu ý: dùng "react-router-dom" nếu bản cũ của bạn bị lỗi
+import { Link, useNavigate } from "react-router";
 import { useAuth } from "../../hooks/useAuth";
 
 const DEFAULT_ROLE_LABELS = {
@@ -9,8 +9,8 @@ const DEFAULT_ROLE_LABELS = {
 };
 
 function getDashboardPath(role) {
-  if (role === "Admin") return "/admin";
-  if (role === "Staff") return "/dashboard";
+  if (role === "Admin") return "/admin-dashboard";
+  if (role === "Staff") return "/staff-dashboard";
   if (role === "Customer") return "/customer-dashboard";
   return null;
 }
@@ -35,80 +35,138 @@ export default function AuthNavActions({
     color: "#aaa",
   };
   const dashboardPath = getDashboardPath(role);
+  const isCustomer = role === "Customer";
 
   return (
-    <div className="d-flex gap-2 ms-lg-3 mt-2 mt-lg-0 align-items-center">
+    <div className="d-flex gap-2 ms-lg-3 mt-2 mt-lg-0">
       {isAuthenticated && user ? (
         <Dropdown align="end">
           <Dropdown.Toggle
             variant="outline-secondary"
-            className="px-3 rounded-0 fw-medium text-light border-secondary d-flex align-items-center gap-2"
-            style={{ backgroundColor: "transparent" }}
+            className="px-3 py-2 rounded-1 fw-medium text-light border-secondary d-flex align-items-center gap-2"
+            style={{ backgroundColor: "rgba(255, 255, 255, 0.04)" }}
           >
-            <i 
-              className={`bi ${roleMeta.icon ?? "bi-person-circle"}`} 
-              style={{ color: roleMeta.color ?? "#aaa" }}
-            ></i>
-            <span>{displayName || user.fullName}</span>
-            <Badge
-              pill
+            <span
+              className="d-inline-flex align-items-center justify-content-center rounded-circle border border-secondary"
               style={{
-                backgroundColor: roleMeta.color ?? "#aaa",
-                color: "#000",
-                fontSize: "0.65rem",
+                width: "30px",
+                height: "30px",
+                flexShrink: 0,
               }}
             >
-              {roleMeta.label ?? role}
-            </Badge>
+              <i
+                className={`bi ${roleMeta.icon ?? "bi-person-circle"}`}
+                style={{ color: roleMeta.color ?? "#aaa" }}
+              ></i>
+            </span>
+            <span className="d-flex flex-column align-items-start lh-sm me-1">
+              <span className="small text-secondary">Tài khoản</span>
+              <span
+                className="fw-semibold text-truncate"
+                style={{ maxWidth: "140px" }}
+              >
+                {displayName || user.fullName}
+              </span>
+            </span>
           </Dropdown.Toggle>
-
-          <Dropdown.Menu className="bg-dark border-secondary shadow" style={{ minWidth: "200px" }}>
-            {/* Mục Hồ sơ cá nhân - Đã thêm lại */}
-            <Dropdown.Item as={Link} to="/profile" className="text-light py-2">
-              <i className="bi bi-person-lines-fill me-2 text-secondary"></i>Hồ sơ cá nhân
-            </Dropdown.Item>
-
-            {dashboardPath && (
-              <Dropdown.Item as={Link} to={dashboardPath} className="text-light py-2">
-                <i className="bi bi-speedometer2 me-2 text-secondary"></i>
-                {role === "Admin" ? "Trang quản trị" : "Bảng điều khiển"}
-              </Dropdown.Item>
-            )}
-
-            <Dropdown.Divider className="border-secondary" />
-            
+          <Dropdown.Menu
+            className={
+              isCustomer
+                ? "bg-white border-0 shadow-sm"
+                : "bg-dark border-secondary"
+            }
+            style={{ minWidth: "180px" }}
+          >
+            <div
+              className={`px-3 py-2 border-bottom ${isCustomer ? "border-light" : "border-secondary-subtle"}`}
+            >
+              <div
+                className={`${isCustomer ? "text-dark" : "text-light"} fw-semibold small text-truncate`}
+              >
+                {displayName || user.fullName}
+              </div>
+              <Badge
+                pill
+                style={{
+                  backgroundColor: roleMeta.color ?? "#aaa",
+                  color: "#000",
+                  fontSize: "0.65rem",
+                }}
+              >
+                {roleMeta.label ?? role}
+              </Badge>
+            </div>
+            {dashboardPath &&
+              (isCustomer ? (
+                <>
+                  <Dropdown.Item
+                    as={Link}
+                    to="/customer-dashboard/profile"
+                    className="text-secondary py-2"
+                  >
+                    <i className="bi bi-person-circle me-2"></i>
+                    Hồ sơ cá nhân
+                  </Dropdown.Item>
+                  <Dropdown.Item
+                    as={Link}
+                    to="/customer-dashboard/orders"
+                    className="text-secondary py-2"
+                  >
+                    <i className="bi bi-card-list me-2"></i>
+                    Đơn hàng của tôi
+                  </Dropdown.Item>
+                  <Dropdown.Item
+                    as={Link}
+                    to="/customer-dashboard/password"
+                    className="text-secondary py-2"
+                  >
+                    <i className="bi bi-key-fill me-2"></i>
+                    Đổi mật khẩu
+                  </Dropdown.Item>
+                </>
+              ) : (
+                <Dropdown.Item
+                  as={Link}
+                  to={dashboardPath}
+                  className="text-light"
+                >
+                  <i className="bi bi-speedometer2 me-2"></i>
+                  {role === "Admin" ? "Quản trị" : "Dashboard"}
+                </Dropdown.Item>
+              ))}
+            <Dropdown.Divider
+              className={isCustomer ? "border-light" : "border-secondary"}
+            />
             <Dropdown.Item onClick={handleLogout} className="text-danger py-2">
               <i className="bi bi-box-arrow-right me-2"></i>Đăng xuất
             </Dropdown.Item>
           </Dropdown.Menu>
         </Dropdown>
       ) : (
-        <div className="d-flex gap-2">
-          {/* Nút Đăng nhập */}
+        <>
           <Button
             as={Link}
             to="/login"
-            variant="outline-secondary"
-            className="px-4 rounded-0 fw-medium text-uppercase text-light border-secondary"
-            style={{ fontSize: "0.85rem", letterSpacing: "1px" }}
+            variant="outline-warning"
+            className="px-4 rounded-0 fw-medium text-uppercase"
+            style={{ borderColor: "#d4a373", color: "#d4a373" }}
           >
             {loginText}
           </Button>
-
-          {/* Nút Đăng ký */}
           <Button
             as={Link}
             to="/register"
-            className="px-4 rounded-0 fw-medium text-uppercase border-0 text-dark"
-            style={{ 
-              backgroundColor: "#d4a373", 
-              fontSize: "0.85rem", 
-              letterSpacing: "1px" 
+            variant="warning"
+            className="px-4 rounded-0 fw-medium text-uppercase"
+            style={{
+              backgroundColor: "#d4a373",
+              borderColor: "#d4a373",
+              color: "#000",
             }}
           >
             Đăng ký
           </Button>
-        </div>
+        </>
       )}
     </div>
   );
