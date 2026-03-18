@@ -1,16 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  Container,
-  Row,
-  Col,
-  Card,
-  Button,
-  Navbar,
-  Form,
-  Alert,
-  Spinner,
-  Badge,
-} from "react-bootstrap";
+import { Container, Row, Col, Card, Button, Navbar, Form, Alert, Spinner, Badge } from "react-bootstrap";
 import { Link, useNavigate } from "react-router";
 import { useAuth } from "../../hooks/useAuth";
 import AuthNavActions from "../../components/common/AuthNavActions";
@@ -42,18 +31,16 @@ const MEMBERSHIP_MAP = {
 export default function Profile() {
   const { user: authUser, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Edit profile state
+  // States cho Form
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
-  const [saveMsg, setSaveMsg] = useState(null); // { type, text }
+  const [saveMsg, setSaveMsg] = useState(null);
 
-  // Change password state
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -61,10 +48,7 @@ export default function Profile() {
   const [pwMsg, setPwMsg] = useState(null);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/login");
-      return;
-    }
+    if (!isAuthenticated) { navigate("/login"); return; }
     getMeApi()
       .then((data) => {
         setProfile(data);
@@ -72,7 +56,7 @@ export default function Profile() {
         setEmail(data.email || "");
         setPhone(data.phone || "");
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, [isAuthenticated, navigate]);
 
@@ -83,44 +67,21 @@ export default function Profile() {
     try {
       const updated = await updateProfileApi({ fullName, email, phone });
       setProfile(updated);
-      // Sync localStorage so navbar updates
-      const stored = JSON.parse(localStorage.getItem("user") || "null");
-      if (stored) {
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            ...stored,
-            fullName: updated.fullName,
-            email: updated.email,
-            phone: updated.phone,
-          }),
-        );
-      }
-      setSaveMsg({ type: "success", text: "Cập nhật thông tin thành công." });
+      localStorage.setItem("user", JSON.stringify(updated)); // Đồng bộ Storage
+      setSaveMsg({ type: "success", text: "Cập nhật hồ sơ thành công!" });
     } catch (err) {
-      setSaveMsg({ type: "danger", text: err.message || "Cập nhật thất bại." });
-    } finally {
-      setSaving(false);
-    }
+      setSaveMsg({ type: "danger", text: err.message });
+    } finally { setSaving(false); }
   };
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
+    if (newPassword !== confirmPassword) return setPwMsg({ type: "danger", text: "Mật khẩu mới không khớp!" });
     setChangingPw(true);
-    setPwMsg(null);
     try {
-      const res = await changePasswordApi({
-        currentPassword,
-        newPassword,
-        confirmPassword,
-      });
-      setPwMsg({
-        type: "success",
-        text: res.message || "Đổi mật khẩu thành công.",
-      });
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
+      await changePasswordApi({ currentPassword, newPassword, confirmPassword });
+      setPwMsg({ type: "success", text: "Đã đổi mật khẩu thành công." });
+      setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
     } catch (err) {
       setPwMsg({
         type: "danger",
@@ -196,261 +157,102 @@ export default function Profile() {
         </Container>
       </Navbar>
 
-      <main className="flex-grow-1 bg-light py-5">
+      <main className="flex-grow-1 py-5">
         <Container>
-          <Row className="mb-4 align-items-center">
-            <Col>
-              <h2 className="fw-bold mb-1 text-dark">Thông tin cá nhân</h2>
-              <p className="text-muted mb-0">
-                Xem và cập nhật thông tin tài khoản của bạn
-              </p>
-            </Col>
-            <Col xs="auto">
-              <Button
-                as={Link}
-                to="/dashboard"
-                variant="outline-secondary"
-                className="rounded-pill px-4 fw-medium"
-              >
-                <i className="bi bi-arrow-left me-1"></i> Quay lại
-              </Button>
-            </Col>
-          </Row>
+          <h2 className="text-uppercase fw-bold mb-4 border-start border-4 ps-3" style={{ borderColor: "#d4a373" }}>
+            Hồ sơ cá nhân
+          </h2>
 
           {loading ? (
-            <div className="text-center py-5">
-              <Spinner animation="border" variant="primary" />
-            </div>
+            <div className="text-center py-5"><Spinner animation="border" style={{ color: "#d4a373" }} /></div>
           ) : (
             <Row className="g-4">
-              {/* Left: Avatar card */}
-              <Col lg={3} md={4}>
-                <Card className="border-0 shadow-sm rounded-4 text-center p-4">
-                  <div
-                    className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold mx-auto mb-3"
-                    style={{ width: 90, height: 90, fontSize: 36 }}
-                  >
+              {/* Cột trái: Thông tin tổng quan */}
+              <Col lg={4}>
+                <Card className="bg-dark border-secondary rounded-0 shadow text-center p-4">
+                  <div className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
+                    style={{ width: 100, height: 100, fontSize: 40, backgroundColor: "#d4a373", color: "#000" }}>
                     {avatarLetter}
                   </div>
-                  <h5 className="fw-bold mb-1">{profile?.fullName}</h5>
-                  <p className="text-muted small mb-2">{profile?.email}</p>
-                  <Badge
-                    bg={membership.bg}
-                    className="rounded-pill px-3 py-2 mb-3"
-                  >
-                    {membership.label}
+                  <h4 className="fw-bold text-uppercase">{profile?.fullName}</h4>
+                  <p className="text-secondary small">{profile?.email}</p>
+                  <Badge bg="outline-secondary" className="border border-secondary rounded-0 px-3 py-2 text-uppercase">
+                    Trạng thái: {profile?.membershipStatus || 'Thành viên'}
                   </Badge>
-                  <hr />
-                  <div className="text-start small">
-                    <div className="d-flex align-items-center gap-2 text-muted mb-2">
-                      <i className="bi bi-shield-check text-primary"></i>
-                      <span>
-                        Vai trò:{" "}
-                        <span className="fw-medium text-dark">
-                          {profile?.role === "admin"
-                            ? "Quản trị viên"
-                            : "Khách hàng"}
-                        </span>
-                      </span>
-                    </div>
-                    <div className="d-flex align-items-center gap-2 text-muted">
-                      <i className="bi bi-calendar3 text-primary"></i>
-                      <span>
-                        Tham gia:{" "}
-                        <span className="fw-medium text-dark">
-                          {formatDate(profile?.createdAt)}
-                        </span>
-                      </span>
-                    </div>
-                  </div>
                 </Card>
               </Col>
 
-              {/* Right: Edit forms */}
-              <Col lg={9} md={8}>
-                {/* Update profile */}
-                <Card className="border-0 shadow-sm rounded-4 mb-4">
-                  <Card.Header className="bg-white border-bottom py-3 px-4 rounded-top-4">
-                    <h6 className="fw-bold mb-0">
-                      <i className="bi bi-person-gear me-2 text-primary"></i>Cập
-                      nhật thông tin
-                    </h6>
+              {/* Cột phải: Các Form chỉnh sửa */}
+              <Col lg={8}>
+                {/* Form Thông tin */}
+                <Card className="bg-dark border-secondary rounded-0 mb-4">
+                  <Card.Header className="bg-secondary bg-opacity-10 border-bottom border-secondary text-uppercase fw-bold py-3">
+                    <i className="bi bi-person-badge me-2" style={{ color: "#d4a373" }}></i>
+                    <h5 className="text-white text-uppercase fw-bold mb-0">Chỉnh sửa thông tin</h5>
                   </Card.Header>
-                  <Card.Body className="p-4">
-                    {saveMsg && (
-                      <Alert
-                        variant={saveMsg.type}
-                        className="rounded-3 py-2 px-3 mb-4"
-                        onClose={() => setSaveMsg(null)}
-                        dismissible
-                      >
-                        <i
-                          className={`bi ${saveMsg.type === "success" ? "bi-check-circle" : "bi-exclamation-circle"} me-2`}
-                        ></i>
-                        {saveMsg.text}
-                      </Alert>
-                    )}
+                  <Card.Body>
+                    {saveMsg && <Alert variant={saveMsg.type} className="rounded-0 small">{saveMsg.text}</Alert>}
                     <Form onSubmit={handleSaveProfile}>
-                      <Row className="g-3">
-                        <Col md={6}>
-                          <Form.Group>
-                            <Form.Label className="fw-semibold small text-muted text-uppercase">
-                              Họ và tên
-                            </Form.Label>
-                            <Form.Control
-                              type="text"
-                              value={fullName}
-                              onChange={(e) => setFullName(e.target.value)}
-                              className="rounded-3"
-                              required
-                            />
-                          </Form.Group>
+                      <Row>
+                        <Col md={6} className="mb-3">
+                          <Form.Label className="small text-secondary text-uppercase">Họ và tên</Form.Label>
+                          <Form.Control className="bg-dark text-light border-secondary rounded-0"
+                            value={fullName} onChange={e => setFullName(e.target.value)} />
                         </Col>
-                        <Col md={6}>
-                          <Form.Group>
-                            <Form.Label className="fw-semibold small text-muted text-uppercase">
-                              Email
-                            </Form.Label>
-                            <Form.Control
-                              type="email"
-                              value={email}
-                              onChange={(e) => setEmail(e.target.value)}
-                              className="rounded-3"
-                              required
-                            />
-                          </Form.Group>
+                        <Col md={6} className="mb-3">
+                          <Form.Label className="small text-secondary text-uppercase">Số điện thoại</Form.Label>
+                          <Form.Control className="bg-dark text-light border-secondary rounded-0"
+                            value={phone} onChange={e => setPhone(e.target.value)} />
                         </Col>
-                        <Col md={6}>
-                          <Form.Group>
-                            <Form.Label className="fw-semibold small text-muted text-uppercase">
-                              Số điện thoại
-                            </Form.Label>
-                            <Form.Control
-                              type="tel"
-                              value={phone}
-                              onChange={(e) => setPhone(e.target.value)}
-                              placeholder="Nhập số điện thoại"
-                              className="rounded-3"
-                            />
-                          </Form.Group>
+                        <Col md={12} className="mb-3">
+                          <Form.Label className="small text-secondary text-uppercase">Email</Form.Label>
+                          <Form.Control className="bg-dark text-light border-secondary rounded-0"
+                            value={email} onChange={e => setEmail(e.target.value)} />
                         </Col>
                       </Row>
-                      <div className="mt-4 text-end">
-                        <Button
-                          type="submit"
-                          variant="primary"
-                          className="rounded-pill px-4 fw-medium"
-                          disabled={saving}
-                        >
-                          {saving ? (
-                            <>
-                              <Spinner size="sm" className="me-2" />
-                              Đang lưu...
-                            </>
-                          ) : (
-                            <>
-                              <i className="bi bi-check-lg me-1"></i>Lưu thay
-                              đổi
-                            </>
-                          )}
-                        </Button>
-                      </div>
+                      <Button type="submit" disabled={saving} className="rounded-0 border-0 px-4 text-dark fw-bold text-uppercase"
+                        style={{ backgroundColor: "#d4a373" }}>
+                        {saving ? "Đang lưu..." : "Cập nhật thông tin"}
+                      </Button>
                     </Form>
                   </Card.Body>
                 </Card>
 
-                {/* Change password */}
-                <Card className="border-0 shadow-sm rounded-4">
-                  <Card.Header className="bg-white border-bottom py-3 px-4 rounded-top-4">
-                    <h6 className="fw-bold mb-0">
-                      <i className="bi bi-lock me-2 text-warning"></i>Đổi mật
-                      khẩu
-                    </h6>
+                {/* Form Mật khẩu */}
+                <Card className="bg-dark border-secondary rounded-0">
+                  <Card.Header className="bg-secondary bg-opacity-10 border-bottom border-secondary text-uppercase fw-bold py-3">
+                    <i className="bi bi-shield-lock me-2" style={{ color: "#d4a373" }}></i>
+                    <h5 className="text-white text-uppercase fw-bold mb-0">Bảo mật tài khoản</h5>
                   </Card.Header>
-                  <Card.Body className="p-4">
-                    {pwMsg && (
-                      <Alert
-                        variant={pwMsg.type}
-                        className="rounded-3 py-2 px-3 mb-4"
-                        onClose={() => setPwMsg(null)}
-                        dismissible
-                      >
-                        <i
-                          className={`bi ${pwMsg.type === "success" ? "bi-check-circle" : "bi-exclamation-circle"} me-2`}
-                        ></i>
-                        {pwMsg.text}
-                      </Alert>
-                    )}
+                  <Card.Body>
+                    {pwMsg && <Alert variant={pwMsg.type} className="rounded-0 small">{pwMsg.text}</Alert>}
                     <Form onSubmit={handleChangePassword}>
-                      <Row className="g-3">
-                        <Col md={12}>
-                          <Form.Group>
-                            <Form.Label className="fw-semibold small text-muted text-uppercase">
-                              Mật khẩu hiện tại
-                            </Form.Label>
-                            <Form.Control
-                              type="password"
-                              value={currentPassword}
-                              onChange={(e) =>
-                                setCurrentPassword(e.target.value)
-                              }
-                              className="rounded-3"
-                              required
-                            />
+                      <Form.Group className="mb-3">
+                        <Form.Label className="small text-secondary text-uppercase">Mật khẩu hiện tại</Form.Label>
+                        <Form.Control type="password" required className="bg-dark text-light border-secondary rounded-0"
+                          value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} />
+                      </Form.Group>
+
+                      <Row>
+                        <Col md={6}>
+                          <Form.Group className="mb-3">
+                            <Form.Label className="small text-secondary text-uppercase">Mật khẩu mới</Form.Label>
+                            <Form.Control type="password" required className="bg-dark text-light border-secondary rounded-0"
+                              value={newPassword} onChange={e => setNewPassword(e.target.value)} />
                           </Form.Group>
                         </Col>
                         <Col md={6}>
-                          <Form.Group>
-                            <Form.Label className="fw-semibold small text-muted text-uppercase">
-                              Mật khẩu mới
-                            </Form.Label>
-                            <Form.Control
-                              type="password"
-                              value={newPassword}
-                              onChange={(e) => setNewPassword(e.target.value)}
-                              placeholder="Tối thiểu 6 ký tự"
-                              className="rounded-3"
-                              required
-                            />
-                          </Form.Group>
-                        </Col>
-                        <Col md={6}>
-                          <Form.Group>
-                            <Form.Label className="fw-semibold small text-muted text-uppercase">
-                              Xác nhận mật khẩu mới
-                            </Form.Label>
-                            <Form.Control
-                              type="password"
-                              value={confirmPassword}
-                              onChange={(e) =>
-                                setConfirmPassword(e.target.value)
-                              }
-                              className="rounded-3"
-                              required
-                            />
+                          <Form.Group className="mb-3">
+                            <Form.Label className="small text-secondary text-uppercase">Xác nhận mật khẩu mới</Form.Label>
+                            <Form.Control type="password" required className="bg-dark text-light border-secondary rounded-0"
+                              value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
                           </Form.Group>
                         </Col>
                       </Row>
-                      <div className="mt-4 text-end">
-                        <Button
-                          type="submit"
-                          variant="warning"
-                          className="rounded-pill px-4 fw-medium"
-                          disabled={changingPw}
-                        >
-                          {changingPw ? (
-                            <>
-                              <Spinner size="sm" className="me-2" />
-                              Đang đổi...
-                            </>
-                          ) : (
-                            <>
-                              <i className="bi bi-shield-lock me-1"></i>Đổi mật
-                              khẩu
-                            </>
-                          )}
-                        </Button>
-                      </div>
+
+                      <Button type="submit" disabled={changingPw} variant="outline-danger" className="rounded-0 px-4 text-uppercase">
+                        {changingPw ? "Đang xử lý..." : "Đổi mật khẩu"}
+                      </Button>
                     </Form>
                   </Card.Body>
                 </Card>
@@ -459,14 +261,6 @@ export default function Profile() {
           )}
         </Container>
       </main>
-
-      <footer className="bg-dark text-light py-4 mt-auto">
-        <Container>
-          <p className="text-secondary mb-0 text-center small">
-            &copy; 2026 Nexus Coworking. All rights reserved.
-          </p>
-        </Container>
-      </footer>
     </div>
   );
 }

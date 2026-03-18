@@ -65,3 +65,5 @@ export const changePasswordApi = (data) =>
   apiClient.put("/auth/password", data);
 
 export const getMyBookingsApi = () => apiClient.get("/bookings/my");
+
+export const registerApi = (data) => apiClient.post("/auth/register", data);
