@@ -74,23 +74,21 @@ export const login = async (req, res) => {
   }
 };
 
-//
 export const register = async (req, res) => {
   try {
     const { fullName, email, phone, password } = req.body;
 
-    // 1. Kiểm tra nhập liệu
     if (!fullName || !email || !phone || !password) {
-      return res.status(400).json({ message: "Vui lòng điền đầy đủ thông tin." });
+      return res
+        .status(400)
+        .json({ message: "Vui lòng điền đầy đủ thông tin." });
     }
 
-    // 2. Kiểm tra định dạng email
     const emailLower = email.toLowerCase().trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLower)) {
       return res.status(400).json({ message: "Email không đúng định dạng." });
     }
 
-    // 3. Kiểm tra user đã tồn tại chưa (email hoặc số điện thoại)
     const existingUser = await User.findOne({
       $or: [{ email: emailLower }, { phone: phone.trim() }],
     });
@@ -101,18 +99,16 @@ export const register = async (req, res) => {
       });
     }
 
-    // 4. Mã hóa mật khẩu (Sử dụng bcryptjs như code của bạn)
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    // 5. Tạo User mới (Mặc định role là Customer)
     const newUser = new User({
       fullName: fullName.trim(),
       email: emailLower,
       phone: phone.trim(),
       passwordHash,
-      role: "Customer",           // Tự động gán là khách hàng
-      membershipStatus: "Active", // Mặc định là hoạt động
+      role: "Customer",
+      membershipStatus: "Active",
     });
 
     await newUser.save();
@@ -247,17 +243,40 @@ export const getTables = async (req, res) => {
 // POST /api/tables/available  (public) — find non-overlapping tables
 export const getAvailableTables = async (req, res) => {
   try {
-    const { arrivalDate, arrivalTime, duration } = req.body;
-    if (!arrivalDate || !arrivalTime || !duration) {
+    const {
+      arrivalDate,
+      arrivalTime,
+      duration,
+      date,
+      startTime: requestStartTime,
+      endTime: requestEndTime,
+      tableType,
+    } = req.body;
+
+    const requestedDate = arrivalDate || date;
+    const requestedStartTime = arrivalTime || requestStartTime;
+    let requestedDuration = Number(duration);
+
+    if ((!requestedDuration || requestedDuration <= 0) && requestEndTime && requestedStartTime && requestedDate) {
+      const start = new Date(`${requestedDate}T${requestedStartTime}:00`);
+      const end = new Date(`${requestedDate}T${requestEndTime}:00`);
+      const diffHours = (end.getTime() - start.getTime()) / 3600000;
+      if (isFinite(diffHours) && diffHours > 0) {
+        requestedDuration = diffHours;
+      }
+    }
+
+    if (!requestedDate || !requestedStartTime || !requestedDuration || requestedDuration <= 0) {
       return res
         .status(400)
         .json({ message: "Vui lòng cung cấp ngày, giờ và thời gian sử dụng." });
     }
-    const startTime = new Date(`${arrivalDate}T${arrivalTime}:00`);
+
+    const startTime = new Date(`${requestedDate}T${requestedStartTime}:00`);
     if (!isFinite(startTime.getTime())) {
       return res.status(400).json({ message: "Ngày hoặc giờ không hợp lệ." });
     }
-    const endTime = new Date(startTime.getTime() + Number(duration) * 3600000);
+    const endTime = new Date(startTime.getTime() + requestedDuration * 3600000);
 
     // Find bookings that overlap with [startTime, endTime)
     const overlapping = await Booking.find({
@@ -270,16 +289,25 @@ export const getAvailableTables = async (req, res) => {
       overlapping.map((b) => b.tableId?.toString()).filter(Boolean),
     );
 
-    const tables = await Table.find({ status: { $ne: "Maintenance" } })
+    let tables = await Table.find({ status: { $ne: "Maintenance" } })
       .sort({ name: 1 })
       .lean();
+
+    if (tableType) {
+      const normalizedType = String(tableType).toLowerCase();
+      tables = tables.filter((t) =>
+        String(t.tableType || "").toLowerCase().includes(normalizedType),
+      );
+    }
+
     const available = tables.filter((t) => !bookedIds.has(t._id.toString()));
 
     res.json(
       available.map((t) => ({
+        _id: t._id.toString(),
         sourceId: t._id.toString(),
         name: t.name,
-        tableType: t.tableType,
+        tableType: { name: t.tableType },
         capacity: t.capacity,
         status: t.status,
         pricePerHour: t.pricePerHour || 0,
@@ -738,24 +766,44 @@ export const createBooking = async (req, res) => {
   try {
     const {
       tableSourceId,
+      tableId,
       guestName,
       guestPhone,
       arrivalDate,
       arrivalTime,
       duration,
       pricePerHour,
+      date,
+      startTime: requestStartTime,
+      endTime: requestEndTime,
     } = req.body;
-    if (!tableSourceId || !arrivalDate || !arrivalTime || !duration) {
+
+    const bookingTableId = tableSourceId || tableId;
+    const bookingDate = arrivalDate || date;
+    const bookingStartTime = arrivalTime || requestStartTime;
+    let bookingDuration = Number(duration);
+
+    if ((!bookingDuration || bookingDuration <= 0) && requestEndTime && bookingStartTime && bookingDate) {
+      const start = new Date(`${bookingDate}T${bookingStartTime}:00`);
+      const end = new Date(`${bookingDate}T${requestEndTime}:00`);
+      const diffHours = (end.getTime() - start.getTime()) / 3600000;
+      if (isFinite(diffHours) && diffHours > 0) {
+        bookingDuration = diffHours;
+      }
+    }
+
+    if (!bookingTableId || !bookingDate || !bookingStartTime || !bookingDuration || bookingDuration <= 0) {
       return res
         .status(400)
         .json({ message: "Vui lòng cung cấp đủ thông tin đặt bàn." });
     }
-    const startTime = new Date(`${arrivalDate}T${arrivalTime}:00`);
+
+    const startTime = new Date(`${bookingDate}T${bookingStartTime}:00`);
     if (!isFinite(startTime.getTime())) {
       return res.status(400).json({ message: "Ngày hoặc giờ không hợp lệ." });
     }
-    const endTime = new Date(startTime.getTime() + Number(duration) * 3600000);
-    const depositAmount = (Number(pricePerHour) || 0) * Number(duration);
+    const endTime = new Date(startTime.getTime() + bookingDuration * 3600000);
+    const depositAmount = (Number(pricePerHour) || 0) * bookingDuration;
 
     const count = await Booking.countDocuments();
     const bookingCode = `BK-${String(count + 1).padStart(4, "0")}`;
@@ -763,7 +811,7 @@ export const createBooking = async (req, res) => {
     const booking = await Booking.create({
       bookingCode,
       userId: req.user.id,
-      tableId: tableSourceId,
+      tableId: bookingTableId,
       startTime,
       endTime,
       status: "Pending",
@@ -901,7 +949,7 @@ export const getMyOrders = async (req, res) => {
       arr.push({
         id: i._id,
         menuItemId: i.menuItemId,
-        menuName: menu?.name || "Món không xác định",
+        menuName: menu?.name || i.itemName || "Món không xác định",
         quantity: Number(i.quantity || 0),
         priceAtOrder: Number(i.priceAtOrder || 0),
         note: i.note || "",
