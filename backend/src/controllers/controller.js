@@ -1600,6 +1600,7 @@ export const getAllUsers = async (req, res) => {
       .sort({ createdAt: -1 });
     res.json(users);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Lỗi khi tải danh sách người dùng." });
   }
 };

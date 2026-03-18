@@ -61,6 +61,7 @@ export default function CustomerPassword() {
       const res = await changePasswordApi({
         currentPassword: formData.currentPassword,
         newPassword: formData.newPassword,
+        confirmPassword: formData.confirmPassword,
       });
       setMessage({
         type: "success",

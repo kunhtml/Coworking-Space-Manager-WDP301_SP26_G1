@@ -46,6 +46,7 @@ export default function AdminSidebar({ user, onLogout }) {
           path: "/admin-dashboard/users",
           icon: "bi-people-fill",
           label: "Quản lý Users",
+          badge: 12,
         },
       ],
     },

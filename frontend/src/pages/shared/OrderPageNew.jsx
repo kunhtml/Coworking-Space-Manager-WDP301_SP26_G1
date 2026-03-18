@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Badge,
   Button,
@@ -11,10 +11,12 @@ import {
   Modal,
   Form,
   Alert,
+  Spinner,
 } from "react-bootstrap";
 import { Link } from "react-router";
 import AuthNavActions from "../../components/common/AuthNavActions";
 import { useAuth } from "../../hooks/useAuth";
+import { getMenuItemsApi, getCategoriesApi } from "../../services/api";
 
 export function meta() {
   return [
@@ -223,16 +225,82 @@ export default function MenuPage() {
   const [showCartModal, setShowCartModal] = useState(false);
   const [orderNote, setOrderNote] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
+  
+  const [menuItems, setMenuItems] = useState([]);
+  const [dbCategories, setDbCategories] = useState([]); 
+  const [loading, setLoading] = useState(true);
 
-  const getAllItems = () => {
-    return [...menuData.drinks, ...menuData.food, ...menuData.services];
-  };
+  useEffect(() => {
+    const fetchMenuAndCategories = async () => {
+      try {
+        setLoading(true);
+        const [itemsData, categoriesData] = await Promise.all([
+          getMenuItemsApi(),
+          getCategoriesApi()
+        ]);
 
+        // IN RA CONSOLE ĐỂ KIỂM TRA DỮ LIỆU THỰC TẾ
+        console.log("=== DỮ LIỆU API TRẢ VỀ ===");
+        console.log("Món ăn:", itemsData);
+        console.log("Danh mục:", categoriesData);
+
+        // Quét tìm mảng dữ liệu dù nó được bọc trong key nào
+        let items = [];
+        if (Array.isArray(itemsData)) items = itemsData;
+        else if (itemsData?.data && Array.isArray(itemsData.data)) items = itemsData.data;
+        else if (itemsData?.items && Array.isArray(itemsData.items)) items = itemsData.items;
+        else if (itemsData?.menuItems && Array.isArray(itemsData.menuItems)) items = itemsData.menuItems;
+
+        let cats = [];
+        if (Array.isArray(categoriesData)) cats = categoriesData;
+        else if (categoriesData?.data && Array.isArray(categoriesData.data)) cats = categoriesData.data;
+        else if (categoriesData?.categories && Array.isArray(categoriesData.categories)) cats = categoriesData.categories;
+
+        setMenuItems(items);
+        setDbCategories(cats.filter((c) => c.isActive !== false));
+      } catch (error) {
+        console.error("Lỗi khi tải dữ liệu:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMenuAndCategories();
+  }, []);
+
+  const categories = [
+    { id: "all", label: "Tất cả", icon: "bi-grid", count: menuItems.length },
+    ...dbCategories.map((cat) => {
+      let icon = "bi-tag"; 
+      const catName = cat.name?.toLowerCase() || "";
+      if (catName.includes("uống") || catName.includes("drink") || catName.includes("trà") || catName.includes("cà phê")) icon = "bi-cup-hot";
+      if (catName.includes("ăn") || catName.includes("food") || catName.includes("bánh")) icon = "bi-bread-slice";
+      if (catName.includes("dịch vụ") || catName.includes("service") || catName.includes("in ấn")) icon = "bi-tools";
+
+      // ĐÃ SỬA TẠI ĐÂY: Dùng item.categoryId
+      const count = menuItems.filter((item) => {
+        const itemCatId = item.categoryId?._id || item.categoryId;
+        return itemCatId === cat._id;
+      }).length;
+
+      return {
+        id: cat._id, 
+        label: cat.name,
+        icon: icon,
+        count: count,
+      };
+    }),
+  ];
+
+  // ĐÃ SỬA TẠI ĐÂY: Dùng item.categoryId
   const getFilteredItems = () => {
     if (selectedCategory === "all") {
-      return getAllItems();
+      return menuItems;
     }
-    return menuData[selectedCategory] || [];
+    return menuItems.filter(item => {
+      const itemCatId = item.categoryId?._id || item.categoryId;
+      return itemCatId === selectedCategory;
+    });
   };
 
   const formatPrice = (price, unit = "đ") => {
@@ -374,9 +442,9 @@ export default function MenuPage() {
             <div className="mb-3">
               <i className="bi bi-cup-hot display-6"></i>
             </div>
-            <h1 className="display-5 fw-bold mb-3">Thực đơn & Dịch vụ</h1>
+            <h1 className="display-5 fw-bold mb-3">Thực đơn</h1>
             <p className="lead mb-0">
-              Thưởng thức đồ uống ngon, sử dụng dịch vụ in ấn và thuê thiết bị
+              Thưởng thức đồ uống ngon, đồ ăn đa dạng
             </p>
           </div>
         </Container>
