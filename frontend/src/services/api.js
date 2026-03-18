@@ -75,3 +75,9 @@ export const changePasswordApi = (data) =>
   apiClient.put("/auth/password", data);
 
 export const getMyBookingsApi = () => apiClient.get("/bookings/my");
+
+// Lấy danh sách toàn bộ menu từ Backend
+export const getMenuItemsApi = () => apiClient.get("/menu/items");
+
+// Lấy danh sách toàn bộ danh mục (Category) từ Backend
+export const getCategoriesApi = () => apiClient.get("/menu/categories");
