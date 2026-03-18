@@ -36,13 +36,7 @@ export const login = async (req, res) => {
         { phone: identifier.trim() },
       ],
     });
-
-    if (user.membershipStatus === "Inactive") {
-  return res.status(403).json({ 
-    message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên." 
-  });
-}
-
+    
     if (!user) {
       return res
         .status(401)
@@ -54,6 +48,15 @@ export const login = async (req, res) => {
       return res
         .status(401)
         .json({ message: "Email/số điện thoại hoặc mật khẩu không đúng." });
+    }
+
+    // Kiểm tra tài khoản có bị khóa không
+    const status = (user.membershipStatus || "").toLowerCase();
+    if (status === "suspended") {
+      return res.status(403).json({
+        message:
+          "Tài khoản của bạn đã bị tạm khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.",
+      });
     }
 
     const token = jwt.sign(
