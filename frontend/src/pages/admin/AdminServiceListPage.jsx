@@ -182,6 +182,66 @@ export default function AdminServiceListPage() {
     setShowItemDelete(true);
   };
 
+  const submitItemAdd = async (e) => {
+    e.preventDefault();
+    setError("");
+    setItemFormLoading(true);
+    try {
+      const res = await api.post("/menu/items", {
+        ...itemForm,
+        price: Number(itemForm.price),
+        stockQuantity: Number(itemForm.stockQuantity) || 0,
+        categoryId: itemForm.categoryId || null,
+      });
+      showSuccess(res.message || "Thêm món thành công!");
+      setShowItemAdd(false);
+      loadItems();
+    } catch (err) {
+      setError(err.message || "Lỗi khi thêm món");
+    } finally {
+      setItemFormLoading(false);
+    }
+  };
+
+  const submitItemEdit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setItemFormLoading(true);
+    try {
+      const res = await api.put(`/menu/items/${editingItemId}`, {
+        ...itemForm,
+        price: Number(itemForm.price),
+        stockQuantity: Number(itemForm.stockQuantity) || 0,
+        categoryId: itemForm.categoryId || null,
+      });
+      showSuccess(res.message || "Cập nhật món thành công!");
+      setShowItemEdit(false);
+      loadItems();
+    } catch (err) {
+      setError(err.message || "Lỗi khi cập nhật món");
+    } finally {
+      setItemFormLoading(false);
+    }
+  };
+
+  const confirmItemDelete = async () => {
+    if (!deletingItem) return;
+    setError("");
+    setItemFormLoading(true);
+    try {
+      const res = await api.delete(`/menu/items/${deletingItem._id}`);
+      showSuccess(res.message || "Xóa món thành công!");
+      setShowItemDelete(false);
+      setDeletingItem(null);
+      loadItems();
+    } catch (err) {
+      setError(err.message || "Lỗi khi xóa món");
+      setShowItemDelete(false);
+    } finally {
+      setItemFormLoading(false);
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="mb-5 pb-3">
