@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   login,
+  register,
   getMe,
   updateProfile,
   changePassword,
@@ -48,6 +49,7 @@ const router = Router();
 
 // Auth
 router.post("/auth/login", login);
+router.post("/auth/register", register);
 router.get("/auth/me", requireAuth, getMe);
 router.put("/auth/profile", requireAuth, updateProfile);
 router.put("/auth/password", requireAuth, changePassword);

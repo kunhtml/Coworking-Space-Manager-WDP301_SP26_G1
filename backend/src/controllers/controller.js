@@ -74,6 +74,78 @@ export const login = async (req, res) => {
   }
 };
 
+// POST /api/auth/register
+export const register = async (req, res) => {
+  try {
+    const { fullName, email, phone, passwordHash, role, membershipStatus } = req.body;
+
+    // Validate required fields
+    if (!email || !passwordHash) {
+      return res
+        .status(400)
+        .json({ message: "Email và mật khẩu là bắt buộc." });
+    }
+
+    // Validate email format
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ message: "Email không đúng định dạng." });
+    }
+
+    if (passwordHash.length < 6) {
+      return res.status(400).json({ message: "Mật khẩu phải có ít nhất 6 ký tự." });
+    }
+
+    // Check if email already exists
+    const existingUser = await User.findOne({
+      email: email.toLowerCase().trim(),
+    });
+
+    if (existingUser) {
+      return res
+        .status(409)
+        .json({ message: "Email này đã được đăng ký." });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(passwordHash, 10);
+
+    // Create new user
+    const newUser = new User({
+      fullName: fullName?.trim() || "Người dùng mới",
+      email: email.toLowerCase().trim(),
+      phone: phone?.trim() || null,
+      passwordHash: hashedPassword,
+      role: role || "customer",
+      membershipStatus: membershipStatus || "active",
+    });
+
+    await newUser.save();
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: newUser._id, role: newUser.role },
+      process.env.JWT_SECRET || "nexus_secret",
+      { expiresIn: "7d" },
+    );
+
+    res.status(201).json({
+      message: "Đăng ký thành công!",
+      token,
+      user: {
+        id: newUser._id,
+        fullName: newUser.fullName,
+        email: newUser.email,
+        phone: newUser.phone,
+        role: newUser.role,
+        membershipStatus: newUser.membershipStatus,
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi server, vui lòng thử lại." });
+  }
+};
+
 // GET /api/auth/me
 export const getMe = async (req, res) => {
   try {

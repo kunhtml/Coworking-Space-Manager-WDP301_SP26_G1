@@ -44,7 +44,10 @@ export default function AuthNavActions({
             className="px-3 rounded-0 fw-medium text-light border-secondary d-flex align-items-center gap-2"
             style={{ backgroundColor: "transparent" }}
           >
-            <i className={`bi ${roleMeta.icon ?? "bi-person-circle"}`} style={{ color: roleMeta.color ?? "#aaa" }}></i>
+            <i
+              className={`bi ${roleMeta.icon ?? "bi-person-circle"}`}
+              style={{ color: roleMeta.color ?? "#aaa" }}
+            ></i>
             <span>{displayName || user.fullName}</span>
             <Badge
               pill
@@ -57,9 +60,16 @@ export default function AuthNavActions({
               {roleMeta.label ?? role}
             </Badge>
           </Dropdown.Toggle>
-          <Dropdown.Menu className="bg-dark border-secondary" style={{ minWidth: "180px" }}>
+          <Dropdown.Menu
+            className="bg-dark border-secondary"
+            style={{ minWidth: "180px" }}
+          >
             {dashboardPath && (
-              <Dropdown.Item as={Link} to={dashboardPath} className="text-light">
+              <Dropdown.Item
+                as={Link}
+                to={dashboardPath}
+                className="text-light"
+              >
                 <i className="bi bi-speedometer2 me-2"></i>
                 {role === "Admin" ? "Quản trị" : "Dashboard"}
               </Dropdown.Item>
@@ -71,14 +81,30 @@ export default function AuthNavActions({
           </Dropdown.Menu>
         </Dropdown>
       ) : (
-        <Button
-          as={Link}
-          to="/login"
-          variant="outline-secondary"
-          className="px-4 rounded-0 fw-medium text-uppercase text-light border-secondary"
-        >
-          {loginText}
-        </Button>
+        <>
+          <Button
+            as={Link}
+            to="/login"
+            variant="outline-warning"
+            className="px-4 rounded-0 fw-medium text-uppercase"
+            style={{ borderColor: "#d4a373", color: "#d4a373" }}
+          >
+            {loginText}
+          </Button>
+          <Button
+            as={Link}
+            to="/register"
+            variant="warning"
+            className="px-4 rounded-0 fw-medium text-uppercase"
+            style={{
+              backgroundColor: "#d4a373",
+              borderColor: "#d4a373",
+              color: "#000",
+            }}
+          >
+            Đăng ký
+          </Button>
+        </>
       )}
     </div>
   );
