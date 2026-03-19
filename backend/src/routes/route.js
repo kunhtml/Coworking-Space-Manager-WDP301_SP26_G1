@@ -9,6 +9,13 @@ import {
   updateMyBooking,
   getAllBookings,
   checkInBooking,
+  getStaffTableStatusList,
+  updateStaffTableStatus,
+  getStaffOrders,
+  createCounterOrder,
+  updateStaffOrder,
+  getStaffOrderInvoice,
+  exportStaffOrderInvoice,
   createBooking,
   getMyOrders,
   createOrder,
@@ -83,6 +90,28 @@ router.patch("/bookings/:id/checkin", requireStaff, checkInBooking);
 // Reports — staff / admin
 router.get("/reports/analytics", requireStaff, getReportAnalytics);
 
+// Staff Dashboard APIs
+router.get("/staff/dashboard/tables", requireStaff, getStaffTableStatusList);
+router.patch(
+  "/staff/dashboard/tables/:id/status",
+  requireStaff,
+  updateStaffTableStatus,
+);
+router.patch("/staff/dashboard/bookings/:id/checkin", requireStaff, checkInBooking);
+router.get("/staff/dashboard/orders", requireStaff, getStaffOrders);
+router.post("/staff/dashboard/orders/counter", requireStaff, createCounterOrder);
+router.put("/staff/dashboard/orders/:id", requireStaff, updateStaffOrder);
+router.get(
+  "/staff/dashboard/orders/:id/invoice",
+  requireStaff,
+  getStaffOrderInvoice,
+);
+router.get(
+  "/staff/dashboard/orders/:id/invoice/export",
+  requireStaff,
+  exportStaffOrderInvoice,
+);
+
 // Payments
 router.get("/payments/:bookingId", requireAuth, getPaymentData);
 router.post("/payments/create", requireAuth, createPayment);
@@ -90,11 +119,6 @@ router.post("/payments/cancel", requireAuth, cancelPayment);
 
 // PayOS webhook (no auth — called by PayOS server)
 router.post("/payos/webhook", payosWebhook);
-
-// Orders
-router.get("/orders/my", requireAuth, getMyOrders);
-router.post("/orders", requireAuth, createOrder);
-router.put("/orders/:id", requireAuth, updateMyOrder);
 
 // Menu Management — staff / admin
 router.get("/menu/items", getMenuItems);
