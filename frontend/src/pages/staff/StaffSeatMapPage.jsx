@@ -203,7 +203,7 @@ export default function StaffSeatMapPage() {
     if (!selected || !newStatus) return;
     try {
       setUpdating(true);
-      await updateTableStatusApi(selected.id || selected._id, newStatus);
+      await updateStaffTableStatus(selected.id || selected._id, newStatus);
       setSuccessMsg(`✅ Đã cập nhật trạng thái "${selected.name}" thành công!`);
       setShowModal(false);
       setSelected(null);
@@ -215,22 +215,6 @@ export default function StaffSeatMapPage() {
       setUpdating(false);
     }
   };
-
-  // ── Derived ───────────────────────────────────────────────────────────────
-  const zoneMap   = groupByZone(tables);
-  const zoneNames = Object.keys(zoneMap);
-  const displayed = filterZone === "Tất cả"
-    ? zoneMap
-    : { [filterZone]: zoneMap[filterZone] || [] };
-
-  const getCfg = (status) => STATUS_CONFIG[status] || STATUS_CONFIG.Available;
-
-  // Thống kê
-  const stats = ALL_STATUSES.map((s) => ({
-    status: s,
-    count: tables.filter((t) => t.status === s).length,
-    ...getCfg(s),
-  }));
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
