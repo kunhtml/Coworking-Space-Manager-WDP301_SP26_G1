@@ -81,3 +81,16 @@ export const getMenuItemsApi = () => apiClient.get("/menu/items");
 
 // Lấy danh sách toàn bộ danh mục (Category) từ Backend
 export const getCategoriesApi = () => apiClient.get("/menu/categories");
+
+// Staff - Lấy danh sách bàn theo trạng thái (dùng cho Sơ đồ chỗ ngồi)
+export const getTablesApi = ({ status, search } = {}) => {
+  const params = new URLSearchParams();
+  if (status && status !== "all") params.append("status", status);
+  if (search) params.append("search", search);
+  const qs = params.toString();
+  return apiClient.get(`/staff/dashboard/tables${qs ? "?" + qs : ""}`);
+};
+
+// Staff - Cập nhật trạng thái bàn
+export const updateTableStatusApi = (tableId, status) =>
+  apiClient.patch(`/staff/dashboard/tables/${tableId}/status`, { status });
