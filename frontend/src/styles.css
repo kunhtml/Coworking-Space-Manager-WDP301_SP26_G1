@@ -356,6 +356,9 @@ body {
 .staff-dot-blue {
   background: #3b82f6;
 }
+.staff-dot-gray {
+  background: #94a3b8;
+}
 
 .staff-seat-card {
   border-radius: 14px;
@@ -374,6 +377,10 @@ body {
 .staff-seat-blue {
   border-color: #3b82f6 !important;
 }
+.staff-seat-gray {
+  border-color: #94a3b8 !important;
+}
+
 
 .staff-seat-icon {
   width: 46px;
