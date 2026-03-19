@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { checkInBooking } from "../controllers/booking.controller.js";
 import {
   getStaffTableStatusList,
   updateStaffTableStatus,
@@ -7,12 +8,14 @@ import {
   updateStaffOrder,
   getStaffOrderInvoice,
   exportStaffOrderInvoice,
+  getStaffDashboardStats,
 } from "../controllers/staff-dashboard.controller.js";
 import { checkInBooking } from "../controllers/booking.controller.js";
 import { requireStaff } from "../middleware/middleware.js";
 
 const router = Router();
 
+router.get("/staff/dashboard/stats", requireStaff, getStaffDashboardStats);
 router.get("/staff/dashboard/tables", requireStaff, getStaffTableStatusList);
 router.patch("/staff/dashboard/tables/:id/status", requireStaff, updateStaffTableStatus);
 router.patch("/staff/dashboard/bookings/:id/checkin", requireStaff, checkInBooking);

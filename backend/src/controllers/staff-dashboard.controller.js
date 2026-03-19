@@ -567,4 +567,76 @@ export const exportStaffOrderInvoice = async (req, res) => {
   }
 };
 
+// GET /api/staff/dashboard/stats  (Staff / Admin)
+export const getStaffDashboardStats = async (req, res) => {
+  try {
+    const now = new Date();
+    const todayStart = new Date(`${now.toISOString().slice(0, 10)}T00:00:00.000+07:00`);
+    const todayEnd   = new Date(`${now.toISOString().slice(0, 10)}T23:59:59.999+07:00`);
+
+    const [
+      totalTables,
+      occupiedTables,
+      todayOrders,
+      recentOrders,
+    ] = await Promise.all([
+      Table.countDocuments(),
+      Table.countDocuments({ status: "Occupied" }),
+      Order.find({ createdAt: { $gte: todayStart, $lte: todayEnd } }).lean(),
+      Order.find().sort({ createdAt: -1 }).limit(10).lean(),
+    ]);
+
+    const orderIds = recentOrders.map((o) => o._id);
+    const bookingIds = [...new Set(recentOrders.map((o) => o.bookingId?.toString()).filter(Boolean))];
+
+    const [recentOrderItems, recentBookings, recentUsers] = await Promise.all([
+      OrderItem.find({ orderId: { $in: orderIds } }).lean(),
+      Booking.find({ _id: { $in: bookingIds } }).lean(),
+      User.find({ _id: { $in: [...new Set(recentOrders.map((o) => o.userId?.toString()).filter(Boolean))] } }).lean(),
+    ]);
+
+    const tableIds = [...new Set(recentBookings.map((b) => b.tableId?.toString()).filter(Boolean))];
+    const recentTables = await Table.find({ _id: { $in: tableIds } }).lean();
+
+    const bkMap  = new Map(recentBookings.map((b) => [b._id.toString(), b]));
+    const tbMap  = new Map(recentTables.map((t) => [t._id.toString(), t]));
+    const usrMap = new Map(recentUsers.map((u) => [u._id.toString(), u]));
+    const oimMap = new Map();
+    for (const oi of recentOrderItems) {
+      const key = oi.orderId?.toString();
+      oimMap.set(key, (oimMap.get(key) || 0) + 1);
+    }
+
+    const statusCounts = { Pending: 0, Confirmed: 0, Completed: 0, Cancelled: 0 };
+    for (const o of todayOrders) {
+      if (statusCounts[o.status] !== undefined) statusCounts[o.status]++;
+    }
+
+    const activity = recentOrders.map((o) => {
+      const bk  = bkMap.get(o.bookingId?.toString());
+      const tb  = tbMap.get(bk?.tableId?.toString());
+      const usr = usrMap.get(bk?.userId?.toString()) || usrMap.get(o.userId?.toString());
+      return {
+        orderId:      o._id,
+        orderCode:    `#${String(o._id).slice(-6).toUpperCase()}`,
+        customerName: bk?.guestInfo?.name || usr?.fullName || "Khách lẻ",
+        tableName:    tb?.name || "Walk-in",
+        status:       o.status || "Pending",
+        totalAmount:  Number(o.totalAmount || 0),
+        itemCount:    oimMap.get(o._id.toString()) || 0,
+        createdAt:    o.createdAt,
+      };
+    });
+
+    res.json({
+      tables:  { total: totalTables, occupied: occupiedTables, available: totalTables - occupiedTables },
+      orders:  { total: todayOrders.length, ...statusCounts },
+      activity,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi server." });
+  }
+};
+
 // GET /api/payments/:bookingId  — get payment page data
