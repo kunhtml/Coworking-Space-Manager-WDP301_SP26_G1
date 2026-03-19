@@ -1,5 +1,9 @@
 import { apiClient } from "./api";
 
+export async function getStaffDashboardStats() {
+  return apiClient.get("/staff/dashboard/stats");
+}
+
 export async function getStaffTables(params = {}) {
   const query = new URLSearchParams();
   if (params.status) query.set("status", params.status);

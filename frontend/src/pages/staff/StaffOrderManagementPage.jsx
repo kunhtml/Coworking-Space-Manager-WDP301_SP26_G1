@@ -199,6 +199,32 @@ export default function StaffOrderManagementPage() {
     }
   };
 
+  // ── Quick complete ────────────────────────────────────────────────────────────
+  const [completing, setCompleting] = useState(null); // orderId being completed
+
+  const quickCompleteOrder = async (order) => {
+    if (completing) return;
+    setCompleting(order.id);
+    setError("");
+    try {
+      await updateStaffOrder(order.id, {
+        status: "Completed",
+        items: (order.items || []).map((it) => ({
+          menuItemId: String(it.menuItemId || ""),
+          quantity: Number(it.quantity || 1),
+          note: it.note || "",
+        })),
+      });
+      setSuccessMsg(`✅ Đơn ${order.orderCode} đã hoàn thành!`);
+      await loadPageData();
+      setTimeout(() => setSuccessMsg(""), 4000);
+    } catch (err) {
+      setError(err.message || "Không thể hoàn thành đơn.");
+    } finally {
+      setCompleting(null);
+    }
+  };
+
   // ── Invoice ──────────────────────────────────────────────────────────────────
   const openInvoiceModal = async (orderId) => {
     setInvoiceLoading(true);
@@ -407,6 +433,24 @@ export default function StaffOrderManagementPage() {
                           >
                             <i className="bi bi-pencil-square" />
                           </button>
+                          {!["Completed", "Cancelled"].includes(order.status) && (
+                            <button
+                              className="staff-icon-btn"
+                              type="button"
+                              title="Xác nhận hoàn thành"
+                              disabled={completing === order.id}
+                              onClick={() => quickCompleteOrder(order)}
+                              style={{
+                                background: "#dcfce7",
+                                color: "#15803d",
+                                border: "1.5px solid #bbf7d0",
+                              }}
+                            >
+                              {completing === order.id
+                                ? <i className="bi bi-arrow-clockwise" style={{ animation: "spin 0.8s linear infinite" }} />
+                                : <i className="bi bi-check-circle-fill" />}
+                            </button>
+                          )}
                           <button
                             className="staff-icon-btn staff-icon-btn-success"
                             type="button"
