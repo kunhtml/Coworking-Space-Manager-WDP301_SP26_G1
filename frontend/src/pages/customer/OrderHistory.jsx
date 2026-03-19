@@ -11,7 +11,6 @@ import {
   Modal,
   Nav,
   Navbar,
-  Pagination,
   Row,
   Spinner,
 } from "react-bootstrap";
@@ -28,6 +27,21 @@ import {
 } from "../../services/orderService";
 import { apiClient } from "../../services/api";
 import AuthNavActions from "../../components/common/AuthNavActions";
+import StatusPill from "../../components/common/StatusPill";
+import ListPagination from "../../components/common/ListPagination";
+import {
+  BOOKING_STATUS_MAP,
+  ORDER_STATUS_MAP,
+  PAGE_SIZE,
+} from "./orderHistory/constants";
+import {
+  durationFromRange,
+  emptyOrderLine,
+  fmt,
+  formatDateTime,
+  toDateInput,
+  toTimeInput,
+} from "./orderHistory/utils";
 
 export function meta() {
   return [
@@ -39,68 +53,6 @@ export function meta() {
   ];
 }
 
-const fmt = (n) => new Intl.NumberFormat("vi-VN").format(Number(n || 0));
-const PAGE_SIZE = 5;
-
-const BOOKING_STATUS_MAP = {
-  Pending: { label: "Chờ thanh toán", bg: "warning", textClass: "text-dark" },
-  Awaiting_Payment: { label: "Chờ thanh toán", bg: "warning", textClass: "text-dark" },
-  Confirmed: { label: "Đã xác nhận", bg: "success", textClass: "text-white" },
-  Completed: { label: "Đã hoàn thành", bg: "secondary", textClass: "text-white" },
-  Cancelled: { label: "Đã hủy", bg: "danger", textClass: "text-white" },
-};
-
-const ORDER_STATUS_MAP = {
-  Pending: { label: "Chờ xác nhận", bg: "warning", textClass: "text-dark" },
-  Confirmed: { label: "Đã xác nhận", bg: "success", textClass: "text-white" },
-  Cancelled: { label: "Đã hủy", bg: "danger", textClass: "text-white" },
-};
-
-function statusBadge(status, map) {
-  const s = map[status] || {
-    label: status || "Unknown",
-    bg: "secondary",
-    textClass: "text-white",
-  };
-  return (
-    <Badge bg={s.bg} className={`px-3 py-2 rounded-pill fw-medium ${s.textClass}`}>
-      {s.label}
-    </Badge>
-  );
-}
-
-function formatDateTime(iso) {
-  if (!iso) return "--";
-  const d = new Date(iso);
-  return `${d.toLocaleDateString("vi-VN")} ${d.toLocaleTimeString("vi-VN", {
-    hour: "2-digit",
-    minute: "2-digit",
-  })}`;
-}
-
-function durationFromRange(start, end) {
-  if (!start || !end) return 1;
-  const diff = (new Date(end) - new Date(start)) / (1000 * 60 * 60);
-  return diff > 0 ? Number(diff.toFixed(1)) : 1;
-}
-
-function toDateInput(iso) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate(),
-  ).padStart(2, "0")}`;
-}
-
-function toTimeInput(iso) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
-
-function emptyOrderLine() {
-  return { menuItemId: "", quantity: 1, note: "" };
-}
 
 export default function Dashboard() {
   const { user, isAuthenticated } = useAuth();
@@ -517,7 +469,7 @@ export default function Dashboard() {
                               <small className="text-muted">{formatDateTime(booking.startTime)}</small>
                             </div>
                             <div className="d-flex align-items-center gap-2">
-                              {statusBadge(booking.status, BOOKING_STATUS_MAP)}
+                              <StatusPill status={booking.status} map={BOOKING_STATUS_MAP} />
                               <Badge bg="dark" pill>Orders: {orderCountByBooking.get(bKey) || 0}</Badge>
                             </div>
                           </div>
@@ -529,7 +481,7 @@ export default function Dashboard() {
                             <Col md={6}><div className="small text-muted">Bắt đầu</div><div className="fw-semibold">{formatDateTime(booking.startTime)}</div></Col>
                             <Col md={6}><div className="small text-muted">Kết thúc</div><div className="fw-semibold">{formatDateTime(booking.endTime)}</div></Col>
                             <Col md={6}><div className="small text-muted">Giá trị booking</div><div className="fw-semibold">{fmt(booking.depositAmount)}đ</div></Col>
-                            <Col md={6}><div className="small text-muted">Trạng thái</div><div>{statusBadge(booking.status, BOOKING_STATUS_MAP)}</div></Col>
+                            <Col md={6}><div className="small text-muted">Trạng thái</div><div><StatusPill status={booking.status} map={BOOKING_STATUS_MAP} /></div></Col>
                           </Row>
 
                           <div className="d-flex flex-wrap gap-2">
@@ -565,27 +517,11 @@ export default function Dashboard() {
               )}
 
               {!loading && filteredBookings.length > 0 && (
-                <div className="d-flex justify-content-center mt-3">
-                  <Pagination className="mb-0">
-                    <Pagination.Prev
-                      disabled={bookingPage === 1}
-                      onClick={() => setBookingPage((p) => Math.max(1, p - 1))}
-                    />
-                    {Array.from({ length: bookingTotalPages }, (_, i) => i + 1).map((p) => (
-                      <Pagination.Item
-                        key={p}
-                        active={p === bookingPage}
-                        onClick={() => setBookingPage(p)}
-                      >
-                        {p}
-                      </Pagination.Item>
-                    ))}
-                    <Pagination.Next
-                      disabled={bookingPage === bookingTotalPages}
-                      onClick={() => setBookingPage((p) => Math.min(bookingTotalPages, p + 1))}
-                    />
-                  </Pagination>
-                </div>
+                <ListPagination
+                  page={bookingPage}
+                  totalPages={bookingTotalPages}
+                  onChange={setBookingPage}
+                />
               )}
             </Card.Body>
           </Card>
@@ -654,7 +590,7 @@ export default function Dashboard() {
                               <small className="text-muted">Booking: {relatedBooking?.bookingCode || String(order.bookingId || "--").slice(-6).toUpperCase()}</small>
                             </div>
                             <div className="d-flex align-items-center gap-2">
-                              {statusBadge(order.status, ORDER_STATUS_MAP)}
+                              <StatusPill status={order.status} map={ORDER_STATUS_MAP} />
                               <Badge bg="info" text="dark" pill>{fmt(order.totalAmount)}đ</Badge>
                             </div>
                           </div>
@@ -715,27 +651,11 @@ export default function Dashboard() {
               )}
 
               {!loading && filteredOrders.length > 0 && (
-                <div className="d-flex justify-content-center mt-3">
-                  <Pagination className="mb-0">
-                    <Pagination.Prev
-                      disabled={orderPage === 1}
-                      onClick={() => setOrderPage((p) => Math.max(1, p - 1))}
-                    />
-                    {Array.from({ length: orderTotalPages }, (_, i) => i + 1).map((p) => (
-                      <Pagination.Item
-                        key={p}
-                        active={p === orderPage}
-                        onClick={() => setOrderPage(p)}
-                      >
-                        {p}
-                      </Pagination.Item>
-                    ))}
-                    <Pagination.Next
-                      disabled={orderPage === orderTotalPages}
-                      onClick={() => setOrderPage((p) => Math.min(orderTotalPages, p + 1))}
-                    />
-                  </Pagination>
-                </div>
+                <ListPagination
+                  page={orderPage}
+                  totalPages={orderTotalPages}
+                  onChange={setOrderPage}
+                />
               )}
             </Card.Body>
           </Card>

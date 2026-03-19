@@ -11,11 +11,14 @@ import {
   Alert,
 } from "react-bootstrap";
 import AdminLayout from "../../components/admin/AdminLayout";
-import { getTablesApi, updateTableStatusApi } from "../../services/api";
+import {
+  getStaffTables,
+  updateStaffTableStatus,
+} from "../../services/staffDashboardService";
 
 // ── Config trạng thái ──────────────────────────────────────────────────────
 const STATUS_CONFIG = {
-  available: {
+  Available: {
     label: "Trống",
     cardClass: "staff-seat-green",
     dotClass: "staff-dot-green",
@@ -26,7 +29,7 @@ const STATUS_CONFIG = {
     glowColor: "rgba(16,185,129,0.15)",
     emoji: "✅",
   },
-  occupied: {
+  Occupied: {
     label: "Đang sử dụng",
     cardClass: "staff-seat-red",
     dotClass: "staff-dot-red",
@@ -37,7 +40,7 @@ const STATUS_CONFIG = {
     glowColor: "rgba(239,68,68,0.15)",
     emoji: "🔴",
   },
-  reserved: {
+  Reserved: {
     label: "Đã đặt trước",
     cardClass: "staff-seat-yellow",
     dotClass: "staff-dot-yellow",
@@ -48,7 +51,7 @@ const STATUS_CONFIG = {
     glowColor: "rgba(245,158,11,0.15)",
     emoji: "📌",
   },
-  cleaning: {
+  Cleaning: {
     label: "Đang dọn",
     cardClass: "staff-seat-blue",
     dotClass: "staff-dot-blue",
@@ -62,10 +65,10 @@ const STATUS_CONFIG = {
 };
 
 const STATUS_LEGEND = [
-  { status: "available", label: "Trống",        dotClass: "staff-dot-green"  },
-  { status: "occupied",  label: "Đang sử dụng", dotClass: "staff-dot-red"    },
-  { status: "reserved",  label: "Đã đặt trước", dotClass: "staff-dot-yellow" },
-  { status: "cleaning",  label: "Đang dọn",     dotClass: "staff-dot-blue"   },
+  { status: "Available", label: "Trống",        dotClass: "staff-dot-green"  },
+  { status: "Occupied",  label: "Đang sử dụng", dotClass: "staff-dot-red"    },
+  { status: "Reserved",  label: "Đã đặt trước", dotClass: "staff-dot-yellow" },
+  { status: "Cleaning",  label: "Đang dọn",     dotClass: "staff-dot-blue"   },
 ];
 
 const ALL_STATUSES = Object.keys(STATUS_CONFIG);
@@ -109,7 +112,7 @@ export default function StaffSeatMapPage() {
     try {
       setLoading(true);
       setError("");
-      const data = await getTablesApi();
+      const data = await getStaffTables();
       setTables(Array.isArray(data) ? data : data.tables || []);
     } catch (err) {
       setError(err.message || "Không thể tải danh sách bàn");
@@ -131,7 +134,7 @@ export default function StaffSeatMapPage() {
     if (!selected || !newStatus) return;
     try {
       setUpdating(true);
-      await updateTableStatusApi(selected._id, newStatus);
+      await updateStaffTableStatus(selected._id, newStatus);
       setSuccessMsg(`✅ Cập nhật bàn ${selected.tableNumber || selected.name} thành công!`);
       setShowModal(false);
       fetchTables();
@@ -150,7 +153,7 @@ export default function StaffSeatMapPage() {
     ? zoneMap
     : { [filterZone]: zoneMap[filterZone] || [] };
 
-  const getCfg = (status) => STATUS_CONFIG[status] || STATUS_CONFIG.available;
+  const getCfg = (status) => STATUS_CONFIG[status] || STATUS_CONFIG.Available;
 
   // Thống kê
   const stats = ALL_STATUSES.map((s) => ({
