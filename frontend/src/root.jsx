@@ -2,11 +2,10 @@ import {
   isRouteErrorResponse,
   Links,
   Meta,
+  Outlet,
   Scripts,
   ScrollRestoration,
 } from "react-router";
-
-import App from "./App";
 import "./styles.css";
 
 export const links = () => [
@@ -45,7 +44,7 @@ export function Layout({ children }) {
 }
 
 export default function Root() {
-  return <App />;
+  return <Outlet />;
 }
 
 export function ErrorBoundary({ error }) {

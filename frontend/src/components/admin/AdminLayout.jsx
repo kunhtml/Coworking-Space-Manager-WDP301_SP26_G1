@@ -8,9 +8,9 @@ export default function AdminLayout({ children }) {
   const location = useLocation();
 
   const getDefaultDashboardByRole = (role) => {
-    if (role === "Admin") return "/admin-dashboard";
-    if (role === "Staff") return "/staff-dashboard";
-    return "/customer-dashboard";
+    if (role === "Admin") return "/admin";
+    if (role === "Staff") return "/staff";
+    return "/customer";
   };
 
   if (!isAuthenticated || !user) {
@@ -18,14 +18,14 @@ export default function AdminLayout({ children }) {
   }
 
   if (
-    location.pathname.startsWith("/admin-dashboard") &&
+    location.pathname.startsWith("/admin") &&
     user.role !== "Admin"
   ) {
     return <Navigate to={getDefaultDashboardByRole(user.role)} replace />;
   }
 
   if (
-    location.pathname.startsWith("/staff-dashboard") &&
+    location.pathname.startsWith("/staff") &&
     user.role !== "Staff"
   ) {
     return <Navigate to={getDefaultDashboardByRole(user.role)} replace />;

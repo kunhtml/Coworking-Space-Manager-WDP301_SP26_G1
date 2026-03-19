@@ -151,7 +151,7 @@ export default function StaffDashboard() {
                     variant="outline-primary"
                     size="sm"
                     className="rounded-3 fw-semibold"
-                    onClick={() => navigate("/staff-dashboard/orders")}
+                    onClick={() => navigate("/staff/orders")}
                   >
                     Xem tất cả
                   </Button>
@@ -263,7 +263,7 @@ export default function StaffDashboard() {
                       <Button
                         className="fw-bold rounded-3 mt-2"
                         style={{ background: "#6366f1", border: "none" }}
-                        onClick={() => navigate("/staff-dashboard/orders")}
+                        onClick={() => navigate("/staff/orders")}
                       >
                         <i className="bi bi-receipt-cutoff me-2" />
                         Quản lý đơn hàng

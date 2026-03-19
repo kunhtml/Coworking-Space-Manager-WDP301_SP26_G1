@@ -6,12 +6,10 @@ export default function AdminSidebar({ user, onLogout }) {
   const isAdmin = user?.role === "Admin";
 
   const isActive = (path) => {
-    if (path === "/staff-dashboard" || path === "/admin-dashboard") {
+    if (path === "/staff" || path === "/admin") {
       return [
-        "/dashboard",
+        "/staff",
         "/admin",
-        "/staff-dashboard",
-        "/admin-dashboard",
       ].includes(location.pathname);
     }
 
@@ -19,13 +17,13 @@ export default function AdminSidebar({ user, onLogout }) {
       return true;
     }
 
-    if (path.startsWith("/staff-dashboard/")) {
-      const adminPath = path.replace("/staff-dashboard/", "/admin-dashboard/");
+    if (path.startsWith("/staff/")) {
+      const adminPath = path.replace("/staff/", "/admin/");
       return location.pathname.startsWith(adminPath);
     }
 
-    if (path.startsWith("/admin-dashboard/")) {
-      const staffPath = path.replace("/admin-dashboard/", "/staff-dashboard/");
+    if (path.startsWith("/admin/")) {
+      const staffPath = path.replace("/admin/", "/staff/");
       return location.pathname.startsWith(staffPath);
     }
 
@@ -36,14 +34,14 @@ export default function AdminSidebar({ user, onLogout }) {
     {
       title: "TỔNG QUAN",
       items: [
-        { path: "/admin-dashboard", icon: "bi-grid", label: "Dashboard" },
+        { path: "/admin", icon: "bi-grid", label: "Dashboard" },
       ],
     },
     {
       title: "QUẢN LÝ NGƯỜI DÙNG",
       items: [
         {
-          path: "/admin-dashboard/users",
+          path: "/admin/users",
           icon: "bi-people-fill",
           label: "Quản lý Users",
           badge: 12,
@@ -54,12 +52,12 @@ export default function AdminSidebar({ user, onLogout }) {
       title: "DỮ LIỆU HỆ THỐNG",
       items: [
         {
-          path: "/admin-dashboard/services",
+          path: "/admin/services",
           icon: "bi-book",
           label: "Quản lý Dịch vụ",
         },
         {
-          path: "/admin-dashboard/spaces",
+          path: "/admin/spaces",
           icon: "bi-building",
           label: "Quản lý Không gian",
         },
@@ -69,7 +67,7 @@ export default function AdminSidebar({ user, onLogout }) {
       title: "BÁO CÁO & THỐNG KÊ",
       items: [
         {
-          path: "/admin-dashboard/revenue",
+          path: "/admin/revenue",
           icon: "bi-graph-up-arrow",
           label: "Báo cáo Doanh thu",
         },
@@ -79,7 +77,7 @@ export default function AdminSidebar({ user, onLogout }) {
       title: "TÀI KHOẢN",
       items: [
         {
-          path: "/admin-dashboard/profile",
+          path: "/admin/profile",
           icon: "bi-person-circle",
           label: "Hồ sơ cá nhân",
         },
@@ -91,14 +89,14 @@ export default function AdminSidebar({ user, onLogout }) {
     {
       title: "TỔNG QUAN",
       items: [
-        { path: "/staff-dashboard", icon: "bi-grid", label: "Dashboard" },
+        { path: "/staff", icon: "bi-grid", label: "Dashboard" },
       ],
     },
     {
       title: "CHECK-IN / CHECK-OUT",
       items: [
         {
-          path: "/staff-dashboard/checkin",
+          path: "/staff/checkin",
           icon: "bi-clipboard-check",
           label: "Check-in đơn",
           badge: 3,
@@ -109,7 +107,7 @@ export default function AdminSidebar({ user, onLogout }) {
       title: "QUẢN LÝ KHÔNG GIAN",
       items: [
         {
-          path: "/staff-dashboard/tables",
+          path: "/staff/tables",
           icon: "bi-map",
           label: "Sơ đồ chỗ ngồi",
         },
@@ -119,18 +117,18 @@ export default function AdminSidebar({ user, onLogout }) {
       title: "ĐƠN HÀNG & DỊCH VỤ",
       items: [
         {
-          path: "/staff-dashboard/orders",
+          path: "/staff/orders",
           icon: "bi-receipt",
           label: "Quản lý đơn hàng",
           badge: 5,
         },
         {
-          path: "/staff-dashboard/create-service",
+          path: "/staff/create-service",
           icon: "bi-plus-circle",
           label: "Tạo đơn dịch vụ",
         },
         {
-          path: "/staff-dashboard/services",
+          path: "/staff/services",
           icon: "bi-book",
           label: "Danh sách dịch vụ",
         },
@@ -140,7 +138,7 @@ export default function AdminSidebar({ user, onLogout }) {
       title: "TÀI KHOẢN",
       items: [
         {
-          path: "/staff-dashboard/profile",
+          path: "/staff/profile",
           icon: "bi-person-circle",
           label: "Hồ sơ cá nhân",
         },

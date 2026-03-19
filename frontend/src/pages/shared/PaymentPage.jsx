@@ -376,7 +376,7 @@ export default function PaymentPage() {
   useEffect(() => {
     if (countdown === null) return;
     if (countdown === 0) {
-      navigate("/dashboard");
+      navigate("/customer");
       return;
     }
     const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
@@ -574,7 +574,7 @@ export default function PaymentPage() {
             </div>
 
             <button
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate("/customer")}
               style={{
                 background: "linear-gradient(135deg, #22c55e, #16a34a)",
                 color: "#fff",
@@ -693,7 +693,7 @@ export default function PaymentPage() {
               Đặt lại bàn
             </button>
             <button
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate("/customer")}
               style={{
                 background: "#f1f5f9",
                 color: "#475569",
@@ -940,7 +940,7 @@ export default function PaymentPage() {
             </div>
 
             <Link
-              to="/dashboard"
+              to="/customer"
               style={{
                 width: 36,
                 height: 36,
@@ -1373,7 +1373,7 @@ export default function PaymentPage() {
               </a>
             )}
             <Link
-              to="/dashboard"
+              to="/customer"
               style={{
                 background: "linear-gradient(135deg, #f1f5f9, #e2e8f0)",
                 borderRadius: 14,

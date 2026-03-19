@@ -187,9 +187,9 @@ export default function Home() {
   // Auto-redirect Admin/Staff về đúng dashboard
   useEffect(() => {
     if (user?.role === "Admin") {
-      navigate("/admin-dashboard", { replace: true });
+      navigate("/admin", { replace: true });
     } else if (user?.role === "Staff") {
-      navigate("/staff-dashboard", { replace: true });
+      navigate("/staff", { replace: true });
     }
   }, [user, navigate]);
 

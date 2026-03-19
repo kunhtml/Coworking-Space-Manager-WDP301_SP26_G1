@@ -152,7 +152,7 @@ export default function CustomerPassword() {
                     <div className="d-flex justify-content-end gap-2 mt-4">
                       <Button
                         as={Link}
-                        to="/customer-dashboard/profile"
+                        to="/customer/profile"
                         variant="outline-secondary"
                       >
                         Hủy

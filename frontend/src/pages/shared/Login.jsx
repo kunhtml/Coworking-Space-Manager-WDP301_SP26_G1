@@ -58,11 +58,11 @@ export default function Login() {
       setSuccess(`Chào mừng ${data.user.fullName}! Đang chuyển hướng...`);
       const redirectPath =
         data.user?.role === "Admin"
-          ? "/admin-dashboard"
+          ? "/admin"
           : data.user?.role === "Staff"
-            ? "/staff-dashboard"
+            ? "/staff"
             : data.user?.role === "Customer"
-              ? "/customer-dashboard"
+              ? "/customer"
               : "/";
       setTimeout(() => navigate(redirectPath), 1500);
     } catch (err) {

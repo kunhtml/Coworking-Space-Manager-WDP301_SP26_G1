@@ -154,6 +154,24 @@ export default function AdminServiceListPage() {
     (i) => i.availabilityStatus === "OutOfStock"
   ).length;
 
+  const services = filteredItems.map((item) => {
+    const statusCfg = STATUS_MAP[item.availabilityStatus] || {
+      label: item.availabilityStatus || "Khong ro",
+      bg: "secondary",
+    };
+
+    return {
+      name: item.name || "(Khong ten)",
+      desc: item.description || "Chua co mo ta",
+      category: item.categoryId?.name || "Khac",
+      price: fmtPrice(item.price),
+      quantity: Number(item.stockQuantity || 0),
+      status: statusCfg.label,
+      statusClass: statusCfg.bg === "success" ? "text-success" : "text-danger",
+      emoji: "☕",
+    };
+  });
+
   // ═══════════════════════════════════════════════════════════
   // MENU ITEM CRUD
   // ═══════════════════════════════════════════════════════════

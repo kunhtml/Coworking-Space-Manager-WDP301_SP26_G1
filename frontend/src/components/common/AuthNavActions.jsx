@@ -13,9 +13,9 @@ const DEFAULT_ROLE_LABELS = {
 function getDashboardPath(role) {
   // Chuẩn hóa về chữ thường trước khi check
   const r = role?.toLowerCase();
-  if (r === "admin") return "/admin-dashboard";
-  if (r === "staff") return "/staff-dashboard";
-  if (r === "customer") return "/customer-dashboard";
+  if (r === "admin") return "/admin";
+  if (r === "staff") return "/staff";
+  if (r === "customer") return "/customer";
   return null;
 }
 
@@ -114,7 +114,7 @@ export default function AuthNavActions({
                 <>
                   <Dropdown.Item
                     as={Link}
-                    to="/customer-dashboard/profile"
+                    to="/customer/profile"
                     className="text-secondary py-2"
                   >
                     <i className="bi bi-person-circle me-2"></i>
@@ -122,7 +122,7 @@ export default function AuthNavActions({
                   </Dropdown.Item>
                   <Dropdown.Item
                     as={Link}
-                    to="/customer-dashboard/orders"
+                    to="/customer"
                     className="text-secondary py-2"
                   >
                     <i className="bi bi-card-list me-2"></i>
@@ -130,7 +130,7 @@ export default function AuthNavActions({
                   </Dropdown.Item>
                   <Dropdown.Item
                     as={Link}
-                    to="/customer-dashboard/password"
+                    to="/customer/password"
                     className="text-secondary py-2"
                   >
                     <i className="bi bi-key-fill me-2"></i>

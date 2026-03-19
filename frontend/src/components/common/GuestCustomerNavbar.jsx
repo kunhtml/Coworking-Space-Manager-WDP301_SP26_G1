@@ -15,7 +15,7 @@ export default function GuestCustomerNavbar({ activeItem = "home" }) {
   const isCustomer = role === "customer";
 
   const links = isCustomer
-    ? [...BASE_LINKS, { key: "orders", label: "Đơn của tôi", to: "/customer-dashboard/orders" }]
+    ? [...BASE_LINKS, { key: "orders", label: "Đơn của tôi", to: "/customer" }]
     : BASE_LINKS;
 
   return (
