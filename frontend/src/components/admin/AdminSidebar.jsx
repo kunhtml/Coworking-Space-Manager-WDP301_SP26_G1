@@ -183,7 +183,7 @@ export default function AdminSidebar({ user, onLogout }) {
               className="fw-bold lh-1"
               style={{ fontSize: "16px", color: "white" }}
             >
-              StudySpace
+              Coworking Space
             </div>
             <small style={{ color: "#94a3b8", fontSize: "11px" }}>
               {isAdmin ? "Admin Panel" : "Staff Panel"}
@@ -340,3 +340,4 @@ export default function AdminSidebar({ user, onLogout }) {
     </div>
   );
 }
+

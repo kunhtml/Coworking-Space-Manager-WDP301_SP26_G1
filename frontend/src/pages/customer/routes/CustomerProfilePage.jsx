@@ -6,14 +6,12 @@ import {
   Col,
   Container,
   Form,
-  Navbar,
   Row,
   Alert,
   Spinner
 } from "react-bootstrap";
-import { Link } from "react-router"; 
 import { useAuth } from "../../../hooks/useAuth";
-import AuthNavActions from "../../../components/common/AuthNavActions";
+import GuestCustomerNavbar from "../../../components/common/GuestCustomerNavbar";
 
 export default function CustomerProfilePage() {
   const { user } = useAuth();
@@ -92,51 +90,7 @@ export default function CustomerProfilePage() {
   return (
     <div className="d-flex flex-column min-vh-100 bg-light">
       {/* Navbar */}
-      <Navbar bg="white" expand="lg" className="py-3 shadow-sm border-0">
-        <Container>
-          <Navbar.Brand
-            as={Link}
-            to="/"
-            className="fw-bold d-flex align-items-center"
-          >
-            <div
-              className="studyspace-logo me-2 d-flex align-items-center justify-content-center rounded-3"
-              style={{ background: "#6366f1", width: "40px", height: "40px" }}
-            >
-              <i className="bi bi-house-door-fill text-white"></i>
-            </div>
-            <span style={{ color: "#1f2937" }}>StudySpace</span>
-          </Navbar.Brand>
-
-          <div className="d-flex align-items-center gap-4 ms-auto">
-            <Link
-              to="/"
-              className="text-decoration-none fw-semibold text-primary"
-            >
-              Trang chủ
-            </Link>
-            <Link
-              to="/order-table"
-              className="text-decoration-none fw-semibold text-secondary"
-            >
-              Đặt chỗ
-            </Link>
-            <Link
-              to="/menu"
-              className="text-decoration-none fw-semibold text-secondary"
-            >
-              Thực đơn
-            </Link>
-            <Link
-              to="/customer-dashboard/orders"
-              className="text-decoration-none fw-semibold text-secondary"
-            >
-              Đơn của tôi
-            </Link>
-            <AuthNavActions displayName={user?.fullName} />
-          </div>
-        </Container>
-      </Navbar>
+      <GuestCustomerNavbar activeItem="orders" />
 
       {/* Main Content */}
       <main className="py-4 flex-grow-1">

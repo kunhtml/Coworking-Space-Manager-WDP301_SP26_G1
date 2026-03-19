@@ -13,11 +13,11 @@ import AuthNavActions from "../../components/common/AuthNavActions";
 
 export function meta() {
   return [
-    { title: "Nexus Coffee | Không gian & Thực đơn" },
+    { title: "Coworking Space | Không gian & Thực đơn" },
     {
       name: "description",
       content:
-        "Khám phá không gian cà phê độc đáo và thực đơn phong phú tại Nexus Coffee.",
+        "Khám phá không gian cà phê độc đáo và thực đơn phong phú tại Coworking Space.",
     },
   ];
 }
@@ -184,7 +184,7 @@ export default function SpacesPage() {
             className="fw-bold text-white fs-4 d-flex align-items-center"
           >
             <i className="bi bi-cup-hot-fill me-2 fs-3"></i>
-            NEXUS COFFEE
+            Coworking Space
           </Navbar.Brand>
           <Navbar.Toggle
             aria-controls="basic-navbar-nav"
@@ -257,7 +257,7 @@ export default function SpacesPage() {
               className="px-3 py-2 rounded-pill fw-semibold"
               style={{ letterSpacing: 2, fontSize: 11 }}
             >
-              NEXUS COFFEE
+              Coworking Space
             </Badge>
           </div>
           <h1
@@ -550,7 +550,7 @@ export default function SpacesPage() {
           <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
             <div className="fw-bold text-white d-flex align-items-center gap-2">
               <i className="bi bi-cup-hot-fill text-warning"></i>
-              NEXUS COFFEE
+              Coworking Space
             </div>
             <div className="d-flex gap-4 flex-wrap">
               <Link
@@ -579,7 +579,7 @@ export default function SpacesPage() {
               </Link>
             </div>
             <div className="text-secondary small">
-              © 2026 Nexus Coffee. All rights reserved.
+              © 2026 Coworking Space. All rights reserved.
             </div>
           </div>
         </Container>
@@ -654,3 +654,4 @@ export default function SpacesPage() {
     </div>
   );
 }
+

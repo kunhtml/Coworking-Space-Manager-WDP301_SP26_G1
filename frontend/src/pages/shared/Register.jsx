@@ -8,19 +8,17 @@ import {
   Button,
   Alert,
   Spinner,
-  Navbar,
-  Nav,
 } from "react-bootstrap";
 import { Link, useNavigate } from "react-router";
 import { animate, stagger } from "animejs";
 import { registerApi } from "../../services/api";
 import { saveAuth } from "../../store/authSlice";
-import AuthNavActions from "../../components/common/AuthNavActions";
+import GuestCustomerNavbar from "../../components/common/GuestCustomerNavbar";
 
 export function meta() {
   return [
-    { title: "Đăng ký | StudySpace" },
-    { name: "description", content: "Đăng ký tài khoản StudySpace" },
+    { title: "Đăng ký | Coworking Space" },
+    { name: "description", content: "Đăng ký tài khoản Coworking Space" },
   ];
 }
 
@@ -121,42 +119,7 @@ export default function Register() {
   return (
     <div className="min-vh-100 bg-light d-flex flex-column">
       {/* Header Navigation */}
-      <Navbar bg="white" expand="lg" className="py-3 shadow-sm border-0">
-        <Container>
-          <Navbar.Brand
-            as={Link}
-            to="/"
-            className="fw-bold d-flex align-items-center"
-          >
-            <div
-              className="studyspace-logo me-2 d-flex align-items-center justify-content-center rounded-3"
-              style={{ background: "#6366f1", width: "40px", height: "40px" }}
-            >
-              <i className="bi bi-cup-hot-fill text-white"></i>
-            </div>
-            <span style={{ color: "#1f2937" }}>StudySpace</span>
-          </Navbar.Brand>
-
-          <Navbar.Toggle />
-          <Navbar.Collapse>
-            <Nav className="me-auto ms-5">
-              <Nav.Link as={Link} to="/" className="fw-medium text-muted px-3">
-                Trang chủ
-              </Nav.Link>
-              <Nav.Link href="#spaces" className="fw-medium text-muted px-3">
-                Đặt chỗ
-              </Nav.Link>
-              <Nav.Link href="#menu" className="fw-medium text-muted px-3">
-                Thực đơn
-              </Nav.Link>
-            </Nav>
-
-            <div className="d-flex gap-3 align-items-center">
-              <AuthNavActions />
-            </div>
-          </Navbar.Collapse>
-        </Container>
-      </Navbar>
+      <GuestCustomerNavbar activeItem="home" />
 
       {/* Register Section */}
       <section className="flex-grow-1 d-flex align-items-center py-5">
@@ -416,3 +379,4 @@ export default function Register() {
     </div>
   );
 }
+

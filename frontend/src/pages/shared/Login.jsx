@@ -17,8 +17,8 @@ import { saveAuth } from "../../store/authSlice";
 
 export function meta() {
   return [
-    { title: "Đăng nhập | Nexus Coffee" },
-    { name: "description", content: "Đăng nhập vào hệ thống Nexus Coffee" },
+    { title: "Đăng nhập | Coworking Space" },
+    { name: "description", content: "Đăng nhập vào hệ thống Coworking Space" },
   ];
 }
 
@@ -263,3 +263,4 @@ export default function Login() {
     </div>
   );
 }
+

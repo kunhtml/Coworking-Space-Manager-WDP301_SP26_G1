@@ -4,9 +4,7 @@ import {
   Card,
   Col,
   Container,
-  Navbar,
   Row,
-  Nav,
   Badge,
   Alert,
 } from "react-bootstrap";
@@ -16,11 +14,11 @@ import { Autoplay, EffectCards } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/effect-cards";
 import { useAuth } from "../../hooks/useAuth";
-import AuthNavActions from "../../components/common/AuthNavActions";
+import GuestCustomerNavbar from "../../components/common/GuestCustomerNavbar";
 
 export function meta() {
   return [
-    { title: "StudySpace | Không gian học tập lý tưởng" },
+    { title: "Coworking Space | Không gian học tập lý tưởng" },
     {
       name: "description",
       content:
@@ -207,42 +205,7 @@ export default function Home() {
   return (
     <div className="min-vh-100 bg-light">
       {/* Header Navigation */}
-      <Navbar bg="white" expand="lg" className="py-3 shadow-sm border-0">
-        <Container>
-          <Navbar.Brand
-            as={Link}
-            to="/"
-            className="fw-bold d-flex align-items-center"
-          >
-            <div
-              className="studyspace-logo me-2 d-flex align-items-center justify-content-center rounded-3"
-              style={{ background: "#6366f1", width: "40px", height: "40px" }}
-            >
-              <i className="bi bi-cup-hot-fill text-white"></i>
-            </div>
-            <span style={{ color: "#1f2937" }}>StudySpace</span>
-          </Navbar.Brand>
-
-          <Navbar.Toggle />
-          <Navbar.Collapse>
-            <Nav className="me-auto ms-5">
-              <Nav.Link href="#spaces" className="fw-medium text-muted px-3">
-                Trang chủ
-              </Nav.Link>
-              <Nav.Link href="#menu" className="fw-medium text-muted px-3">
-                Đặt chỗ
-              </Nav.Link>
-              <Nav.Link href="#menu" className="fw-medium text-muted px-3">
-                Thực đơn
-              </Nav.Link>
-            </Nav>
-
-            <div className="d-flex gap-3 align-items-center">
-              <AuthNavActions />
-            </div>
-          </Navbar.Collapse>
-        </Container>
-      </Navbar>
+      <GuestCustomerNavbar activeItem="home" />
 
       {/* Hero Section */}
       <section
@@ -501,7 +464,7 @@ export default function Home() {
             <Col lg={4}>
               <div className="d-flex align-items-center mb-3">
                 <div
-                  className="studyspace-logo me-2 d-flex align-items-center justify-content-center rounded-3"
+                  className="Coworking Space-logo me-2 d-flex align-items-center justify-content-center rounded-3"
                   style={{
                     background: "#6366f1",
                     width: "40px",
@@ -510,7 +473,7 @@ export default function Home() {
                 >
                   <i className="bi bi-cup-hot-fill text-white"></i>
                 </div>
-                <span className="fw-bold text-white fs-5">StudySpace</span>
+                <span className="fw-bold text-white fs-5">Coworking Space</span>
               </div>
               <p className="text-white-50 small mb-0">
                 Không gian học tập & làm việc chuyên nghiệp, tiện nghi. Đặt chỗ
@@ -592,7 +555,7 @@ export default function Home() {
                 <li className="mb-2">
                   <i className="bi bi-envelope me-2 text-primary"></i>
                   <span className="text-white-50 small">
-                    hello@studyspace.vn
+                    hello@Coworking Space.vn
                   </span>
                 </li>
               </ul>
@@ -602,7 +565,7 @@ export default function Home() {
           <hr className="my-4 border-secondary" />
           <div className="text-center">
             <small className="text-white-50">
-              © 2025 StudySpace. CSMS — Coworking Space Management System.
+              © 2025 Coworking Space. CSMS — Coworking Space Management System.
             </small>
           </div>
         </Container>
@@ -610,3 +573,4 @@ export default function Home() {
     </div>
   );
 }
+

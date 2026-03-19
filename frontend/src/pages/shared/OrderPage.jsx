@@ -3,18 +3,16 @@ import {
   Badge,
   Button,
   Container,
-  Navbar,
   Row,
   Col,
   Card,
-  Nav,
   Modal,
   Form,
   Alert,
   Spinner,
 } from "react-bootstrap";
 import { Link, useNavigate } from "react-router";
-import AuthNavActions from "../../components/common/AuthNavActions";
+import GuestCustomerNavbar from "../../components/common/GuestCustomerNavbar";
 import { useAuth } from "../../hooks/useAuth";
 import { apiClient } from "../../services/api";
 import { getBookings } from "../../services/bookingService";
@@ -22,11 +20,11 @@ import { createOrderApi } from "../../services/orderService";
 
 export function meta() {
   return [
-    { title: "Thực đơn & Dịch vụ | StudySpace" },
+    { title: "Thực đơn & Dịch vụ | Coworking Space" },
     {
       name: "description",
       content:
-        "Khám phá thực đơn đa dạng với các loại đồ uống, đồ ăn nhẹ và dịch vụ tiện ích tại StudySpace.",
+        "Khám phá thực đơn đa dạng với các loại đồ uống, đồ ăn nhẹ và dịch vụ tiện ích tại Coworking Space.",
     },
   ];
 }
@@ -254,46 +252,7 @@ export default function MenuPage() {
   return (
     <div className="min-vh-100 bg-light">
       {/* Header Navigation */}
-      <Navbar bg="white" expand="lg" className="py-3 shadow-sm border-0">
-        <Container>
-          <Navbar.Brand
-            as={Link}
-            to="/"
-            className="fw-bold d-flex align-items-center"
-          >
-            <div
-              className="studyspace-logo me-2 d-flex align-items-center justify-content-center rounded-3"
-              style={{ background: "#6366f1", width: "40px", height: "40px" }}
-            >
-              <i className="bi bi-cup-hot-fill text-white"></i>
-            </div>
-            <span style={{ color: "#1f2937" }}>NEXUS COFFEE</span>
-          </Navbar.Brand>
-
-          <Navbar.Toggle />
-          <Navbar.Collapse>
-            <Nav className="me-auto ms-5">
-              <Nav.Link as={Link} to="/" className="fw-medium text-muted px-3">
-                Trang chủ
-              </Nav.Link>
-              <Nav.Link
-                as={Link}
-                to="/order-table"
-                className="fw-medium text-muted px-3"
-              >
-                Đặt chỗ
-              </Nav.Link>
-              <Nav.Link href="#" className="fw-medium text-primary px-3">
-                Thực đơn
-              </Nav.Link>
-            </Nav>
-
-            <div className="d-flex gap-3 align-items-center">
-              <AuthNavActions />
-            </div>
-          </Navbar.Collapse>
-        </Container>
-      </Navbar>
+      <GuestCustomerNavbar activeItem="menu" />
 
       {/* Success Alert */}
       {showSuccess && (
@@ -685,3 +644,4 @@ export default function MenuPage() {
     </div>
   );
 }
+

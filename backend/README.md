@@ -1,4 +1,4 @@
-# Backend Layer
+# Coworking Space Manager - Backend
 
 This folder contains the backend architecture scaffold.
 

@@ -504,12 +504,12 @@ body {
   border-radius: 8px;
 }
 
-/* StudySpace Homepage Styles */
-.studyspace-logo {
+/* Coworking Space Homepage Styles */
+.Coworking Space-logo {
   transition: transform 0.2s ease-in-out;
 }
 
-.studyspace-logo:hover {
+.Coworking Space-logo:hover {
   transform: scale(1.05);
 }
 
@@ -736,3 +736,4 @@ body {
   color: #495057;
   font-size: 0.95rem;
 }
+

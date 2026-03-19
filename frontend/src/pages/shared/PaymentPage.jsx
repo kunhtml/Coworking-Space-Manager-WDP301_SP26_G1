@@ -47,7 +47,7 @@ import {
 } from "react-icons/ri";
 
 export function meta() {
-  return [{ title: "Thanh toán QR | Nexus Coffee" }];
+  return [{ title: "Thanh toán QR | Coworking Space" }];
 }
 
 /* ─── helpers ─── */
@@ -1410,3 +1410,4 @@ export default function PaymentPage() {
     </div>
   );
 }
+

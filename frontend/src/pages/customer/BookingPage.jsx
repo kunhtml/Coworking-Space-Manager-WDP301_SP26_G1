@@ -7,15 +7,13 @@ import {
   Card,
   Button,
   Badge,
-  Navbar,
   Modal,
   Form,
   Spinner,
-  Nav,
 } from "react-bootstrap";
 import { Link, useNavigate } from "react-router";
 import { useAuth } from "../../hooks/useAuth";
-import AuthNavActions from "../../components/common/AuthNavActions";
+import GuestCustomerNavbar from "../../components/common/GuestCustomerNavbar";
 import {
   searchAvailableTables,
   createBookingApi,
@@ -24,11 +22,11 @@ import { apiClient } from "../../services/api";
 
 export function meta() {
   return [
-    { title: "Đặt chỗ ngồi | StudySpace" },
+    { title: "Đặt chỗ ngồi | Coworking Space" },
     {
       name: "description",
       content:
-        "Đặt chỗ ngồi online tại StudySpace. Chọn thời gian, loại chỗ ngồi phù hợp cho việc học tập và làm việc.",
+        "Đặt chỗ ngồi online tại Coworking Space. Chọn thời gian, loại chỗ ngồi phù hợp cho việc học tập và làm việc.",
     },
   ];
 }
@@ -230,46 +228,7 @@ export default function BookingPage() {
   return (
     <div className="min-vh-100 bg-light">
       {/* Header Navigation */}
-      <Navbar bg="white" expand="lg" className="py-3 shadow-sm border-0">
-        <Container>
-          <Navbar.Brand
-            as={Link}
-            to="/"
-            className="fw-bold d-flex align-items-center"
-          >
-            <div
-              className="studyspace-logo me-2 d-flex align-items-center justify-content-center rounded-3"
-              style={{ background: "#6366f1", width: "40px", height: "40px" }}
-            >
-              <i className="bi bi-cup-hot-fill text-white"></i>
-            </div>
-            <span style={{ color: "#1f2937" }}>NEXUS COFFEE</span>
-          </Navbar.Brand>
-
-          <Navbar.Toggle />
-          <Navbar.Collapse>
-            <Nav className="me-auto ms-5">
-              <Nav.Link as={Link} to="/" className="fw-medium text-muted px-3">
-                Trang chủ
-              </Nav.Link>
-              <Nav.Link href="#" className="fw-medium text-primary px-3">
-                Đặt chỗ
-              </Nav.Link>
-              <Nav.Link
-                as={Link}
-                to="/menu"
-                className="fw-medium text-muted px-3"
-              >
-                Thực đơn
-              </Nav.Link>
-            </Nav>
-
-            <div className="d-flex gap-3 align-items-center">
-              <AuthNavActions />
-            </div>
-          </Navbar.Collapse>
-        </Container>
-      </Navbar>
+      <GuestCustomerNavbar activeItem="booking" />
 
       {/* Hero Section */}
       <section className="py-5 bg-primary text-white">
@@ -671,3 +630,4 @@ export default function BookingPage() {
     </div>
   );
 }
+

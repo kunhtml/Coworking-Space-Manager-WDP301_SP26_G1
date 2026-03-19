@@ -155,7 +155,7 @@ ${appName}
 export const sendRegistrationEmail = async ({ to, fullName }) => {
   const resend = createResendClient();
   
-  const appName = process.env.APP_NAME || "Nexus Coworking Space";
+  const appName = process.env.APP_NAME || "Coworking Space";
   const loginUrl = process.env.FRONTEND_URL || "http://localhost:5173";
   // Resend requires a verified domain or use onboarding@resend.dev for testing
   const fromEmail = process.env.EMAIL_FROM || "onboarding@resend.dev";
@@ -212,3 +212,4 @@ export default {
   sendRegistrationEmail,
   isEmailConfigured,
 };
+

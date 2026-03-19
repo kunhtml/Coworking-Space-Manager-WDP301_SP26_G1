@@ -1,6 +1,5 @@
 import { Router } from "express";
 import {
-  checkInBooking,
   getStaffTableStatusList,
   updateStaffTableStatus,
   getStaffOrders,
@@ -9,6 +8,7 @@ import {
   getStaffOrderInvoice,
   exportStaffOrderInvoice,
 } from "../controllers/staff-dashboard.controller.js";
+import { checkInBooking } from "../controllers/booking.controller.js";
 import { requireStaff } from "../middleware/middleware.js";
 
 const router = Router();

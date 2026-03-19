@@ -6,12 +6,11 @@ import {
   Col,
   Container,
   Form,
-  Navbar,
   Row,
   Spinner,
 } from "react-bootstrap";
 import { Link, Navigate } from "react-router";
-import AuthNavActions from "../../components/common/AuthNavActions";
+import GuestCustomerNavbar from "../../components/common/GuestCustomerNavbar";
 import { changePasswordApi } from "../../services/api";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -84,26 +83,7 @@ export default function CustomerPassword() {
 
   return (
     <div className="d-flex flex-column min-vh-100 bg-light">
-      <Navbar bg="white" expand="lg" className="py-3 shadow-sm border-0">
-        <Container>
-          <Navbar.Brand
-            as={Link}
-            to="/"
-            className="fw-bold d-flex align-items-center"
-          >
-            <div
-              className="studyspace-logo me-2 d-flex align-items-center justify-content-center rounded-3"
-              style={{ background: "#6366f1", width: "40px", height: "40px" }}
-            >
-              <i className="bi bi-cup-hot-fill text-white"></i>
-            </div>
-            <span style={{ color: "#1f2937" }}>StudySpace</span>
-          </Navbar.Brand>
-          <div className="d-flex gap-3 align-items-center">
-            <AuthNavActions />
-          </div>
-        </Container>
-      </Navbar>
+      <GuestCustomerNavbar activeItem="orders" />
 
       <main className="py-5 flex-grow-1">
         <Container>
