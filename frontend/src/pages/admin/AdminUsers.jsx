@@ -12,7 +12,6 @@ import {
   Alert,
   Spinner,
 } from "react-bootstrap";
-import { useAuth } from "../../hooks/useAuth";
 import { apiClient as api } from "../../services/api";
 import AdminLayout from "../../components/admin/AdminLayout";
 
@@ -737,23 +736,18 @@ export default function AdminUsers() {
                   </Form.Select>
                 </FieldGroup>
               </Col>
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label className="fw-semibold">Trạng thái</Form.Label>
+
+              {/* Trạng thái */}
+              <Col md={3}>
+                <FieldGroup label="Trạng thái">
                   <Form.Select
                     value={formData.membershipStatus}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        membershipStatus: e.target.value,
-                      })
-                    }
+                    onChange={(e) => field("membershipStatus", e.target.value)}
                   >
                     <option value="Active">Hoạt động</option>
-                    <option value="Inactive">Chưa kích hoạt</option>
                     <option value="Suspended">Tạm khóa</option>
                   </Form.Select>
-                </Form.Group>
+                </FieldGroup>
               </Col>
             </Row>
           </Modal.Body>
@@ -846,28 +840,21 @@ export default function AdminUsers() {
                 </FieldGroup>
               </Col>
               <Col md={6}>
-                <Form.Group>
-                  <Form.Label className="fw-semibold">Trạng thái</Form.Label>
+                <FieldGroup label="Trạng thái">
                   <Form.Select
                     value={formData.membershipStatus}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        membershipStatus: e.target.value,
-                      })
-                    }
+                    onChange={(e) => field("membershipStatus", e.target.value)}
                   >
                     <option value="Active">Hoạt động</option>
-                    <option value="Inactive">Chưa kích hoạt</option>
                     <option value="Suspended">Tạm khóa</option>
                   </Form.Select>
-                </Form.Group>
+                </FieldGroup>
               </Col>
             </Row>
-            <Alert variant="info" className="mt-3 mb-0">
+            <Alert variant="info" className="mt-3 mb-0 py-2">
               <i className="bi bi-info-circle me-2"></i>
-              Không thể đổi mật khẩu ở đây. User cần dùng chức năng "Đổi mật
-              khẩu" trong hồ sơ.
+              Để thay đổi mật khẩu, người dùng cần dùng chức năng{" "}
+              <strong>Đổi mật khẩu</strong> trong hồ sơ của họ.
             </Alert>
           </Modal.Body>
           <Modal.Footer className="border-0 pt-0">

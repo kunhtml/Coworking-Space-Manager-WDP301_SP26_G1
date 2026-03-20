@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { checkInBooking } from "../controllers/booking.controller.js";
 import {
   getStaffTableStatusList,
   updateStaffTableStatus,
