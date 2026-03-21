@@ -22,7 +22,9 @@ export const requireStaff = (req, res, next) => {
   try {
     const token = auth.split(" ")[1];
     req.user = jwt.verify(token, process.env.JWT_SECRET || "nexus_secret");
-    if (!["Staff", "Admin"].includes(req.user.role)) {
+    // Normalize role để chấp nhận cả 'admin'/'Admin', 'staff'/'Staff'
+    const role = (req.user.role || "").toLowerCase();
+    if (!["staff", "admin"].includes(role)) {
       return res.status(403).json({ message: "Không có quyền truy cập." });
     }
     next();

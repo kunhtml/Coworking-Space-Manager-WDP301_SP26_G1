@@ -1,4 +1,4 @@
-# Nexus Coworking Space Manager Frontend
+# Coworking Space Manager - Frontend
 
 Frontend layer for the coworking space manager, built with React Router v7 and React Bootstrap.
 
@@ -38,3 +38,4 @@ my-app-frontend/
     routes.js
     styles.css
 ```
+

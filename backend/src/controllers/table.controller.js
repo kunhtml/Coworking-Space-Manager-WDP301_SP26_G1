@@ -1,0 +1,162 @@
+import Booking from "../models/booking.js";
+import Table from "../models/table.js";
+
+export const getTables = async (req, res) => {
+  try {
+    const tables = await Table.find().sort({ name: 1 }).lean();
+    res.json(
+      tables.map((t) => ({
+        sourceId: t._id.toString(),
+        name: t.name,
+        tableType: t.tableType,
+        capacity: t.capacity,
+        status: t.status,
+        pricePerHour: t.pricePerHour || 0,
+        pricePerDay: t.pricePerDay || 0,
+      })),
+    );
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi server." });
+  }
+};
+
+// POST /api/tables/available  (public) — find non-overlapping tables
+
+export const getAvailableTables = async (req, res) => {
+  try {
+    const {
+      arrivalDate,
+      arrivalTime,
+      duration,
+      date,
+      startTime: requestStartTime,
+      endTime: requestEndTime,
+      tableType,
+    } = req.body;
+
+    const requestedDate = arrivalDate || date;
+    const requestedStartTime = arrivalTime || requestStartTime;
+    let requestedDuration = Number(duration);
+
+    if ((!requestedDuration || requestedDuration <= 0) && requestEndTime && requestedStartTime && requestedDate) {
+      const start = new Date(`${requestedDate}T${requestedStartTime}:00`);
+      const end = new Date(`${requestedDate}T${requestEndTime}:00`);
+      const diffHours = (end.getTime() - start.getTime()) / 3600000;
+      if (isFinite(diffHours) && diffHours > 0) {
+        requestedDuration = diffHours;
+      }
+    }
+
+    if (!requestedDate || !requestedStartTime || !requestedDuration || requestedDuration <= 0) {
+      return res
+        .status(400)
+        .json({ message: "Vui lòng cung cấp ngày, giờ và thời gian sử dụng." });
+    }
+
+    const startTime = new Date(`${requestedDate}T${requestedStartTime}:00`);
+    if (!isFinite(startTime.getTime())) {
+      return res.status(400).json({ message: "Ngày hoặc giờ không hợp lệ." });
+    }
+    const endTime = new Date(startTime.getTime() + requestedDuration * 3600000);
+
+    // Find bookings that overlap with [startTime, endTime)
+    const overlapping = await Booking.find({
+      status: { $nin: ["Cancelled", "Canceled"] },
+      startTime: { $lt: endTime },
+      endTime: { $gt: startTime },
+    }).lean();
+
+    const bookedIds = new Set(
+      overlapping.map((b) => b.tableId?.toString()).filter(Boolean),
+    );
+
+    let tables = await Table.find({ status: { $ne: "Maintenance" } })
+      .sort({ name: 1 })
+      .lean();
+
+    if (tableType) {
+      const normalizedType = String(tableType).toLowerCase();
+      tables = tables.filter((t) =>
+        String(t.tableType || "").toLowerCase().includes(normalizedType),
+      );
+    }
+
+    const available = tables.filter((t) => !bookedIds.has(t._id.toString()));
+
+    res.json(
+      available.map((t) => ({
+        _id: t._id.toString(),
+        sourceId: t._id.toString(),
+        name: t.name,
+        tableType: { name: t.tableType },
+        capacity: t.capacity,
+        status: t.status,
+        pricePerHour: t.pricePerHour || 0,
+        pricePerDay: t.pricePerDay || 0,
+      })),
+    );
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi server." });
+  }
+};
+
+// POST /api/tables (Staff/Admin - create table)
+
+export const createTable = async (req, res) => {
+  try {
+    const { name, tableType, capacity, status, pricePerHour, pricePerDay } =
+      req.body;
+    if (!name || !tableType || !capacity) {
+      return res
+        .status(400)
+        .json({ message: "Vui lòng cung cấp tên, loại và sức chứa." });
+    }
+    const table = await Table.create({
+      name,
+      tableType,
+      capacity,
+      status: status || "Available",
+      pricePerHour: pricePerHour || 0,
+      pricePerDay: pricePerDay || 0,
+    });
+    res.status(201).json({ message: "Thêm bàn thành công!", table });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi khi tạo bàn." });
+  }
+};
+
+// PUT /api/tables/:id (Staff/Admin - update table)
+
+export const updateTable = async (req, res) => {
+  try {
+    const { name, tableType, capacity, status, pricePerHour, pricePerDay } =
+      req.body;
+    const table = await Table.findByIdAndUpdate(
+      req.params.id,
+      { name, tableType, capacity, status, pricePerHour, pricePerDay },
+      { new: true, runValidators: true },
+    );
+    if (!table) return res.status(404).json({ message: "Không tìm thấy bàn." });
+    res.json({ message: "Cập nhật bàn thành công!", table });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi khi cập nhật bàn." });
+  }
+};
+
+// DELETE /api/tables/:id (Staff/Admin - delete table)
+
+export const deleteTable = async (req, res) => {
+  try {
+    const table = await Table.findByIdAndDelete(req.params.id);
+    if (!table) return res.status(404).json({ message: "Không tìm thấy bàn." });
+    res.json({ message: "Xóa bàn thành công!" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi khi xóa bàn." });
+  }
+};
+
+// GET /api/table-types (public)

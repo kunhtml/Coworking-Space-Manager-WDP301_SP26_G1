@@ -1,4 +1,4 @@
-# Nexus Coworking Space Manager
+# Coworking Space Manager
 
 Project is reorganized into separated frontend and backend layers.
 
@@ -34,3 +34,4 @@ cd my-app-backend
 npm install
 npm run start
 ```
+
