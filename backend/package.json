@@ -4,7 +4,10 @@
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "seed": "node ../seed/seed-enhanced-data.js",
+    "seed:accounts": "node ../seed/seed-accounts.js",
+    "audit": "node ../seed/audit-db.js"
   },
   "dependencies": {
     "@payos/node": "^2.0.5",
