@@ -101,7 +101,6 @@ export default function AdminSidebar({ user, onLogout }) {
           path: "/staff-dashboard/checkin",
           icon: "bi-clipboard-check",
           label: "Check-in đơn",
-          badge: 3,
         },
       ],
     },

@@ -3,8 +3,30 @@ import Category from "../models/category.js";
 
 export const getMenuItems = async (req, res) => {
   try {
-    const items = await MenuItem.find().populate("categoryId", "name").lean();
-    res.json(items);
+    const isAdmin = req.query.admin === "true";
+
+    if (isAdmin) {
+      // Admin: lấy tất cả món không lọc
+      const items = await MenuItem.find().populate("categoryId", "name isActive").lean();
+      return res.json(items);
+    }
+
+    // Public (khách hàng): chỉ lấy món của danh mục đang hiển thị
+    // và loại bỏ món Hết hàng (Unavailable)
+    const activeCategories = await Category.find({ isActive: true }).select("_id").lean();
+    const activeCatIds = activeCategories.map((c) => c._id);
+
+    const items = await MenuItem.find({
+      availabilityStatus: { $ne: "Unavailable" }, // ẩn món hết hàng hẳn
+      $or: [
+        { categoryId: { $in: activeCatIds } }, // danh mục đang hiển thị
+        { categoryId: null },                   // món không có danh mục
+      ],
+    })
+      .populate("categoryId", "name isActive")
+      .lean();
+
+    return res.json(items);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Lỗi khi tải danh sách menu." });
@@ -46,13 +68,23 @@ export const createMenuItem = async (req, res) => {
       return res.status(400).json({ message: "Giá không hợp lệ." });
     }
 
+    const qty = Number(stockQuantity) || 0;
+    // Nếu admin chọn Unavailable (hết hàng hẳn), giữ nguyên.
+    // Nếu tồn kho = 0 và không phải Unavailable → tự động OutOfStock
+    let resolvedStatus = availabilityStatus || "Available";
+    if (resolvedStatus !== "Unavailable" && qty === 0) {
+      resolvedStatus = "OutOfStock";
+    } else if (resolvedStatus === "OutOfStock" && qty > 0) {
+      resolvedStatus = "Available";
+    }
+
     const newItem = await MenuItem.create({
       name: name.trim(),
       categoryId: categoryId || null,
       description: description?.trim() || "",
       price: Number(price),
-      stockQuantity: Number(stockQuantity) || 0,
-      availabilityStatus: availabilityStatus || "Available",
+      stockQuantity: qty,
+      availabilityStatus: resolvedStatus,
     });
 
     const populated = await MenuItem.findById(newItem._id)
@@ -85,6 +117,15 @@ export const updateMenuItem = async (req, res) => {
       return res.status(400).json({ message: "Giá không hợp lệ." });
     }
 
+    const qty = Number(stockQuantity) || 0;
+    // Tương tự createMenuItem: auto OutOfStock khi hết hàng tmpThời
+    let resolvedStatus = availabilityStatus || "Available";
+    if (resolvedStatus !== "Unavailable" && qty === 0) {
+      resolvedStatus = "OutOfStock";
+    } else if (resolvedStatus === "OutOfStock" && qty > 0) {
+      resolvedStatus = "Available";
+    }
+
     const updated = await MenuItem.findByIdAndUpdate(
       req.params.id,
       {
@@ -92,8 +133,8 @@ export const updateMenuItem = async (req, res) => {
         categoryId: categoryId || null,
         description: description?.trim() || "",
         price: Number(price),
-        stockQuantity: Number(stockQuantity) || 0,
-        availabilityStatus: availabilityStatus || "Available",
+        stockQuantity: qty,
+        availabilityStatus: resolvedStatus,
       },
       { new: true },
     )
