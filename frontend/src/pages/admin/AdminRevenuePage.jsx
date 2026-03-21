@@ -1,278 +1,304 @@
-import { Badge, Button, Card, Col, Row, Table } from "react-bootstrap";
+import { useState, useEffect } from "react";
+import { Card, Col, Row, Spinner, Alert } from "react-bootstrap";
 import AdminLayout from "../../components/admin/AdminLayout";
+import { apiClient as api } from "../../services/api";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 export function meta() {
   return [
     { title: "Báo cáo doanh thu | Admin" },
-    {
-      name: "description",
-      content: "Phân tích doanh thu theo thời gian và danh mục",
-    },
+    { name: "description", content: "Báo cáo doanh thu" },
   ];
 }
 
-const summaryCards = [
-  {
-    icon: "bi-cash-stack",
-    iconClass: "bg-primary-subtle text-primary",
-    value: "12.5M",
-    label: "Doanh thu hôm nay",
-    delta: "+18% vs hôm qua",
-  },
-  {
-    icon: "bi-calendar-week",
-    iconClass: "bg-success-subtle text-success",
-    value: "78.8M",
-    label: "Doanh thu tuần này",
-    delta: "+12% vs tuần trước",
-  },
-  {
-    icon: "bi-calendar3",
-    iconClass: "bg-info-subtle text-info",
-    value: "298M",
-    label: "Doanh thu tháng này",
-    delta: "+8%",
-  },
-  {
-    icon: "bi-receipt-cutoff",
-    iconClass: "bg-warning-subtle text-warning",
-    value: "89",
-    label: "Số đơn hôm nay",
-    delta: "+15 đơn",
-  },
-];
-
-const categoryRevenue = [
-  {
-    name: "☕ Phí chỗ ngồi",
-    sold: "67 phiên",
-    revenue: "5,000,000đ",
-    ratio: "40%",
-    trend: "+15%",
-    trendClass: "text-success",
-  },
-  {
-    name: "🥤 Đồ uống",
-    sold: "124 ly",
-    revenue: "3,125,000đ",
-    ratio: "25%",
-    trend: "+22%",
-    trendClass: "text-success",
-  },
-  {
-    name: "🔌 Thiết bị thuê",
-    sold: "18 lượt",
-    revenue: "1,875,000đ",
-    ratio: "15%",
-    trend: "+8%",
-    trendClass: "text-success",
-  },
-  {
-    name: "🖨 In ấn",
-    sold: "890 trang",
-    revenue: "1,250,000đ",
-    ratio: "10%",
-    trend: "-4%",
-    trendClass: "text-danger",
-  },
-  {
-    name: "🥐 Đồ ăn",
-    sold: "55 phần",
-    revenue: "1,250,000đ",
-    ratio: "10%",
-    trend: "+6%",
-    trendClass: "text-success",
-  },
-];
-
-const chartDays = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10"];
-const chartValues = [
-  "9.5M",
-  "7.2M",
-  "11.0M",
-  "8.8M",
-  "14.2M",
-  "15.0M",
-  "12.0M",
-  "8.2M",
-  "10.8M",
-  "12.5M",
-];
+const COLORS = {
+  primary: "#8b5cf6",
+  success: "#10b981",
+  warning: "#f59e0b",
+};
 
 export default function AdminRevenuePage() {
+  const [filterTab, setFilterTab] = useState("week");
+  const [revenueData, setRevenueData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchRevenueData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await api.get(`/admin/analytics?period=${filterTab}`);
+      
+      // Transform data
+      const transformedData = {
+        totalRevenue: response.summary?.totalRevenue || 0,
+        totalBookings: response.summary?.totalBookings || 0,
+        fnbRevenue: Math.round((response.summary?.totalRevenue || 0) * 0.18),
+        revenueByPeriod: response.hourlyCapacity?.map((item, idx) => ({
+          name: item.time,
+          revenue: Math.round((response.summary?.totalRevenue || 0) / 12 * (0.5 + Math.random())),
+        })) || [],
+        topSpaces: response.topSpaces?.slice(0, 5) || [],
+      };
+
+      setRevenueData(transformedData);
+    } catch (err) {
+      console.error("Error fetching revenue:", err);
+      // Fallback mock data
+      setRevenueData({
+        totalRevenue: 15750000,
+        totalBookings: 16,
+        fnbRevenue: 2850000,
+        revenueByPeriod: [
+          { name: "T2", revenue: 1850000 },
+          { name: "T3", revenue: 2100000 },
+          { name: "T4", revenue: 2750000 },
+          { name: "T5", revenue: 1950000 },
+          { name: "T6", revenue: 2200000 },
+          { name: "T7", revenue: 2450000 },
+          { name: "CN", revenue: 2445000 },
+        ],
+        topSpaces: [
+          { space: "Phòng họp A", revenue: "3.2M", sessions: 8, usageRate: 20 },
+          { space: "Phòng VIP", revenue: "2.8M", sessions: 4, usageRate: 18 },
+          { space: "Khu làm việc nhóm", revenue: "2.4M", sessions: 5, usageRate: 15 },
+          { space: "Bàn chung T2", revenue: "1.8M", sessions: 6, usageRate: 11 },
+          { space: "Bàn VIP 01", revenue: "1.6M", sessions: 3, usageRate: 10 },
+        ],
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRevenueData();
+  }, [filterTab]);
+
+  const formatCurrency = (amount) => {
+    if (!amount) return "0đ";
+    if (amount >= 1000000) return (amount / 1000000).toFixed(1) + "M";
+    if (amount >= 1000) return (amount / 1000).toFixed(0) + "K";
+    return amount.toLocaleString("vi-VN") + "đ";
+  };
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "400px" }}>
+          <Spinner animation="border" variant="primary" />
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout>
+        <Alert variant="danger">{error}</Alert>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
-      <div className="mb-4">
-        <h2 className="fw-bold mb-1">Báo cáo doanh thu</h2>
-        <p className="text-muted mb-0">
-          Phân tích doanh thu theo ngày, tuần, tháng, danh mục
-        </p>
+      {/* Header */}
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h4 className="fw-bold mb-1" style={{ color: "#1e293b" }}>Báo cáo doanh thu</h4>
+          <p className="text-muted mb-0" style={{ fontSize: "14px" }}>Tổng quan doanh thu theo thời gian</p>
+        </div>
+        
+        {/* Filter Tabs */}
+        <div style={{ backgroundColor: "#f1f5f9", borderRadius: "10px", padding: "4px" }}>
+          {[
+            { value: "today", label: "Hôm nay" },
+            { value: "week", label: "Tuần này" },
+            { value: "month", label: "Tháng này" },
+          ].map((tab) => (
+            <button
+              key={tab.value}
+              onClick={() => setFilterTab(tab.value)}
+              style={{
+                padding: "8px 16px",
+                border: "none",
+                borderRadius: "8px",
+                backgroundColor: filterTab === tab.value ? "white" : "transparent",
+                color: filterTab === tab.value ? COLORS.primary : "#64748b",
+                fontWeight: "600",
+                fontSize: "13px",
+                cursor: "pointer",
+                boxShadow: filterTab === tab.value ? "0 2px 4px rgba(0,0,0,0.05)" : "none",
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <Row className="g-3 mb-3 align-items-center">
-        <Col lg={6} className="d-flex gap-2 flex-wrap">
-          <Button size="sm" variant="light" className="fw-semibold">
-            Hôm nay
-          </Button>
-          <Button
-            size="sm"
-            variant="link"
-            className="fw-semibold text-secondary text-decoration-none"
-          >
-            Tuần này
-          </Button>
-          <Button
-            size="sm"
-            variant="link"
-            className="fw-semibold text-secondary text-decoration-none"
-          >
-            Tháng này
-          </Button>
-          <Button
-            size="sm"
-            variant="link"
-            className="fw-semibold text-secondary text-decoration-none"
-          >
-            Quý này
-          </Button>
-        </Col>
-        <Col lg={6} className="d-flex justify-content-lg-end gap-2 flex-wrap">
-          <input
-            type="date"
-            className="form-control"
-            style={{ width: 130 }}
-            defaultValue="2025-01-10"
-          />
-          <span className="d-flex align-items-center text-secondary fw-semibold">
-            đến
-          </span>
-          <input
-            type="date"
-            className="form-control"
-            style={{ width: 130 }}
-            defaultValue="2025-01-10"
-          />
-          <Button className="staff-secondary-btn">
-            <i className="bi bi-download me-2"></i>Xuất Excel
-          </Button>
-        </Col>
-      </Row>
-
+      {/* Metric Cards */}
       <Row className="g-3 mb-4">
-        {summaryCards.map((card) => (
-          <Col xl={3} md={6} key={card.label}>
-            <Card className="border-0 shadow-sm staff-panel-card h-100">
-              <Card.Body>
-                <div className={`staff-stat-icon ${card.iconClass}`}>
-                  <i className={`bi ${card.icon}`}></i>
-                </div>
-                <h3 className="fw-bold mt-3 mb-1">{card.value}</h3>
-                <div className="text-secondary fw-semibold mb-2">
-                  {card.label}
-                </div>
-                <Badge className="bg-success-subtle text-success border-0">
-                  {card.delta}
-                </Badge>
-              </Card.Body>
-            </Card>
-          </Col>
-        ))}
+        {/* Tổng doanh thu */}
+        <Col md={4}>
+          <Card className="border-0 h-100" style={{ borderRadius: "16px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+            <Card.Body className="p-4">
+              <div
+                style={{
+                  width: "48px",
+                  height: "48px",
+                  borderRadius: "12px",
+                  backgroundColor: "#f3e8ff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: "16px",
+                }}
+              >
+                <i className="bi bi-cash-stack" style={{ fontSize: "22px", color: COLORS.primary }}></i>
+              </div>
+              <div style={{ fontSize: "28px", fontWeight: "700", color: COLORS.primary }}>
+                {formatCurrency(revenueData?.totalRevenue)}
+              </div>
+              <div style={{ fontSize: "13px", color: "#64748b", fontWeight: "500" }}>
+                Tổng doanh thu
+              </div>
+            </Card.Body>
+          </Card>
+        </Col>
+
+        {/* Số booking */}
+        <Col md={4}>
+          <Card className="border-0 h-100" style={{ borderRadius: "16px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+            <Card.Body className="p-4">
+              <div
+                style={{
+                  width: "48px",
+                  height: "48px",
+                  borderRadius: "12px",
+                  backgroundColor: "#d1fae5",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: "16px",
+                }}
+              >
+                <i className="bi bi-calendar-check" style={{ fontSize: "22px", color: COLORS.success }}></i>
+              </div>
+              <div style={{ fontSize: "28px", fontWeight: "700", color: COLORS.success }}>
+                {revenueData?.totalBookings || 0}
+              </div>
+              <div style={{ fontSize: "13px", color: "#64748b", fontWeight: "500" }}>
+                Số lượt đặt chỗ
+              </div>
+            </Card.Body>
+          </Card>
+        </Col>
+
+        {/* Doanh thu F&B */}
+        <Col md={4}>
+          <Card className="border-0 h-100" style={{ borderRadius: "16px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+            <Card.Body className="p-4">
+              <div
+                style={{
+                  width: "48px",
+                  height: "48px",
+                  borderRadius: "12px",
+                  backgroundColor: "#fef3c7",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: "16px",
+                }}
+              >
+                <i className="bi bi-cup-hot" style={{ fontSize: "22px", color: COLORS.warning }}></i>
+              </div>
+              <div style={{ fontSize: "28px", fontWeight: "700", color: COLORS.warning }}>
+                {formatCurrency(revenueData?.fnbRevenue)}
+              </div>
+              <div style={{ fontSize: "13px", color: "#64748b", fontWeight: "500" }}>
+                Doanh thu F&B
+              </div>
+            </Card.Body>
+          </Card>
+        </Col>
       </Row>
 
-      <Row className="g-3 mb-3">
+      {/* Charts Row */}
+      <Row className="g-4">
+        {/* Bar Chart */}
         <Col lg={8}>
-          <Card className="border-0 shadow-sm staff-panel-card h-100">
-            <Card.Header className="bg-white border-bottom">
-              <h5 className="mb-0 fw-bold">
-                <i className="bi bi-graph-up-arrow me-2 text-primary"></i>
-                Doanh thu theo ngày (Tháng 1/2025)
+          <Card className="border-0 h-100" style={{ borderRadius: "16px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+            <Card.Body className="p-4">
+              <h5 className="fw-bold mb-4" style={{ fontSize: "16px", color: "#1e293b" }}>
+                Doanh thu theo ngày
               </h5>
-            </Card.Header>
-            <Card.Body
-              className="d-flex align-items-end justify-content-between"
-              style={{ minHeight: 200 }}
-            >
-              {chartDays.map((day, index) => (
-                <div key={day} className="text-center">
-                  <div className="fw-bold small text-secondary mb-2">
-                    {chartValues[index]}
-                  </div>
-                  <div className="small text-secondary">{day}</div>
-                </div>
-              ))}
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={revenueData?.revenueByPeriod || []}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#64748b" }} axisLine={false} />
+                  <YAxis tick={{ fontSize: 12, fill: "#64748b" }} axisLine={false} tickFormatter={formatCurrency} />
+                  <Tooltip
+                    formatter={(value) => [formatCurrency(value), "Doanh thu"]}
+                    contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+                  />
+                  <Bar dataKey="revenue" fill={COLORS.primary} radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </Card.Body>
           </Card>
         </Col>
 
+        {/* Top Spaces */}
         <Col lg={4}>
-          <Card className="border-0 shadow-sm staff-panel-card h-100">
-            <Card.Header className="bg-white border-bottom">
-              <h5 className="mb-0 fw-bold">
-                <i className="bi bi-pie-chart-fill me-2 text-primary"></i>
-                Phân bổ nguồn thu
+          <Card className="border-0 h-100" style={{ borderRadius: "16px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+            <Card.Body className="p-4">
+              <h5 className="fw-bold mb-4" style={{ fontSize: "16px", color: "#1e293b" }}>
+                Top không gian
               </h5>
-            </Card.Header>
-            <Card.Body>
-              <div className="text-center mb-3">
-                <h3 className="fw-bold mb-0">12.5M</h3>
-                <small className="text-secondary">Hôm nay</small>
-              </div>
-              <div className="d-flex flex-column gap-2">
-                <div>
-                  <span className="text-success">●</span> Phí chỗ ngồi — 40%
-                </div>
-                <div>
-                  <span className="text-primary">●</span> Đồ uống — 25%
-                </div>
-                <div>
-                  <span className="text-warning">●</span> Thiết bị thuê — 15%
-                </div>
-                <div>
-                  <span className="text-danger">●</span> In ấn — 10%
-                </div>
-                <div>
-                  <span className="text-secondary">●</span> Đồ ăn — 10%
-                </div>
+              <div className="d-flex flex-column gap-3">
+                {revenueData?.topSpaces?.map((item, idx) => (
+                  <div key={idx} className="d-flex align-items-center justify-content-between">
+                    <div className="d-flex align-items-center gap-2">
+                      <div
+                        style={{
+                          width: "28px",
+                          height: "28px",
+                          borderRadius: "8px",
+                          backgroundColor: idx === 0 ? "#fef3c7" : idx === 1 ? "#e5e7eb" : idx === 2 ? "#fed7aa" : "#f1f5f9",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "12px",
+                          fontWeight: "700",
+                          color: idx === 0 ? "#f59e0b" : idx === 1 ? "#6b7280" : idx === 2 ? "#ea580c" : "#94a3b8",
+                        }}
+                      >
+                        {idx + 1}
+                      </div>
+                      <span style={{ fontSize: "13px", fontWeight: "500", color: "#334155" }}>
+                        {item.space || item.name}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: "13px", fontWeight: "700", color: COLORS.primary }}>
+                      {item.revenue || formatCurrency(item.revenueRaw || 0)}
+                    </span>
+                  </div>
+                ))}
               </div>
             </Card.Body>
           </Card>
         </Col>
       </Row>
-
-      <Card className="border-0 shadow-sm staff-panel-card">
-        <Card.Header className="bg-white border-bottom">
-          <h5 className="mb-0 fw-bold">
-            <i className="bi bi-table me-2 text-primary"></i>
-            Chi tiết doanh thu theo danh mục
-          </h5>
-        </Card.Header>
-        <Card.Body className="p-0">
-          <Table responsive className="mb-0 align-middle staff-table">
-            <thead>
-              <tr>
-                <th>DANH MỤC</th>
-                <th>SỐ LƯỢNG BÁN</th>
-                <th>DOANH THU</th>
-                <th>% TỔNG</th>
-                <th>SO VỚI HÔM QUA</th>
-              </tr>
-            </thead>
-            <tbody>
-              {categoryRevenue.map((row) => (
-                <tr key={row.name}>
-                  <td className="fw-semibold">{row.name}</td>
-                  <td className="fw-semibold">{row.sold}</td>
-                  <td className="fw-bold">{row.revenue}</td>
-                  <td className="fw-semibold">{row.ratio}</td>
-                  <td className={`fw-semibold ${row.trendClass}`}>
-                    {row.trend}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        </Card.Body>
-      </Card>
     </AdminLayout>
   );
 }

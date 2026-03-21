@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Button,
   Card,
@@ -8,12 +8,11 @@ import {
   Badge,
   Alert,
 } from "react-bootstrap";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, EffectCards } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/effect-cards";
-import { useAuth } from "../../hooks/useAuth";
 import GuestCustomerNavbar from "../../components/common/GuestCustomerNavbar";
 
 export function meta() {
@@ -180,18 +179,7 @@ const categories = [
 ];
 
 export default function Home() {
-  const { isAuthenticated, user } = useAuth();
-  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState("all");
-
-  // Auto-redirect Admin/Staff về đúng dashboard
-  useEffect(() => {
-    if (user?.role === "Admin") {
-      navigate("/admin-dashboard", { replace: true });
-    } else if (user?.role === "Staff") {
-      navigate("/staff-dashboard", { replace: true });
-    }
-  }, [user, navigate]);
 
   const filteredMenuItems =
     selectedCategory === "all"
@@ -573,4 +561,3 @@ export default function Home() {
     </div>
   );
 }
-

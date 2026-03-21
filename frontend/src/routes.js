@@ -5,6 +5,7 @@ export default [
 
   // Shared pages
   index("pages/shared/HomeNew.jsx"),
+  route("home", "pages/shared/HomeAlias.jsx"),
   route("login", "pages/shared/Login.jsx"),
   route("register", "pages/shared/Register.jsx"),
   route("spaces", "pages/shared/SpacesPage.jsx"),

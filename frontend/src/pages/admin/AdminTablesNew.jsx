@@ -22,11 +22,19 @@ export function meta() {
   ];
 }
 
+// Danh sách loại bàn cố định
+const TABLE_TYPES = [
+  { value: "Hot_Desk", label: "Hot Desk" },
+  { value: "Dedicated_Desk", label: "Dedicated Desk" },
+  { value: "Meeting_Room", label: "Phòng họp" },
+  { value: "Private_Office", label: "Văn phòng riêng" },
+  { value: "Event_Space", label: "Không gian sự kiện" },
+];
+
 export default function TableManagementPage() {
   const { user } = useAuth();
 
   const [tables, setTables] = useState([]);
-  const [tableTypes, setTableTypes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -39,7 +47,7 @@ export default function TableManagementPage() {
   // Form state
   const [formData, setFormData] = useState({
     name: "",
-    typeId: "",
+    tableType: "",
     capacity: "",
     pricePerHour: "",
     location: "",
@@ -56,12 +64,8 @@ export default function TableManagementPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [tablesData, typesData] = await Promise.all([
-        api.get("/tables"),
-        api.get("/table-types"),
-      ]);
+      const tablesData = await api.get("/tables");
       setTables(tablesData);
-      setTableTypes(typesData);
     } catch (err) {
       setError(err.message || "Lỗi khi tải dữ liệu");
     } finally {
@@ -72,7 +76,7 @@ export default function TableManagementPage() {
   const resetForm = () => {
     setFormData({
       name: "",
-      typeId: "",
+      tableType: "",
       capacity: "",
       pricePerHour: "",
       location: "",
@@ -105,7 +109,7 @@ export default function TableManagementPage() {
   const openEdit = (table) => {
     setFormData({
       name: table.name,
-      typeId: table.typeId?._id || "",
+      tableType: table.tableType || "",
       capacity: table.capacity || "",
       pricePerHour: table.pricePerHour || "",
       location: table.location || "",
@@ -311,8 +315,10 @@ export default function TableManagementPage() {
                       <tr key={table._id}>
                         <td className="px-4 py-3 fw-medium">{table.name}</td>
                         <td className="px-4 py-3">
-                          {table.typeId ? (
-                            <Badge bg="secondary">{table.typeId.name}</Badge>
+                          {table.tableType ? (
+                            <Badge bg="secondary">
+                              {TABLE_TYPES.find(t => t.value === table.tableType)?.label || table.tableType}
+                            </Badge>
                           ) : (
                             "—"
                           )}
@@ -388,15 +394,15 @@ export default function TableManagementPage() {
                   <Form.Group>
                     <Form.Label>Loại bàn</Form.Label>
                     <Form.Select
-                      value={formData.typeId}
+                      value={formData.tableType}
                       onChange={(e) =>
-                        setFormData({ ...formData, typeId: e.target.value })
+                        setFormData({ ...formData, tableType: e.target.value })
                       }
                     >
-                      <option value="">-- Chọn loại --</option>
-                      {tableTypes.map((type) => (
-                        <option key={type._id} value={type._id}>
-                          {type.name}
+                      <option value="" key="default-option">-- Chọn loại --</option>
+                      {TABLE_TYPES.map((type) => (
+                        <option key={type.value} value={type.value}>
+                          {type.label}
                         </option>
                       ))}
                     </Form.Select>
@@ -511,15 +517,15 @@ export default function TableManagementPage() {
                   <Form.Group>
                     <Form.Label>Loại bàn</Form.Label>
                     <Form.Select
-                      value={formData.typeId}
+                      value={formData.tableType}
                       onChange={(e) =>
-                        setFormData({ ...formData, typeId: e.target.value })
+                        setFormData({ ...formData, tableType: e.target.value })
                       }
                     >
-                      <option value="">-- Chọn loại --</option>
-                      {tableTypes.map((type) => (
-                        <option key={type._id} value={type._id}>
-                          {type.name}
+                      <option value="" key="default-option">-- Chọn loại --</option>
+                      {TABLE_TYPES.map((type) => (
+                        <option key={type.value} value={type.value}>
+                          {type.label}
                         </option>
                       ))}
                     </Form.Select>

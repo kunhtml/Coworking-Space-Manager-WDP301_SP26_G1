@@ -14,6 +14,9 @@ export const requireAuth = (req, res, next) => {
   }
 };
 
+// Alias for requireAuth
+export const authMiddleware = requireAuth;
+
 export const requireStaff = (req, res, next) => {
   const auth = req.headers.authorization;
   if (!auth || !auth.startsWith("Bearer ")) {
@@ -31,4 +34,13 @@ export const requireStaff = (req, res, next) => {
   } catch {
     res.status(401).json({ message: "Token không hợp lệ hoặc đã hết hạn." });
   }
+};
+
+// Check if user is admin or staff (must be used after authMiddleware)
+export const isAdminOrStaff = (req, res, next) => {
+  const role = (req.user?.role || "").toLowerCase();
+  if (!["staff", "admin"].includes(role)) {
+    return res.status(403).json({ message: "Không có quyền truy cập." });
+  }
+  next();
 };

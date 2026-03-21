@@ -8,6 +8,7 @@ import staffDashboardRoutes from "./staff-dashboard.routes.js";
 import paymentRoutes from "./payment.routes.js";
 import menuRoutes from "./menu.routes.js";
 import userRoutes from "./user.routes.js";
+import adminAnalyticsRoutes from "./admin-analytics.routes.js";
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use(staffDashboardRoutes);
 router.use(paymentRoutes);
 router.use(menuRoutes);
 router.use(userRoutes);
+router.use(adminAnalyticsRoutes);
 
 export default router;

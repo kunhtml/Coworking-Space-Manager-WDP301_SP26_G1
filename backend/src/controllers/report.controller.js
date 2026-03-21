@@ -6,6 +6,7 @@ import Invoice from "../models/invoice.js";
 
 export const getReportAnalytics = async (req, res) => {
   try {
+    console.log("🔍 Report Analytics called with query:", req.query);
     const { timeFilter = "Ngày" } = req.query;
     console.log("📊 Analytics request with timeFilter:", timeFilter);
 
