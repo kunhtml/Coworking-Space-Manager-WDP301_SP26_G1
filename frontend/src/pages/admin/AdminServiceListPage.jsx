@@ -512,7 +512,8 @@ export default function AdminServiceListPage() {
                       const catObj = categories.find((c) => c._id === (item.categoryId?._id || item.categoryId));
                       const catHidden = catObj && catObj.isActive === false;
                       return (
-                        <tr key={item._id} className={item.availabilityStatus === "Unavailable" ? "table-secondary" : ""}>
+                        <tr key={item._id}>
+
                           <td className="px-4 py-3 text-muted small">{idx + 1}</td>
                           <td className="px-4 py-3">
                             <div className="fw-semibold">{item.name}</div>
@@ -594,7 +595,7 @@ export default function AdminServiceListPage() {
                         (i) => i.categoryId?._id === cat._id || i.categoryId === cat._id
                       ).length;
                       return (
-                        <tr key={cat._id} className={cat.isActive === false ? "table-secondary" : ""}>
+                        <tr key={cat._id}>
                           <td className="px-4 py-3 text-muted small">{idx + 1}</td>
                           <td className="px-4 py-3 fw-semibold">{cat.name}</td>
                           <td className="px-4 py-3 text-muted">{cat.description || "—"}</td>

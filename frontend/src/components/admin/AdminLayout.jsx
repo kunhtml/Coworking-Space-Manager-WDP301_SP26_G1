@@ -99,7 +99,6 @@ export default function AdminLayout({ children }) {
                   padding: "2px 4px",
                 }}
               >
-                3
               </span>
             </button>
 
