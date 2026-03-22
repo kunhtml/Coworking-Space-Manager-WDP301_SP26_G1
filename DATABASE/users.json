@@ -64,5 +64,38 @@
     "membershipStatus": "Active",
     "createdAt": { "$date": "2026-03-23T08:10:00.000Z" },
     "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6b0000000000000000007" },
+    "fullName": "Nguyen Thi Thu",
+    "email": "thu.nguyen@workcafe.com",
+    "passwordHash": "$2b$10$qP4o784M3v/w7vEOFSJcs./GTeqovXhMnnzyDeoQypgcTAaTjBzO6",
+    "phone": "0900000004",
+    "role": "Customer",
+    "membershipStatus": "Active",
+    "createdAt": { "$date": "2026-02-12T09:20:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6b0000000000000000008" },
+    "fullName": "Pham Minh Khoa",
+    "email": "khoa.pham@workcafe.com",
+    "passwordHash": "$2b$10$qP4o784M3v/w7vEOFSJcs./GTeqovXhMnnzyDeoQypgcTAaTjBzO6",
+    "phone": "0900000005",
+    "role": "Staff",
+    "membershipStatus": "Active",
+    "createdAt": { "$date": "2026-02-20T10:30:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6b0000000000000000009" },
+    "fullName": "Vo Ha An",
+    "email": "ha.an@workcafe.com",
+    "passwordHash": "$2b$10$qP4o784M3v/w7vEOFSJcs./GTeqovXhMnnzyDeoQypgcTAaTjBzO6",
+    "phone": "0900000006",
+    "role": "Customer",
+    "membershipStatus": "Active",
+    "createdAt": { "$date": "2026-03-01T07:45:00.000Z" },
+    "__v": 0
   }
 ]

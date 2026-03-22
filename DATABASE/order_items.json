@@ -16,5 +16,50 @@
     "priceAtOrder": 30000,
     "note": "",
     "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7b0000000000000000003" },
+    "orderId": { "$oid": "65e7a0000000000000000002" },
+    "menuItemId": { "$oid": "65e6d0000000000000000022" },
+    "quantity": 2,
+    "priceAtOrder": 45000,
+    "note": "it duong",
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7b0000000000000000004" },
+    "orderId": { "$oid": "65e7a0000000000000000002" },
+    "menuItemId": { "$oid": "65e6d0000000000000000030" },
+    "quantity": 1,
+    "priceAtOrder": 45000,
+    "note": "",
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7b0000000000000000005" },
+    "orderId": { "$oid": "65e7a0000000000000000003" },
+    "menuItemId": { "$oid": "65e6d0000000000000000036" },
+    "quantity": 1,
+    "priceAtOrder": 55000,
+    "note": "",
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7b0000000000000000006" },
+    "orderId": { "$oid": "65e7a0000000000000000003" },
+    "menuItemId": { "$oid": "65e6d0000000000000000032" },
+    "quantity": 1,
+    "priceAtOrder": 40000,
+    "note": "50% da",
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7b0000000000000000007" },
+    "orderId": { "$oid": "65e7a0000000000000000003" },
+    "menuItemId": { "$oid": "65e6d0000000000000000026" },
+    "quantity": 1,
+    "priceAtOrder": 30000,
+    "note": "",
+    "__v": 0
   }
 ]

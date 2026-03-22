@@ -22,5 +22,21 @@
     "capacity": 5,
     "createdAt": { "$date": "2026-01-01T08:00:00.000Z" },
     "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6e1000000000000000004" },
+    "name": "Khu D",
+    "description": "khu ban nhom 6-8 nguoi",
+    "capacity": 8,
+    "createdAt": { "$date": "2026-01-05T08:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6e1000000000000000005" },
+    "name": "Khu VIP",
+    "description": "phong rieng cho nhom lon hoac hop du an",
+    "capacity": 12,
+    "createdAt": { "$date": "2026-01-06T08:00:00.000Z" },
+    "__v": 0
   }
 ]
