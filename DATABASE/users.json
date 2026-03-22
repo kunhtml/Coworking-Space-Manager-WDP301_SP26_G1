@@ -31,5 +31,38 @@
     "membershipStatus": "Active",
     "createdAt": { "$date": "2026-02-10T08:00:00.000Z" },
     "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6b0000000000000000004" },
+    "fullName": "WorkCafe Admin",
+    "email": "admin@workcafe.com",
+    "passwordHash": "$2b$10$qP4o784M3v/w7vEOFSJcs./GTeqovXhMnnzyDeoQypgcTAaTjBzO6",
+    "phone": "0900000001",
+    "role": "Admin",
+    "membershipStatus": "Active",
+    "createdAt": { "$date": "2026-03-23T08:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6b0000000000000000005" },
+    "fullName": "WorkCafe Staff",
+    "email": "staff@workcafe.com",
+    "passwordHash": "$2b$10$qP4o784M3v/w7vEOFSJcs./GTeqovXhMnnzyDeoQypgcTAaTjBzO6",
+    "phone": "0900000002",
+    "role": "Staff",
+    "membershipStatus": "Active",
+    "createdAt": { "$date": "2026-03-23T08:05:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6b0000000000000000006" },
+    "fullName": "WorkCafe Customer",
+    "email": "customer@workcafe.com",
+    "passwordHash": "$2b$10$qP4o784M3v/w7vEOFSJcs./GTeqovXhMnnzyDeoQypgcTAaTjBzO6",
+    "phone": "0900000003",
+    "role": "Customer",
+    "membershipStatus": "Active",
+    "createdAt": { "$date": "2026-03-23T08:10:00.000Z" },
+    "__v": 0
   }
 ]
