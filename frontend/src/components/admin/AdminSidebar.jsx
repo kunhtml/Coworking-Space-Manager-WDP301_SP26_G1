@@ -73,6 +73,11 @@ export default function AdminSidebar({ user, onLogout }) {
           icon: "bi-graph-up-arrow",
           label: "Báo cáo Doanh thu",
         },
+        {
+          path: "/admin-dashboard/occupancy",
+          icon: "bi-bar-chart-fill",
+          label: "Tỉ lệ lấp đầy bàn",
+        },
       ],
     },
     {
