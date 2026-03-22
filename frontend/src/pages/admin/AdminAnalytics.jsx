@@ -37,14 +37,6 @@ export default function AdminAnalytics() {
     { time: "18h", usage: 45 },
   ];
 
-  // Heatmap data - space usage by day and type
-  const heatmapData = [
-    { type: "Sáng", days: [65, 72, 78, 85, 82, 75, 45] },
-    { type: "Trưa", days: [48, 55, 62, 68, 70, 58, 32] },
-    { type: "Chiều", days: [72, 80, 85, 88, 92, 80, 50] },
-    { type: "Tối", days: [55, 60, 65, 70, 72, 65, 40] },
-  ];
-
   const topSpaces = [
     {
       rank: 1,
@@ -107,14 +99,6 @@ export default function AdminAnalytics() {
     if (rate >= 60) return "#3b82f6"; // blue
     if (rate >= 40) return "#f59e0b"; // orange
     return "#ef4444"; // red
-  };
-
-  const getHeatmapColor = (value) => {
-    if (value >= 80) return "#4f46e5";
-    if (value >= 65) return "#6366f1";
-    if (value >= 50) return "#818cf8";
-    if (value >= 35) return "#c7d2fe";
-    return "#f3f4f6";
   };
 
   return (
@@ -376,7 +360,7 @@ export default function AdminAnalytics() {
         {/* Main Content */}
         <Row className="g-4 mb-5">
           {/* Hourly Capacity Chart */}
-          <Col lg={7}>
+          <Col lg={12}>
             <Card
               className="border-0"
               style={{
@@ -464,133 +448,6 @@ export default function AdminAnalytics() {
             </Card>
           </Col>
 
-          {/* Heatmap */}
-          <Col lg={5}>
-            <Card
-              className="border-0"
-              style={{
-                backgroundColor: "white",
-                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08)",
-                borderRadius: "12px",
-              }}
-            >
-              <Card.Body className="p-4">
-                <h5
-                  className="mb-3 fw-bold"
-                  style={{ fontSize: "16px", color: "#1e293b" }}
-                >
-                  <i
-                    className="bi bi-calendar-heat"
-                    style={{ color: "#8b5cf6", marginRight: "8px" }}
-                  ></i>
-                  Heatmap tuần này
-                </h5>
-
-                <small
-                  style={{
-                    color: "#64748b",
-                    fontSize: "12px",
-                    display: "block",
-                    marginBottom: "16px",
-                  }}
-                >
-                  Mức độ sử dụng theo ngày & khung giờ:
-                </small>
-
-                {heatmapData.map((row, rowIdx) => (
-                  <div key={rowIdx} style={{ marginBottom: "16px" }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        marginBottom: "8px",
-                      }}
-                    >
-                      <small
-                        style={{
-                          width: "40px",
-                          color: "#64748b",
-                          fontWeight: "600",
-                          fontSize: "11px",
-                        }}
-                      >
-                        {row.type}
-                      </small>
-                      <div style={{ display: "flex", gap: "4px", flex: 1 }}>
-                        {row.days.map((day, dayIdx) => (
-                          <div
-                            key={dayIdx}
-                            style={{
-                              flex: 1,
-                              height: "28px",
-                              backgroundColor: getHeatmapColor(day),
-                              borderRadius: "4px",
-                              cursor: "pointer",
-                              transition: "all 0.2s",
-                              title: `${day}%`,
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.transform = "scale(1.1)";
-                              e.currentTarget.style.boxShadow =
-                                "0 4px 8px rgba(0, 0, 0, 0.15)";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.transform = "none";
-                              e.currentTarget.style.boxShadow = "none";
-                            }}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-                <div
-                  style={{
-                    marginTop: "16px",
-                    paddingTop: "12px",
-                    borderTop: "1px solid #f1f5f9",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "12px",
-                      fontSize: "11px",
-                    }}
-                  >
-                    <div>
-                      <div
-                        style={{
-                          width: "16px",
-                          height: "16px",
-                          backgroundColor: "#f3f4f6",
-                          borderRadius: "2px",
-                        }}
-                      />
-                    </div>
-                    <span style={{ color: "#94a3b8" }}>15%</span>
-                    <div style={{ display: "flex", gap: "4px" }}>
-                      {[4, 3, 2, 1].map((idx) => (
-                        <div
-                          key={idx}
-                          style={{
-                            width: "16px",
-                            height: "16px",
-                            backgroundColor: getHeatmapColor(10 + idx * 20),
-                            borderRadius: "2px",
-                          }}
-                        />
-                      ))}
-                    </div>
-                    <span style={{ color: "#94a3b8" }}>Nối điều</span>
-                  </div>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
         </Row>
 
         {/* Top Spaces Table */}
