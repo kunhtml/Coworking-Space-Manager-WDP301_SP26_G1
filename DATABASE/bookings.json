@@ -28,5 +28,143 @@
     "depositAmount": 50000,
     "createdAt": { "$date": "2026-03-05T08:00:00.000Z" },
     "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6f0000000000000000003" },
+    "bookingCode": "BK-2001",
+    "userId": { "$oid": "65e6b0000000000000000006" },
+    "guestInfo": null,
+    "tableId": { "$oid": "65e6e0000000000000000004" },
+    "startTime": { "$date": "2026-03-23T07:30:00.000Z" },
+    "endTime": { "$date": "2026-03-23T09:30:00.000Z" },
+    "status": "Confirmed",
+    "depositAmount": 60000,
+    "createdAt": { "$date": "2026-03-22T15:30:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6f0000000000000000004" },
+    "bookingCode": "BK-2002",
+    "userId": { "$oid": "65e6b0000000000000000005" },
+    "guestInfo": null,
+    "tableId": { "$oid": "65e6e0000000000000000002" },
+    "startTime": { "$date": "2026-03-23T09:00:00.000Z" },
+    "endTime": { "$date": "2026-03-23T12:00:00.000Z" },
+    "status": "In_Use",
+    "depositAmount": 150000,
+    "createdAt": { "$date": "2026-03-22T16:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6f0000000000000000005" },
+    "bookingCode": "BK-2003",
+    "userId": { "$oid": "65e6b0000000000000000004" },
+    "guestInfo": null,
+    "tableId": { "$oid": "65e6e0000000000000000005" },
+    "startTime": { "$date": "2026-03-23T11:00:00.000Z" },
+    "endTime": { "$date": "2026-03-23T14:00:00.000Z" },
+    "status": "Confirmed",
+    "depositAmount": 85000,
+    "createdAt": { "$date": "2026-03-22T17:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6f0000000000000000006" },
+    "bookingCode": "BK-2004",
+    "userId": null,
+    "guestInfo": {
+      "name": "Khach Team A",
+      "email": "team.a@example.com",
+      "phone": "0933000001"
+    },
+    "tableId": { "$oid": "65e6e0000000000000000006" },
+    "startTime": { "$date": "2026-03-23T13:00:00.000Z" },
+    "endTime": { "$date": "2026-03-23T16:30:00.000Z" },
+    "status": "Confirmed",
+    "depositAmount": 120000,
+    "createdAt": { "$date": "2026-03-22T18:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6f0000000000000000007" },
+    "bookingCode": "BK-2005",
+    "userId": { "$oid": "65e6b0000000000000000003" },
+    "guestInfo": null,
+    "tableId": { "$oid": "65e6e0000000000000000002" },
+    "startTime": { "$date": "2026-03-23T14:00:00.000Z" },
+    "endTime": { "$date": "2026-03-23T18:00:00.000Z" },
+    "status": "In_Use",
+    "depositAmount": 150000,
+    "createdAt": { "$date": "2026-03-22T19:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6f0000000000000000008" },
+    "bookingCode": "BK-2006",
+    "userId": { "$oid": "65e6b0000000000000000006" },
+    "guestInfo": null,
+    "tableId": { "$oid": "65e6e0000000000000000004" },
+    "startTime": { "$date": "2026-03-23T17:00:00.000Z" },
+    "endTime": { "$date": "2026-03-23T18:30:00.000Z" },
+    "status": "Confirmed",
+    "depositAmount": 60000,
+    "createdAt": { "$date": "2026-03-22T20:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6f0000000000000000009" },
+    "bookingCode": "BK-2007",
+    "userId": { "$oid": "65e6b0000000000000000007" },
+    "guestInfo": null,
+    "tableId": { "$oid": "65e6e0000000000000000007" },
+    "startTime": { "$date": "2026-03-22T08:00:00.000Z" },
+    "endTime": { "$date": "2026-03-22T11:00:00.000Z" },
+    "status": "Confirmed",
+    "depositAmount": 90000,
+    "createdAt": { "$date": "2026-03-21T13:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6f0000000000000000010" },
+    "bookingCode": "BK-2008",
+    "userId": { "$oid": "65e6b0000000000000000009" },
+    "guestInfo": null,
+    "tableId": { "$oid": "65e6e0000000000000000008" },
+    "startTime": { "$date": "2026-03-21T13:00:00.000Z" },
+    "endTime": { "$date": "2026-03-21T16:00:00.000Z" },
+    "status": "In_Use",
+    "depositAmount": 200000,
+    "createdAt": { "$date": "2026-03-20T15:30:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6f0000000000000000011" },
+    "bookingCode": "BK-2009",
+    "userId": null,
+    "guestInfo": {
+      "name": "Doan hoc tap DH A",
+      "email": "group.a@example.com",
+      "phone": "0933000002"
+    },
+    "tableId": { "$oid": "65e6e0000000000000000002" },
+    "startTime": { "$date": "2026-03-20T09:00:00.000Z" },
+    "endTime": { "$date": "2026-03-20T12:00:00.000Z" },
+    "status": "Completed",
+    "depositAmount": 150000,
+    "createdAt": { "$date": "2026-03-19T12:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6f0000000000000000012" },
+    "bookingCode": "BK-2010",
+    "userId": { "$oid": "65e6b0000000000000000003" },
+    "guestInfo": null,
+    "tableId": { "$oid": "65e6e0000000000000000009" },
+    "startTime": { "$date": "2026-03-19T07:00:00.000Z" },
+    "endTime": { "$date": "2026-03-19T10:00:00.000Z" },
+    "status": "Cancelled",
+    "depositAmount": 25000,
+    "createdAt": { "$date": "2026-03-18T07:30:00.000Z" },
+    "__v": 0
   }
 ]
