@@ -58,9 +58,9 @@ export default function Login() {
       setSuccess(`Chào mừng ${data.user.fullName}! Đang chuyển hướng...`);
       const redirectPath =
         data.user?.role === "Admin"
-          ? "/admin-dashboard"
+          ? "/"
           : data.user?.role === "Staff"
-            ? "/staff-dashboard"
+            ? "/"
             : data.user?.role === "Customer"
               ? "/customer-dashboard"
               : "/";
