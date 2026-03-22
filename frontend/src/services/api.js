@@ -94,3 +94,11 @@ export const getTablesApi = ({ status, search } = {}) => {
 // Staff - Cập nhật trạng thái bàn
 export const updateTableStatusApi = (tableId, status) =>
   apiClient.patch(`/staff/dashboard/tables/${tableId}/status`, { status });
+
+export const getHourlyOccupancyApi = ({ date, period } = {}) => {
+  const params = new URLSearchParams();
+  if (date) params.append("date", date);
+  if (period) params.append("period", period);
+  const qs = params.toString();
+  return apiClient.get(`/reports/analytics/hourly${qs ? `?${qs}` : ""}`);
+};
