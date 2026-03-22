@@ -29,22 +29,33 @@ export function meta() {
   ];
 }
 
-const COLOR_POOL = [
-  "rgba(99, 102, 241, 0.1)",
-  "rgba(251, 191, 36, 0.1)",
-  "rgba(34, 197, 94, 0.1)",
-  "rgba(59, 130, 246, 0.1)",
-  "rgba(139, 92, 246, 0.1)",
-];
-
-const ICON_POOL = [
-  "bi-cup-hot",
-  "bi-cup-straw",
-  "bi-bread-slice",
-  "bi-printer",
-  "bi-tools",
-  "bi-basket",
-];
+const getCategoryVisuals = (categoryName) => {
+  const name = categoryName.toLowerCase();
+  
+  // Nhóm Cà phê
+  if (name.includes("cà phê") || name.includes("coffee")) {
+    return { icon: "bi-cup-hot", color: "rgba(139, 92, 246, 0.1)" }; // Tím nhạt
+  }
+  // Nhóm Bánh / Đồ ăn nhẹ
+  if (name.includes("đồ ăn") || name.includes("bánh") || name.includes("muffin")) {
+    return { icon: "bi-basket", color: "rgba(251, 191, 36, 0.1)" }; // Vàng nhạt
+  }
+  // Nhóm Trà & Trái cây
+  if (name.includes("trà") || name.includes("trái cây") || name.includes("nước ép")) {
+    return { icon: "bi-cup-straw", color: "rgba(34, 197, 94, 0.1)" }; // Xanh lá nhạt
+  }
+  // Nhóm Đá xay / Sinh tố
+  if (name.includes("đá xay") || name.includes("frappuccino") || name.includes("sinh tố")) {
+    return { icon: "bi-cup", color: "rgba(59, 130, 246, 0.1)" }; // Xanh dương nhạt (cảm giác lạnh)
+  }
+  // Nhóm Dịch vụ / Khác (In ấn, văn phòng phẩm...)
+  if (name.includes("dịch vụ") || name.includes("in ấn") || name.includes("thiết bị")) {
+    return { icon: "bi-printer", color: "rgba(99, 102, 241, 0.1)" }; // Chàm
+  }
+  
+  // Mặc định nếu không khớp nhóm nào
+  return { icon: "bi-tag", color: "rgba(108, 117, 125, 0.1)" }; // Xám
+};
 
 export default function MenuPage() {
   const navigate = useNavigate();
@@ -91,14 +102,15 @@ export default function MenuPage() {
           const rawCatId = item?.categoryId?._id || item?.categoryId || "uncategorized";
           const categoryId = String(rawCatId);
           const categoryName = item?.categoryId?.name || catMap.get(categoryId) || "Khác";
+          const visuals = getCategoryVisuals(categoryName);
 
           return {
             id: String(item._id),
             name: item.name || "Món không tên",
             description: item.description || "",
             price: Number(item.price || 0),
-            icon: ICON_POOL[index % ICON_POOL.length],
-            color: COLOR_POOL[index % COLOR_POOL.length],
+            icon: visuals.icon,       
+            color: visuals.color,
             category: categoryName,
             categoryId,
             popular: false,
