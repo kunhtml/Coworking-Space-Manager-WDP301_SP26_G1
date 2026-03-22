@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, Row, Col, Button } from "react-bootstrap";
 import AdminLayout from "../../components/admin/AdminLayout";
+import { getHourlyOccupancyApi } from "../../services/api";
 
 export function meta() {
   return [
@@ -14,28 +15,60 @@ export function meta() {
 
 export default function AdminAnalytics() {
   const [filterTab, setFilterTab] = useState("today");
+  const [hourlyCapacity, setHourlyCapacity] = useState([]);
+  const [peakWindowLabel, setPeakWindowLabel] = useState("--");
+  const [hourlyLoading, setHourlyLoading] = useState(true);
+  const [hourlyError, setHourlyError] = useState("");
+
+  useEffect(() => {
+    const formatLocalISODate = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
+
+    const loadHourlyCapacity = async () => {
+      setHourlyLoading(true);
+      setHourlyError("");
+
+      try {
+        const periodMap = {
+          today: "day",
+          week: "week",
+          month: "month",
+        };
+        const data = await getHourlyOccupancyApi({
+          date: formatLocalISODate(new Date()),
+          period: periodMap[filterTab] || "day",
+        });
+        setHourlyCapacity(Array.isArray(data?.hourlyCapacity) ? data.hourlyCapacity : []);
+        setPeakWindowLabel(data?.peakWindow?.label || "--");
+      } catch (err) {
+        setHourlyCapacity([]);
+        setPeakWindowLabel("--");
+        setHourlyError(err?.message || "Khong tai duoc du lieu cong suat theo gio.");
+      } finally {
+        setHourlyLoading(false);
+      }
+    };
+
+    loadHourlyCapacity();
+  }, [filterTab]);
+
+  const averageHourlyOccupancy = hourlyCapacity.length
+    ? Math.round(
+        hourlyCapacity.reduce((sum, item) => sum + (Number(item.usage) || 0), 0) /
+          hourlyCapacity.length,
+      )
+    : 0;
 
   const metrics = {
-    occupancy: 72,
+    occupancy: averageHourlyOccupancy,
     avgTime: "2h 45p",
-    peakHours: "14:00-17:00",
+    peakHours: peakWindowLabel !== "--" ? peakWindowLabel.split(" (")[0] : "--",
     noShowRate: 3.2,
   };
-
-  const hourlyCapacity = [
-    { time: "7h", usage: 15 },
-    { time: "8h", usage: 30 },
-    { time: "9h", usage: 55 },
-    { time: "10h", usage: 65 },
-    { time: "11h", usage: 50 },
-    { time: "12h", usage: 40 },
-    { time: "13h", usage: 60 },
-    { time: "14h", usage: 85 },
-    { time: "15h", usage: 88 },
-    { time: "16h", usage: 70 },
-    { time: "17h", usage: 48 },
-    { time: "18h", usage: 45 },
-  ];
 
   const topSpaces = [
     {
@@ -389,47 +422,62 @@ export default function AdminAnalytics() {
                     gap: "8px",
                   }}
                 >
-                  {hourlyCapacity.map((item, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        flex: 1,
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                      }}
-                    >
+                  {hourlyLoading ? (
+                    <div className="w-100 h-100 d-flex align-items-center justify-content-center">
+                      <small style={{ color: "#64748b" }}>Dang tai du lieu...</small>
+                    </div>
+                  ) : hourlyError ? (
+                    <div className="w-100 h-100 d-flex align-items-center justify-content-center">
+                      <small style={{ color: "#ef4444" }}>{hourlyError}</small>
+                    </div>
+                  ) : hourlyCapacity.length === 0 ? (
+                    <div className="w-100 h-100 d-flex align-items-center justify-content-center">
+                      <small style={{ color: "#64748b" }}>Khong co du lieu theo gio.</small>
+                    </div>
+                  ) : (
+                    hourlyCapacity.map((item, idx) => (
                       <div
+                        key={idx}
                         style={{
-                          width: "100%",
-                          height: `${Math.max(30, item.usage * 3)}px`,
-                          backgroundColor: "#c7d2fe",
-                          borderRadius: "4px 4px 0 0",
-                          transition: "all 0.2s",
-                          cursor: "pointer",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = "#8b5cf6";
-                          e.currentTarget.style.boxShadow =
-                            "0 4px 12px rgba(139, 92, 246, 0.3)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = "#c7d2fe";
-                          e.currentTarget.style.boxShadow = "none";
-                        }}
-                      />
-                      <small
-                        style={{
-                          color: "#94a3b8",
-                          fontWeight: "600",
-                          marginTop: "8px",
-                          fontSize: "11px",
+                          flex: 1,
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
                         }}
                       >
-                        {item.time}
-                      </small>
-                    </div>
-                  ))}
+                        <div
+                          title={`${item.time}: ${item.usage}%`}
+                          style={{
+                            width: "100%",
+                            height: `${Math.max(30, (Number(item.usage) || 0) * 3)}px`,
+                            backgroundColor: "#c7d2fe",
+                            borderRadius: "4px 4px 0 0",
+                            transition: "all 0.2s",
+                            cursor: "pointer",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = "#8b5cf6";
+                            e.currentTarget.style.boxShadow =
+                              "0 4px 12px rgba(139, 92, 246, 0.3)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = "#c7d2fe";
+                            e.currentTarget.style.boxShadow = "none";
+                          }}
+                        />
+                        <small
+                          style={{
+                            color: "#94a3b8",
+                            fontWeight: "600",
+                            marginTop: "8px",
+                            fontSize: "11px",
+                          }}
+                        >
+                          {item.time}
+                        </small>
+                      </div>
+                    ))
+                  )}
                 </div>
 
                 <div
@@ -441,7 +489,7 @@ export default function AdminAnalytics() {
                 >
                   <small style={{ color: "#f59e0b", fontWeight: "600" }}>
                     <i className="bi bi-exclamation-circle me-1"></i>
-                    Cao điểm: 14:00 - 16:00 (88–95% lấp đầy)
+                    Cao điểm: {peakWindowLabel}
                   </small>
                 </div>
               </Card.Body>
