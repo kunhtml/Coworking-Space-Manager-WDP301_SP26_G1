@@ -40,7 +40,7 @@ export default function AuthNavActions({
     color: "#aaa",
   };
   const dashboardPath = getDashboardPath(role);
-  const isCustomer = role === "Customer";
+  const isCustomer = role === "customer";
 
   return (
     <div className="d-flex gap-2 ms-lg-3 mt-2 mt-lg-0">
