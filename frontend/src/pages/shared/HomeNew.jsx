@@ -182,7 +182,7 @@ const categories = [
 export default function Home() {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  // const [selectedCategory, setSelectedCategory] = useState("all");
 
   // Auto-redirect Admin/Staff về đúng dashboard
   useEffect(() => {
@@ -193,10 +193,10 @@ export default function Home() {
     }
   }, [user, navigate]);
 
-  const filteredMenuItems =
-    selectedCategory === "all"
-      ? menuItems
-      : menuItems.filter((item) => item.category === selectedCategory);
+  // const filteredMenuItems =
+  //   selectedCategory === "all"
+  //     ? menuItems
+  //     : menuItems.filter((item) => item.category === selectedCategory);
 
   const formatPrice = (price, unit = "đ") => {
     return new Intl.NumberFormat("vi-VN").format(price) + unit;
@@ -364,43 +364,23 @@ export default function Home() {
           <div className="text-center mb-5">
             <Badge bg="primary" className="px-3 py-2 rounded-pill mb-3">
               <i className="bi bi-cup-hot me-2"></i>
-              THỰC ĐƠN & DỊCH VỤ
+              THỰC ĐƠN
             </Badge>
-            <h2 className="fw-bold mb-3">Đồ uống & Dịch vụ</h2>
+            <h2 className="fw-bold mb-3">Đồ ăn & Đồ uống</h2>
             <p className="text-muted lead">
-              Thưởng thức đồ uống ngon, sử dụng dịch vụ in ấn và thuê thiết bị
+              Thưởng thức đồ uống ngon, đồ ăn đa dạng
             </p>
           </div>
 
-          {/* Category Filters */}
-          <div className="d-flex justify-content-center mb-5">
-            <div className="d-flex gap-2 flex-wrap">
-              {categories.map((category) => (
-                <Button
-                  key={category.id}
-                  variant={
-                    selectedCategory === category.id
-                      ? "primary"
-                      : "outline-secondary"
-                  }
-                  size="sm"
-                  className="px-4 py-2 rounded-pill fw-medium"
-                  onClick={() => setSelectedCategory(category.id)}
-                >
-                  {category.icon && (
-                    <span className="me-2">{category.icon}</span>
-                  )}
-                  {category.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {/* Menu Items Grid */}
+          {/* Menu Items Grid - Chỉ lấy 8 món đầu tiên */}
           <Row className="g-4">
-            {filteredMenuItems.map((item) => (
+            {menuItems.slice(0, 8).map((item) => (
               <Col key={item.id} lg={3} md={6}>
-                <Card className="h-100 border-0 shadow-sm rounded-4 overflow-hidden hover-lift">
+                <Card 
+                  className="h-100 border-0 shadow-sm rounded-4 overflow-hidden hover-lift"
+                  onClick={() => navigate('/menu')} // 👉 Đổi '/order' thành route thực tế của bạn
+                  style={{ cursor: "pointer" }}      // 👉 Thêm con trỏ chuột khi hover để báo hiệu có thể click
+                >
                   <div
                     className="card-header border-0 p-4 position-relative text-center"
                     style={{ backgroundColor: item.color }}
@@ -410,7 +390,7 @@ export default function Home() {
                       text="primary"
                       className="position-absolute top-0 start-0 m-3 px-2 py-1 small"
                     >
-                      Đồ uống
+                      {item.category === "drink" ? "Đồ uống" : item.category === "food" ? "Đồ ăn" : item.category === "print" ? "In ấn" : "Thiết bị"}
                     </Badge>
 
                     <div
@@ -428,32 +408,32 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <Card.Body className="p-4">
+                  <Card.Body className="p-4 d-flex flex-column text-center">
                     <h6 className="fw-bold mb-2">{item.name}</h6>
-                    <p className="text-muted small mb-4">{item.description}</p>
+                    <p className="text-muted small mb-4 flex-grow-1">{item.description}</p>
 
-                    <div className="d-flex align-items-center justify-content-between">
-                      <div>
-                        <h5 className="fw-bold text-primary mb-0">
-                          {formatPrice(item.price)}
-                          {item.unit || ""}
-                        </h5>
-                      </div>
-
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        className="rounded-circle p-2"
-                        style={{ width: "40px", height: "40px" }}
-                      >
-                        <i className="bi bi-plus-lg"></i>
-                      </Button>
-                    </div>
+                    {/* Đã bỏ nút (+), căn giữa giá tiền cho đẹp mắt */}
+                    <h5 className="fw-bold text-primary mb-0">
+                      {formatPrice(item.price)}
+                      {item.unit || ""}
+                    </h5>
                   </Card.Body>
                 </Card>
               </Col>
             ))}
           </Row>
+
+          {/* Nút Xem thêm */}
+          <div className="text-center mt-5">
+            <Button
+              variant="outline-primary"
+              size="lg"
+              className="px-5 py-3 rounded-pill fw-bold"
+              onClick={() => navigate('/menu')} // 👉 Đổi '/order' thành route thực tế của bạn
+            >
+              Xem thêm <i className="bi bi-arrow-right ms-2"></i>
+            </Button>
+          </div>
         </Container>
       </section>
 
