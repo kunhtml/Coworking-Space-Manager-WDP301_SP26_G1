@@ -35,6 +35,8 @@ export default [
   route("staff-dashboard/checkin", "pages/staff/StaffCheckinPage.jsx"),
   route("staff-dashboard/tables", "pages/staff/StaffSeatMapPage.jsx"),
   route("staff-dashboard/orders", "pages/staff/StaffOrderManagementPage.jsx"),
+  // Redirect route để xử lý payment link cũ
+  route("staff/orders", "pages/staff/StaffOrdersRedirect.jsx"),
   route(
     "staff-dashboard/create-service",
     "pages/staff/StaffCreateServicePage.jsx",

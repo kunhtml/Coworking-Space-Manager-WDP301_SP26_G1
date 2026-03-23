@@ -143,18 +143,45 @@ export default function StaffOrderManagementPage() {
     setCreating(true);
     setError("");
     try {
-      await createCounterOrder({
+      const result = await createCounterOrder({
         tableId: createForm.tableId,
         customerName: createForm.customerName,
         customerPhone: createForm.customerPhone,
         durationHours: Number(createForm.durationHours || 2),
         items: createForm.items,
       });
+      
       setShowCreateModal(false);
       setCreateForm({ tableId: "", customerName: "", customerPhone: "", durationHours: 2, items: [createEmptyLine()] });
-      setSuccessMsg("✅ Tạo đơn counter thành công!");
+      
+      // Show success message with payment info
+      const bookingAmt = result.bookingAmount || 0;
+      const orderAmt = result.orderAmount || 0;
+      const totalAmt = result.totalAmount || 0;
+      
+      let message = `✅ Tạo đơn counter thành công!`;
+      if (totalAmt > 0) {
+        message += `\n💰 Tiền thuê bàn: ${bookingAmt.toLocaleString()}đ`;
+        if (orderAmt > 0) {
+          message += `\n🍽️ Tiền order: ${orderAmt.toLocaleString()}đ`;
+        }
+        message += `\n📊 Tổng: ${totalAmt.toLocaleString()}đ`;
+      }
+      
+      setSuccessMsg(message);
+      
+      // Open payment link if available
+      if (result.payment?.checkoutUrl) {
+        const openPayment = window.confirm(
+          `Đơn đã tạo thành công!\nTổng tiền: ${totalAmt.toLocaleString()}đ\n\nBạn có muốn mở link thanh toán?`
+        );
+        if (openPayment) {
+          window.open(result.payment.checkoutUrl, "_blank");
+        }
+      }
+      
       await loadPageData();
-      setTimeout(() => setSuccessMsg(""), 4000);
+      setTimeout(() => setSuccessMsg(""), 6000);
     } catch (err) {
       setError(err.message || "Tạo counter order thất bại.");
     } finally {
