@@ -54,7 +54,9 @@ export const createBooking = async (req, res) => {
       return res.status(400).json({ message: "Ngày hoặc giờ không hợp lệ." });
     }
     const endTime = new Date(startTime.getTime() + bookingDuration * 3600000);
-    const depositAmount = Math.round((Number(pricePerHour) || 0) * bookingDuration);
+    const depositAmount = Math.round(
+      (Number(pricePerHour) || 0) * bookingDuration,
+    );
 
     const count = await Booking.countDocuments();
     const bookingCode = `BK-${String(count + 1).padStart(4, "0")}`;

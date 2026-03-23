@@ -6,7 +6,10 @@ export const login = async (req, res) => {
   try {
     const { identifier, password } = req.body;
 
-    console.log("[LOGIN] Request:", { identifier, passwordLength: password?.length });
+    console.log("[LOGIN] Request:", {
+      identifier,
+      passwordLength: password?.length,
+    });
 
     if (!identifier || !password) {
       return res
@@ -22,16 +25,19 @@ export const login = async (req, res) => {
         { phone: identifier.trim() },
       ],
     });
-    
+
     const user = await User.findOne({
       $or: [
         { email: identifier.toLowerCase().trim() },
         { phone: identifier.trim() },
       ],
     });
-    
-    console.log("[LOGIN] User found:", user ? { email: user.email, role: user.role } : null);
-    
+
+    console.log(
+      "[LOGIN] User found:",
+      user ? { email: user.email, role: user.role } : null,
+    );
+
     if (!user) {
       return res
         .status(401)
@@ -40,7 +46,7 @@ export const login = async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     console.log("[LOGIN] Password match:", isMatch);
-    
+
     if (!isMatch) {
       return res
         .status(401)
