@@ -15,6 +15,7 @@ import { Autoplay, EffectCards } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/effect-cards";
 import GuestCustomerNavbar from "../../components/common/GuestCustomerNavbar";
+import { apiClient } from "../../services/api";
 
 export function meta() {
   return [
@@ -27,159 +28,46 @@ export function meta() {
   ];
 }
 
-const workspaceOptions = [
-  {
-    id: "individual",
-    title: "Ghế cá nhân",
-    description: "Không gian yên tĩnh cho việc học tập và làm việc cá nhân",
-    price: 25000,
-    capacity: "1 chỗ",
-    features: ["0 cầm", "Wi-Fi 5G"],
-    icon: "bi-person-workspace",
-    color: "rgba(99, 102, 241, 0.1)",
-    badge: "Ghế cá nhân",
-    status: "Trống",
-    statusColor: "success",
-  },
-  {
-    id: "group4",
-    title: "Bàn nhóm (4 chỗ)",
-    description: "Thảo luận nhóm, làm project, học nhóm hiệu quả",
-    price: 40000,
-    capacity: "4 chỗ",
-    features: ["4 ổ cắm", "Bảng trắng"],
-    icon: "bi-people-fill",
-    color: "rgba(251, 191, 36, 0.1)",
-    badge: "Bàn nhóm",
-    status: "Trống",
-    statusColor: "success",
-  },
-  {
-    id: "group6",
-    title: "Bàn nhóm (6 chỗ)",
-    description: "Bàn lớn dành cho nhóm đông, họp team, workshop nhỏ",
-    price: 55000,
-    capacity: "6 chỗ",
-    features: ["6 ổ cắm", "Màn hình"],
-    icon: "bi-people-fill",
-    color: "rgba(34, 197, 94, 0.1)",
-    badge: "Bàn nhóm",
-    status: "Còn lại 1",
-    statusColor: "warning",
-  },
-  {
-    id: "meeting8",
-    title: "Phòng họp (8 chỗ)",
-    description: "Phòng riêng cách âm, máy chiếu, bảng trắng, AC",
-    price: 120000,
-    capacity: "8 chỗ",
-    features: ["Máy chiếu", "AC"],
-    icon: "bi-easel",
-    color: "rgba(59, 130, 246, 0.1)",
-    badge: "Phòng họp",
-    status: "Hết chỗ",
-    statusColor: "danger",
-  },
-  {
-    id: "vip10",
-    title: "Phòng VIP (10 chỗ)",
-    description: "Full option: máy chiếu, loa, bảng, minibar, phục vụ riêng",
-    price: null,
-    capacity: "10 chỗ",
-    features: ["VIP", "Minibar"],
-    icon: "bi-gem",
-    color: "rgba(139, 92, 246, 0.1)",
-    badge: "VIP",
-    status: "Trống",
-    statusColor: "success",
-  },
+const TYPE_COLORS = [
+  "rgba(99, 102, 241, 0.1)",
+  "rgba(251, 191, 36, 0.1)",
+  "rgba(34, 197, 94, 0.1)",
+  "rgba(59, 130, 246, 0.1)",
+  "rgba(139, 92, 246, 0.1)",
 ];
 
-const menuItems = [
-  {
-    id: 1,
-    name: "Cà phê sữa đá",
-    description: "Cà phê phin truyền thống pha sữa đặc, đá viên",
-    price: 30000,
-    icon: "☕",
-    category: "drink",
-    color: "rgba(99, 102, 241, 0.1)",
-  },
-  {
-    id: 2,
-    name: "Trà đào cam sả",
-    description: "Trà thơm hoa quyến đào tươi, cam vả sả",
-    price: 35000,
-    icon: "bi-cup-straw",
-    category: "drink",
-    color: "rgba(251, 191, 36, 0.1)",
-  },
-  {
-    id: 3,
-    name: "Latte",
-    description: "Espresso đậm đà kết hợp sữa tươi béo ngậy",
-    price: 40000,
-    icon: "bi-cup",
-    category: "drink",
-    color: "rgba(156, 163, 175, 0.1)",
-  },
-  {
-    id: 4,
-    name: "Americano",
-    description: "Espresso pha nước, vị đắm thanh",
-    price: 35000,
-    icon: "bi-cup-hot",
-    category: "drink",
-    color: "rgba(99, 102, 241, 0.1)",
-  },
-  {
-    id: 5,
-    name: "Croissant bơ Pháp",
-    description: "Bánh sừng bò bơ Pháp nướng giòn thơm",
-    price: 25000,
-    icon: "bi-bread-slice",
-    category: "food",
-    color: "rgba(251, 191, 36, 0.1)",
-  },
-  {
-    id: 6,
-    name: "Bánh mì chả lụa",
-    description: "Bánh mì nóng giòn ăn kèm chả lụa và pate gia truyền",
-    price: 30000,
-    icon: "bi-bag",
-    category: "food",
-    color: "rgba(59, 130, 246, 0.1)",
-  },
-  {
-    id: 7,
-    name: "Tiramisu Cổ Điển",
-    description: "Bánh phô mai Mascarpone hương cà phê và rượu Rhum nhẹ",
-    price: 45000,
-    icon: "bi-bag",
-    category: "food",
-    color: "rgba(34, 197, 94, 0.1)",
-  },
-  {
-    id: 8,
-    name: "Muffin Sô-cô-la Chip",
-    description: "Bánh muffin nướng mềm xốp, thơm mùi cacao với những hạt sô-cô-la chip giòn",
-    price: 30000,
-    icon: "bi-bag",
-    category: "food",
-    color: "rgba(139, 92, 246, 0.1)",
-  },
-];
+function formatTypeTitle(type) {
+  if (!type) return "Không gian";
+  return String(type)
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (ch) => ch.toUpperCase());
+}
 
-const categories = [
-  { id: "all", label: "Tất cả", icon: "" },
-  { id: "drink", label: "Đồ uống", icon: "bi-cup-hot" },
-  { id: "food", label: "Đồ ăn", icon: "bi-bread-slice" },
-  { id: "print", label: "In ấn", icon: "bi-printer" },
-  { id: "equipment", label: "Thiết bị", icon: "bi-tools" },
-];
+function pickWorkspaceIcon(type) {
+  const t = String(type || "").toLowerCase();
+  if (t.includes("meeting") || t.includes("room")) return "bi-easel";
+  if (t.includes("group")) return "bi-people-fill";
+  if (t.includes("vip") || t.includes("private")) return "bi-gem";
+  return "bi-person-workspace";
+}
+
+function pickMenuIcon(categoryName) {
+  const c = String(categoryName || "").toLowerCase();
+  if (c.includes("uống") || c.includes("drink") || c.includes("coffee")) {
+    return "bi-cup-hot";
+  }
+  if (c.includes("in") || c.includes("print")) return "bi-printer";
+  if (c.includes("thiết bị") || c.includes("equipment")) return "bi-tools";
+  return "bi-bread-slice";
+}
 
 export default function Home() {
   const navigate = useNavigate();
+  const [workspaceOptions, setWorkspaceOptions] = useState([]);
+  const [menuItems, setMenuItems] = useState([]);
+  const [loadingData, setLoadingData] = useState(true);
+  const [dataError, setDataError] = useState("");
 
   // Auto-redirect Admin/Staff về dashboard của họ
   useEffect(() => {
@@ -197,6 +85,84 @@ export default function Home() {
     }
   }, [navigate]);
 
+  useEffect(() => {
+    const loadHomeData = async () => {
+      setLoadingData(true);
+      setDataError("");
+      try {
+        const [tablesRes, menuRes] = await Promise.all([
+          apiClient.get("/tables"),
+          apiClient.get("/menu/items"),
+        ]);
+
+        const tables = Array.isArray(tablesRes) ? tablesRes : [];
+        const grouped = new Map();
+
+        tables.forEach((t) => {
+          const typeKey = String(t.tableType || "Khac");
+          const current = grouped.get(typeKey) || {
+            id: typeKey,
+            title: formatTypeTitle(typeKey),
+            price: Number.POSITIVE_INFINITY,
+            capacityValue: 0,
+            total: 0,
+            available: 0,
+          };
+
+          current.price = Math.min(current.price, Number(t.pricePerHour || 0));
+          current.capacityValue = Math.max(current.capacityValue, Number(t.capacity || 0));
+          current.total += 1;
+          if (String(t.status || "").toLowerCase() === "available") {
+            current.available += 1;
+          }
+          grouped.set(typeKey, current);
+        });
+
+        const mappedWorkspaces = Array.from(grouped.values()).map((w, idx) => {
+          const status =
+            w.available <= 0 ? "Het cho" : w.available === 1 ? "Con lai 1" : "Trong";
+          const statusColor = w.available <= 0 ? "danger" : w.available === 1 ? "warning" : "success";
+          return {
+            id: w.id,
+            title: w.title,
+            description: `${w.total} cho theo loai ${w.title}`,
+            price: Number.isFinite(w.price) ? w.price : 0,
+            capacity: `${w.capacityValue || 1} cho`,
+            icon: pickWorkspaceIcon(w.id),
+            color: TYPE_COLORS[idx % TYPE_COLORS.length],
+            badge: w.title,
+            status,
+            statusColor,
+            capacityValue: w.capacityValue || 1,
+          };
+        });
+
+        const menus = Array.isArray(menuRes) ? menuRes : [];
+        const mappedMenus = menus.map((item, idx) => {
+          const categoryName = item.categoryId?.name || "Khac";
+          return {
+            id: item._id || item.id || idx,
+            name: item.name || "Mon khong ten",
+            description: item.description || "Dang cap nhat",
+            price: Number(item.price || 0),
+            icon: pickMenuIcon(categoryName),
+            category: categoryName,
+            color: TYPE_COLORS[idx % TYPE_COLORS.length],
+          };
+        });
+
+        setWorkspaceOptions(mappedWorkspaces);
+        setMenuItems(mappedMenus);
+      } catch (err) {
+        setDataError(err.message || "Khong the tai du lieu trang chu.");
+      } finally {
+        setLoadingData(false);
+      }
+    };
+
+    loadHomeData();
+  }, []);
+
   // const [selectedCategory, setSelectedCategory] = useState("all");
 
 
@@ -208,6 +174,12 @@ export default function Home() {
   const formatPrice = (price, unit = "đ") => {
     return new Intl.NumberFormat("vi-VN").format(price) + unit;
   };
+
+  const totalSeats = workspaceOptions.reduce(
+    (sum, w) => sum + Number(w.capacityValue || 0),
+    0,
+  );
+  const totalServices = menuItems.length;
 
   return (
     <div className="min-vh-100 bg-light">
@@ -263,11 +235,11 @@ export default function Home() {
 
                 <Row className="text-center text-lg-start">
                   <Col xs={4} lg={4}>
-                    <h3 className="fw-bold mb-1">30+</h3>
+                    <h3 className="fw-bold mb-1">{loadingData ? "-" : `${totalSeats}+`}</h3>
                     <p className="small text-white-50 mb-0">Chỗ ngồi</p>
                   </Col>
                   <Col xs={4} lg={4}>
-                    <h3 className="fw-bold mb-1">15+</h3>
+                    <h3 className="fw-bold mb-1">{loadingData ? "-" : `${totalServices}+`}</h3>
                     <p className="small text-white-50 mb-0">Dịch vụ</p>
                   </Col>
                   <Col xs={4} lg={4}>
@@ -304,6 +276,11 @@ export default function Home() {
                     height: "400px",
                   }}
                 >
+                  {dataError && (
+                    <Alert variant="warning" className="mb-3">
+                      {dataError}
+                    </Alert>
+                  )}
                   {workspaceOptions.map((workspace) => (
                     <SwiperSlide key={workspace.id} className="workspace-slide">
                       <Card
@@ -397,7 +374,7 @@ export default function Home() {
                       text="primary"
                       className="position-absolute top-0 start-0 m-3 px-2 py-1 small"
                     >
-                      {item.category === "drink" ? "Đồ uống" : item.category === "food" ? "Đồ ăn" : item.category === "print" ? "In ấn" : "Thiết bị"}
+                      {item.category}
                     </Badge>
 
                     <div
