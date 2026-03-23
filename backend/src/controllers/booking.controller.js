@@ -19,8 +19,9 @@ export const createBooking = async (req, res) => {
     } = req.body;
 
     const bookingTableId = tableSourceId || tableId;
-    const bookingDate = arrivalDate || date;
-    const bookingStartTime = arrivalTime || requestStartTime;
+    const bookingDate = date || arrivalDate;
+    const bookingStartTime = requestStartTime || arrivalTime;
+    const bookingEndTime = requestEndTime;
     let bookingDuration = Number(duration);
 
     if (
@@ -30,7 +31,7 @@ export const createBooking = async (req, res) => {
       bookingDate
     ) {
       const start = new Date(`${bookingDate}T${bookingStartTime}:00`);
-      const end = new Date(`${bookingDate}T${requestEndTime}:00`);
+      const end = new Date(`${bookingDate}T${bookingEndTime}:00`);
       const diffHours = (end.getTime() - start.getTime()) / 3600000;
       if (isFinite(diffHours) && diffHours > 0) {
         bookingDuration = diffHours;
@@ -48,14 +49,12 @@ export const createBooking = async (req, res) => {
         .status(400)
         .json({ message: "Vui lòng cung cấp đủ thông tin đặt bàn." });
     }
-    const startTime = new Date(`${bookingDate}T${bookingStartTime}:00`);
+    const startTime = new Date(`${arrivalDate}T${arrivalTime}:00`);
     if (!isFinite(startTime.getTime())) {
       return res.status(400).json({ message: "Ngày hoặc giờ không hợp lệ." });
     }
-    const endTime = new Date(startTime.getTime() + bookingDuration * 3600000);
-    const depositAmount = Math.round(
-      (Number(pricePerHour) || 0) * bookingDuration,
-    );
+    const endTime = new Date(startTime.getTime() + Number(duration) * 3600000);
+    const depositAmount = (Number(pricePerHour) || 0) * Number(duration);
 
     const count = await Booking.countDocuments();
     const bookingCode = `BK-${String(count + 1).padStart(4, "0")}`;
@@ -128,11 +127,9 @@ export const updateMyBooking = async (req, res) => {
     }
 
     if (["Confirmed", "Cancelled"].includes(booking.status)) {
-      return res
-        .status(400)
-        .json({
-          message: "Booking đã xác nhận hoặc đã hủy, không thể chỉnh sửa.",
-        });
+      return res.status(400).json({
+        message: "Booking đã xác nhận hoặc đã hủy, không thể chỉnh sửa.",
+      });
     }
 
     const nextStart = new Date(`${arrivalDate}T${arrivalTime}:00`);
@@ -142,7 +139,25 @@ export const updateMyBooking = async (req, res) => {
         .status(400)
         .json({ message: "Thông tin ngày giờ hoặc thời lượng không hợp lệ." });
     }
-    const nextEnd = new Date(nextStart.getTime() + dur * 3600000);
+
+    let nextEnd;
+    if (bookingEndTime) {
+      nextEnd = new Date(`${bookingDate}T${bookingEndTime}:00`);
+      if (
+        !isFinite(nextEnd.getTime()) ||
+        nextEnd.getTime() <= nextStart.getTime()
+      ) {
+        return res.status(400).json({ message: "Giờ kết thúc không hợp lệ." });
+      }
+    } else if (bookingDuration && bookingDuration > 0) {
+      nextEnd = new Date(nextStart.getTime() + bookingDuration * 3600000);
+    } else {
+      return res
+        .status(400)
+        .json({
+          message: "Vui lòng cung cấp thời lượng hoặc giờ kết thúc hợp lệ.",
+        });
+    }
 
     const overlapping = await Booking.find({
       _id: { $ne: booking._id },
@@ -153,11 +168,9 @@ export const updateMyBooking = async (req, res) => {
     }).lean();
 
     if (overlapping.length > 0) {
-      return res
-        .status(409)
-        .json({
-          message: "Khung giờ này đã có người đặt. Vui lòng chọn giờ khác.",
-        });
+      return res.status(409).json({
+        message: "Khung giờ này đã có người đặt. Vui lòng chọn giờ khác.",
+      });
     }
 
     booking.startTime = nextStart;
