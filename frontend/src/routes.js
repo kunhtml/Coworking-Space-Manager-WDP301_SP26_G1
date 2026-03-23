@@ -39,11 +39,6 @@ export default [
   route("staff-dashboard/password", "pages/admin/routes/StaffPasswordPage.jsx"),
 
   // Admin pages
-  route("admin-dashboard", "pages/admin/AdminAnalytics.jsx"),
-  route(
-    "admin-dashboard/analytics",
-    "pages/admin/routes/AdminDashboardAnalytics.jsx",
-  ),
   route("admin-dashboard/users", "pages/admin/AdminUsers.jsx"),
   route("admin-dashboard/spaces", "pages/admin/AdminTablesNew.jsx"),
   route("admin-dashboard/services", "pages/admin/AdminServiceListPage.jsx"),

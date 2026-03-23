@@ -13,7 +13,7 @@ const DEFAULT_ROLE_LABELS = {
 function getDashboardPath(role) {
   // Chuẩn hóa về chữ thường trước khi check
   const r = role?.toLowerCase();
-  if (r === "admin") return "/admin-dashboard";
+  if (r === "admin") return "/admin-dashboard/users";
   if (r === "staff") return "/staff-dashboard";
   if (r === "customer") return "/customer-dashboard";
   return null;
