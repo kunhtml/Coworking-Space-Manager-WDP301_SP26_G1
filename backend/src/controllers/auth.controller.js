@@ -6,6 +6,8 @@ export const login = async (req, res) => {
   try {
     const { identifier, password } = req.body;
 
+    console.log("[LOGIN] Request:", { identifier, passwordLength: password?.length });
+
     if (!identifier || !password) {
       return res
         .status(400)
@@ -13,12 +15,23 @@ export const login = async (req, res) => {
     }
 
     // Tìm user bằng email hoặc phone
+    console.log("[LOGIN] User collection:", User.collection.name);
+    console.log("[LOGIN] Query:", {
+      $or: [
+        { email: identifier.toLowerCase().trim() },
+        { phone: identifier.trim() },
+      ],
+    });
+    
     const user = await User.findOne({
       $or: [
         { email: identifier.toLowerCase().trim() },
         { phone: identifier.trim() },
       ],
     });
+    
+    console.log("[LOGIN] User found:", user ? { email: user.email, role: user.role } : null);
+    
     if (!user) {
       return res
         .status(401)
@@ -26,6 +39,8 @@ export const login = async (req, res) => {
     }
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
+    console.log("[LOGIN] Password match:", isMatch);
+    
     if (!isMatch) {
       return res
         .status(401)

@@ -97,13 +97,20 @@ export default function BookingPage() {
             features: ["Wi-Fi", "Ổ cắm"],
             icon: pickIcon(typeKey),
             color: TYPE_COLORS[grouped.size % TYPE_COLORS.length].color,
-            borderColor: TYPE_COLORS[grouped.size % TYPE_COLORS.length].borderColor,
+            borderColor:
+              TYPE_COLORS[grouped.size % TYPE_COLORS.length].borderColor,
             popular: false,
             count: 0,
           };
 
-          existing.price = Math.min(existing.price, Number(t.pricePerHour || 0));
-          existing.capacity = Math.max(existing.capacity, Number(t.capacity || 0));
+          existing.price = Math.min(
+            existing.price,
+            Number(t.pricePerHour || 0),
+          );
+          existing.capacity = Math.max(
+            existing.capacity,
+            Number(t.capacity || 0),
+          );
           existing.count += 1;
           grouped.set(typeKey, existing);
         }
@@ -185,6 +192,7 @@ export default function BookingPage() {
         date: selectedDate,
         startTime: selectedTimeStart,
         endTime: selectedTimeEnd,
+        pricePerHour: selectedTable.pricePerHour,
         notes: `Đặt ${selectedTable.name} - ${selectedTable.tableType?.name || "N/A"}`,
       };
 
@@ -205,7 +213,7 @@ export default function BookingPage() {
   };
 
   const formatPrice = (price) => {
-    return new Intl.NumberFormat("vi-VN").format(price) + "đ";
+    return new Intl.NumberFormat("vi-VN").format(Math.round(price)) + "đ";
   };
 
   const getSelectedTypeInfo = () => {
@@ -220,9 +228,13 @@ export default function BookingPage() {
   };
 
   const calculateTotalPrice = () => {
-    const typeInfo = getSelectedTypeInfo();
+    // Use selected table's actual price if available, otherwise fall back to type price
     const duration = calculateDuration();
-    return typeInfo && duration > 0 ? typeInfo.price * duration : 0;
+    if (selectedTable && duration > 0) {
+      return Math.round(Number(selectedTable.pricePerHour || 0) * duration);
+    }
+    const typeInfo = getSelectedTypeInfo();
+    return typeInfo && duration > 0 ? Math.round(typeInfo.price * duration) : 0;
   };
 
   return (
@@ -288,61 +300,61 @@ export default function BookingPage() {
                       <Spinner animation="border" variant="primary" />
                     </div>
                   ) : (
-                  <Row className="g-3">
-                    {workspaceTypes.map((type) => (
-                      <Col key={type.id} lg={6}>
-                        <div
-                          className={`workspace-type-card p-3 rounded-3 border-2 h-100 ${selectedType === type.id ? "border-primary" : "border-light"}`}
-                          style={{
-                            backgroundColor:
-                              selectedType === type.id ? type.color : "white",
-                            cursor: "pointer",
-                            transition: "all 0.2s ease",
-                          }}
-                          onClick={() => setSelectedType(type.id)}
-                        >
-                          <div className="d-flex align-items-start gap-3">
-                            <div
-                              className="workspace-icon"
-                              style={{ fontSize: "2.5rem" }}
-                            >
-                                  <i className={type.icon}></i>
-                            </div>
-                            <div className="flex-grow-1">
-                              <div className="d-flex align-items-center gap-2 mb-2">
-                                <h6 className="fw-bold mb-0">{type.title}</h6>
-                                {type.popular && (
-                                  <Badge bg="warning" className="px-2">
-                                    Phổ biến
-                                  </Badge>
-                                )}
+                    <Row className="g-3">
+                      {workspaceTypes.map((type) => (
+                        <Col key={type.id} lg={6}>
+                          <div
+                            className={`workspace-type-card p-3 rounded-3 border-2 h-100 ${selectedType === type.id ? "border-primary" : "border-light"}`}
+                            style={{
+                              backgroundColor:
+                                selectedType === type.id ? type.color : "white",
+                              cursor: "pointer",
+                              transition: "all 0.2s ease",
+                            }}
+                            onClick={() => setSelectedType(type.id)}
+                          >
+                            <div className="d-flex align-items-start gap-3">
+                              <div
+                                className="workspace-icon"
+                                style={{ fontSize: "2.5rem" }}
+                              >
+                                <i className={type.icon}></i>
                               </div>
-                              <p className="text-muted small mb-2">
-                                {type.description}
-                              </p>
-                              <div className="d-flex align-items-center gap-2 small text-muted mb-2">
-                                <span>
-                                  <i className="bi bi-people me-1"></i>
-                                  {type.capacity}
-                                </span>
-                                {type.features
-                                  .slice(0, 2)
-                                  .map((feature, idx) => (
-                                    <span key={idx}>
-                                      <i className="bi bi-check-circle me-1 text-success"></i>
-                                      {feature}
-                                    </span>
-                                  ))}
-                              </div>
-                              <div className="fw-bold text-primary">
-                                {formatPrice(type.price)}/giờ
+                              <div className="flex-grow-1">
+                                <div className="d-flex align-items-center gap-2 mb-2">
+                                  <h6 className="fw-bold mb-0">{type.title}</h6>
+                                  {type.popular && (
+                                    <Badge bg="warning" className="px-2">
+                                      Phổ biến
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-muted small mb-2">
+                                  {type.description}
+                                </p>
+                                <div className="d-flex align-items-center gap-2 small text-muted mb-2">
+                                  <span>
+                                    <i className="bi bi-people me-1"></i>
+                                    {type.capacity}
+                                  </span>
+                                  {type.features
+                                    .slice(0, 2)
+                                    .map((feature, idx) => (
+                                      <span key={idx}>
+                                        <i className="bi bi-check-circle me-1 text-success"></i>
+                                        {feature}
+                                      </span>
+                                    ))}
+                                </div>
+                                <div className="fw-bold text-primary">
+                                  {formatPrice(type.price)}/giờ
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      </Col>
-                    ))}
-                  </Row>
+                        </Col>
+                      ))}
+                    </Row>
                   )}
                 </Card.Body>
               </Card>
@@ -630,4 +642,3 @@ export default function BookingPage() {
     </div>
   );
 }
-

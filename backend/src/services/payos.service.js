@@ -2,6 +2,7 @@ import { PayOS } from "@payos/node";
 import QRCode from "qrcode";
 import mongoose from "mongoose";
 import Booking from "../models/booking.js";
+import Order from "../models/order.js";
 import Payment from "../models/payment.js";
 import Invoice from "../models/invoice.js";
 
@@ -18,7 +19,11 @@ export function isPayOSConfigured() {
 }
 
 export function createPayOSClient() {
-  return new PayOS();
+  return new PayOS(
+    process.env.PAYOS_CLIENT_ID,
+    process.env.PAYOS_API_KEY,
+    process.env.PAYOS_CHECKSUM_KEY,
+  );
 }
 
 function createOrderCode() {
@@ -48,9 +53,10 @@ function mapPayOSStatus(status) {
 async function ensureInvoice(bookingId, depositAmount) {
   let invoice = await Invoice.findOne({ bookingId }).lean();
   if (invoice) return invoice;
-  const totalAmount = Number(depositAmount || 0);
+  const totalAmount = Math.round(Number(depositAmount || 0));
   invoice = await Invoice.create({
     bookingId,
+    orderIds: [],
     totalAmount,
     remainingAmount: totalAmount,
     status: totalAmount > 0 ? "Pending" : "Paid",
@@ -69,13 +75,16 @@ export async function getBookingPaymentSnapshot(bookingId) {
 
   const successPaid = payments
     .filter((p) => p.paymentStatus === "Success")
-    .reduce((s, p) => s + Number(p.amount || 0), 0);
+    .reduce((s, p) => s + Math.round(Number(p.amount || 0)), 0);
 
-  const totalAmount = Number(invoice.totalAmount || 0);
-  const remainingAmount = Math.max(0, totalAmount - successPaid);
+  const totalAmount = Math.round(Number(invoice.totalAmount || 0));
+  const remainingAmount = Math.max(0, Math.round(totalAmount - successPaid));
 
   const pendingPayOSPayment = payments.find(
-    (p) => p.paymentMethod === PAYOS_PAYMENT_METHOD && p.paymentStatus === "Pending" && p.payos?.checkoutUrl,
+    (p) =>
+      p.paymentMethod === PAYOS_PAYMENT_METHOD &&
+      p.paymentStatus === "Pending" &&
+      p.payos?.checkoutUrl,
   );
   const latestPayOSPayment = payments.find(
     (p) => p.paymentMethod === PAYOS_PAYMENT_METHOD && p.payos,
@@ -83,8 +92,13 @@ export async function getBookingPaymentSnapshot(bookingId) {
 
   let stateLabel = "Chưa thanh toán";
   let stateVariant = "secondary";
-  if (remainingAmount <= 0) { stateLabel = "Đã thanh toán"; stateVariant = "success"; }
-  else if (pendingPayOSPayment) { stateLabel = "Đang chờ thanh toán"; stateVariant = "warning"; }
+  if (remainingAmount <= 0) {
+    stateLabel = "Đã thanh toán";
+    stateVariant = "success";
+  } else if (pendingPayOSPayment) {
+    stateLabel = "Đang chờ thanh toán";
+    stateVariant = "warning";
+  }
 
   return {
     booking,
@@ -111,120 +125,215 @@ export async function createOrReusePayOSPayment({ booking, buyer, origin }) {
 
   const successPaid = paymentHistory
     .filter((p) => p.paymentStatus === "Success")
-    .reduce((s, p) => s + Number(p.amount || 0), 0);
-  const remainingAmount = Math.max(0, Number(invoice.totalAmount || 0) - successPaid);
+    .reduce((s, p) => s + Math.round(Number(p.amount || 0)), 0);
+  const remainingAmount = Math.max(
+    0,
+    Math.round(Number(invoice.totalAmount || 0) - successPaid),
+  );
+
+  console.log("createOrReusePayOSPayment:", {
+    invoiceTotal: invoice.totalAmount,
+    successPaid,
+    remainingAmount,
+    pendingPayments: paymentHistory.filter((p) => p.paymentStatus === "Pending")
+      .length,
+  });
 
   if (remainingAmount <= 0) return { alreadyPaid: true };
 
-  // Reuse existing pending link if still active
+  // Check if there's an active pending payment with MATCHING amount
+  // If remainingAmount changed (e.g., new order added), we need a NEW payment link
   const activePending = paymentHistory.find(
-    (p) => p.paymentMethod === PAYOS_PAYMENT_METHOD && p.paymentStatus === "Pending" && p.payos?.checkoutUrl,
+    (p) =>
+      p.paymentMethod === PAYOS_PAYMENT_METHOD &&
+      p.paymentStatus === "Pending" &&
+      p.payos?.checkoutUrl &&
+      Math.round(Number(p.amount || 0)) === remainingAmount, // Amount must match
   );
+
   if (activePending) {
     try {
-      const link = await payOS.paymentRequests.get(activePending.payos.orderCode);
+      const link = await payOS.paymentRequests.get(
+        activePending.payos.orderCode,
+      );
       if (PAYOS_PENDING_STATUSES.has(link.status)) {
+        console.log(
+          "Reusing payment link with matching amount:",
+          activePending.payos.orderCode,
+        );
         return { reused: true, payment: activePending };
       }
       if (PAYOS_FAILED_STATUSES.has(link.status)) {
-        await syncPayOSPaymentRecord({ orderCode: activePending.payos.orderCode, paymentLink: link });
+        await syncPayOSPaymentRecord({
+          orderCode: activePending.payos.orderCode,
+          paymentLink: link,
+        });
       }
-    } catch { /* ignore, create new */ }
+    } catch {
+      /* ignore, create new */
+    }
   }
+
+  // Cancel any old pending payments that don't match the current amount
+  const oldPendingPayments = paymentHistory.filter(
+    (p) =>
+      p.paymentMethod === PAYOS_PAYMENT_METHOD &&
+      p.paymentStatus === "Pending" &&
+      p._id.toString() !== activePending?._id?.toString(),
+  );
+
+  if (oldPendingPayments.length > 0) {
+    console.log("Cancelling old pending payments:", oldPendingPayments.length);
+  }
+
+  for (const oldPayment of oldPendingPayments) {
+    try {
+      if (oldPayment.payos?.orderCode) {
+        await payOS.paymentRequests.cancel(oldPayment.payos.orderCode);
+      }
+      await Payment.findByIdAndUpdate(oldPayment._id, {
+        paymentStatus: "Cancelled",
+        "payos.status": "CANCELLED",
+      });
+    } catch (err) {
+      console.log("Could not cancel old payment:", err.message);
+    }
+  }
+
+  console.log("Creating new payment link for amount:", remainingAmount);
 
   const orderCode = createOrderCode();
-  const amount = remainingAmount;
+  const amount = Math.round(remainingAmount);
   const description = createShortDescription(booking.bookingCode, orderCode);
 
-  const returnUrl = `${origin}/dashboard?payment=success`;
-  const cancelUrl = `${origin}/dashboard?payment=cancelled`;
+  const returnUrl =
+    process.env.PAYOS_RETURN_URL || `${origin}/dashboard?payment=success`;
+  const cancelUrl =
+    process.env.PAYOS_CANCEL_URL || `${origin}/dashboard?payment=cancelled`;
 
-  const paymentLink = await payOS.paymentRequests.create({
-    orderCode,
-    amount,
-    description,
-    returnUrl,
-    cancelUrl,
-    expiredAt: Math.floor(Date.now() / 1000) + 15 * 60,
-    buyerName: buyer?.fullName || booking?.guestInfo?.name || "Khách hàng",
-    buyerEmail: buyer?.email || booking?.guestInfo?.email,
-    buyerPhone: buyer?.phone || booking?.guestInfo?.phone,
-    items: [
-      {
-        name: `Dat coc ${booking.bookingCode || booking._id}`.slice(0, 25),
-        quantity: 1,
-        price: amount,
-      },
-    ],
-  });
-
-  const now = new Date();
-  const payment = await Payment.create({
-    invoiceId: invoice._id,
-    bookingId: booking._id,
-    paymentMethod: PAYOS_PAYMENT_METHOD,
-    transactionId: paymentLink.paymentLinkId,
-    amount,
-    paymentStatus: "Pending",
-    createdAt: now,
-    payos: {
+  try {
+    const paymentLink = await payOS.paymentRequests.create({
       orderCode,
-      paymentLinkId: paymentLink.paymentLinkId,
-      checkoutUrl: paymentLink.checkoutUrl,
-      qrCode: paymentLink.qrCode,
-      bin: paymentLink.bin,
-      accountNumber: paymentLink.accountNumber,
-      accountName: paymentLink.accountName,
-      status: paymentLink.status,
-      expiredAt: paymentLink.expiredAt,
-      amountPaid: 0,
-      amountRemaining: amount,
-      lastSyncedAt: now,
+      amount,
       description,
-    },
-  });
+      returnUrl,
+      cancelUrl,
+      expiredAt: Math.floor(Date.now() / 1000) + 15 * 60,
+      buyerName: buyer?.fullName || booking?.guestInfo?.name || "Khách hàng",
+      buyerEmail: buyer?.email || booking?.guestInfo?.email,
+      buyerPhone: buyer?.phone || booking?.guestInfo?.phone,
+      items: [
+        {
+          name: `Dat coc ${booking.bookingCode || booking._id}`.slice(0, 25),
+          quantity: 1,
+          price: amount,
+        },
+      ],
+    });
 
-  // Mark booking as awaiting payment
-  if (["Pending", "Confirmed"].includes(booking.status || "")) {
-    await Booking.findByIdAndUpdate(booking._id, { status: "Awaiting_Payment" });
+    const now = new Date();
+    const payment = await Payment.create({
+      invoiceId: invoice._id,
+      bookingId: booking._id,
+      paymentMethod: PAYOS_PAYMENT_METHOD,
+      transactionId: paymentLink.paymentLinkId,
+      amount,
+      paymentStatus: "Pending",
+      createdAt: now,
+      payos: {
+        orderCode,
+        paymentLinkId: paymentLink.paymentLinkId,
+        checkoutUrl: paymentLink.checkoutUrl,
+        qrCode: paymentLink.qrCode,
+        bin: paymentLink.bin,
+        accountNumber: paymentLink.accountNumber,
+        accountName: paymentLink.accountName,
+        status: paymentLink.status,
+        expiredAt: paymentLink.expiredAt,
+        amountPaid: 0,
+        amountRemaining: amount,
+        lastSyncedAt: now,
+        description,
+      },
+    });
+
+    // Mark booking as awaiting payment
+    if (["Pending", "Confirmed"].includes(booking.status || "")) {
+      await Booking.findByIdAndUpdate(booking._id, {
+        status: "Awaiting_Payment",
+      });
+    }
+
+    return { reused: false, payment: payment.toObject() };
+  } catch (payosError) {
+    console.error("PayOS API error:", payosError);
+    throw new Error(
+      `Lỗi kết nối với PayOS: ${payosError.message || "Không thể tạo link thanh toán. Vui lòng kiểm tra cấu hình PayOS."}`,
+    );
   }
-
-  return { reused: false, payment: payment.toObject() };
 }
 
-export async function syncPayOSPaymentRecord({ orderCode, paymentLink, webhookData }) {
-  const payment = await Payment.findOne({ "payos.orderCode": Number(orderCode) });
+export async function syncPayOSPaymentRecord({
+  orderCode,
+  paymentLink,
+  webhookData,
+}) {
+  const payment = await Payment.findOne({
+    "payos.orderCode": Number(orderCode),
+  });
   if (!payment) return { payment: null, invoice: null, booking: null };
 
-  const derivedStatus = paymentLink?.status || (webhookData?.code === "00" ? "PAID" : "FAILED");
+  const derivedStatus =
+    paymentLink?.status || (webhookData?.code === "00" ? "PAID" : "FAILED");
   const paymentStatus = mapPayOSStatus(derivedStatus);
   const now = new Date();
-  const paidAt = paymentStatus === "Success"
-    ? new Date(webhookData?.transactionDateTime || now)
-    : payment.paidAt || null;
+  const paidAt =
+    paymentStatus === "Success"
+      ? new Date(webhookData?.transactionDateTime || now)
+      : payment.paidAt || null;
 
   payment.paymentStatus = paymentStatus;
   payment.paidAt = paidAt;
   payment.updatedAt = now;
   if (payment.payos) {
     payment.payos.status = derivedStatus;
-    payment.payos.amountPaid = paymentLink?.amountPaid ?? (paymentStatus === "Success" ? Number(payment.amount || 0) : 0);
-    payment.payos.amountRemaining = paymentLink?.amountRemaining ?? (paymentStatus === "Success" ? 0 : payment.payos?.amountRemaining);
+    payment.payos.amountPaid = Math.round(
+      paymentLink?.amountPaid ??
+        (paymentStatus === "Success" ? Number(payment.amount || 0) : 0),
+    );
+    payment.payos.amountRemaining = Math.round(
+      paymentLink?.amountRemaining ??
+        (paymentStatus === "Success" ? 0 : payment.payos?.amountRemaining || 0),
+    );
     payment.payos.lastSyncedAt = now;
   }
   await payment.save();
 
   const invoice = await Invoice.findById(payment.invoiceId);
   if (invoice) {
-    const successPayments = await Payment.find({ invoiceId: invoice._id, paymentStatus: "Success" }).lean();
-    const totalPaid = successPayments.reduce((s, p) => s + Number(p.amount || 0), 0);
-    const remaining = Math.max(0, Number(invoice.totalAmount || 0) - totalPaid);
+    const successPayments = await Payment.find({
+      invoiceId: invoice._id,
+      paymentStatus: "Success",
+    }).lean();
+    const totalPaid = successPayments.reduce(
+      (s, p) => s + Math.round(Number(p.amount || 0)),
+      0,
+    );
+    const remaining = Math.max(
+      0,
+      Math.round(Number(invoice.totalAmount || 0) - totalPaid),
+    );
     invoice.remainingAmount = remaining;
-    invoice.status = remaining <= 0 ? "Paid" : totalPaid > 0 ? "Partially_Paid" : "Pending";
+    invoice.status =
+      remaining <= 0 ? "Paid" : totalPaid > 0 ? "Partially_Paid" : "Pending";
     await invoice.save();
 
     const booking = await Booking.findById(invoice.bookingId);
-    if (booking && remaining <= 0 && ["Pending", "Awaiting_Payment"].includes(booking.status || "")) {
+    if (
+      booking &&
+      remaining <= 0 &&
+      ["Pending", "Awaiting_Payment"].includes(booking.status || "")
+    ) {
       booking.status = "Confirmed";
       await booking.save();
     }
@@ -240,7 +349,8 @@ export async function syncPayOSPaymentRecord({ orderCode, paymentLink, webhookDa
 export async function cancelPayOSPayment(bookingId, userId) {
   const booking = await Booking.findById(bookingId).lean();
   if (!booking) return { notFound: true };
-  if (booking.userId?.toString() !== userId.toString()) return { forbidden: true };
+  if (booking.userId?.toString() !== userId.toString())
+    return { forbidden: true };
 
   const invoice = await Invoice.findOne({ bookingId: booking._id }).lean();
   if (!invoice) return { success: true }; // nothing to cancel
@@ -255,7 +365,9 @@ export async function cancelPayOSPayment(bookingId, userId) {
     try {
       const payOS = createPayOSClient();
       await payOS.paymentRequests.cancel(pendingPayment.payos.orderCode);
-    } catch { /* ignore PayOS errors — still mark local records */ }
+    } catch {
+      /* ignore PayOS errors — still mark local records */
+    }
   }
 
   if (pendingPayment) {
@@ -289,19 +401,275 @@ export async function buildPaymentPageData(bookingId, userId) {
   if (isPayOSConfigured() && pendingPayment?.payos?.orderCode) {
     try {
       const payOS = createPayOSClient();
-      const link = await payOS.paymentRequests.get(pendingPayment.payos.orderCode);
-      await syncPayOSPaymentRecord({ orderCode: pendingPayment.payos.orderCode, paymentLink: link });
+      const link = await payOS.paymentRequests.get(
+        pendingPayment.payos.orderCode,
+      );
+      await syncPayOSPaymentRecord({
+        orderCode: pendingPayment.payos.orderCode,
+        paymentLink: link,
+      });
       freshSnapshot = await getBookingPaymentSnapshot(bookingId);
-    } catch { /* keep as is */ }
+    } catch {
+      /* keep as is */
+    }
   }
 
-  const activePayment = freshSnapshot.pendingPayOSPayment || freshSnapshot.latestPayOSPayment || null;
+  const activePayment =
+    freshSnapshot.pendingPayOSPayment ||
+    freshSnapshot.latestPayOSPayment ||
+    null;
   const qrCodeValue = activePayment?.payos?.qrCode || "";
   let qrCodeDataUrl = null;
   if (qrCodeValue) {
     try {
       qrCodeDataUrl = await QRCode.toDataURL(qrCodeValue, {
-        margin: 1, width: 320,
+        margin: 1,
+        width: 320,
+        color: { dark: "#111827", light: "#ffffff" },
+      });
+    } catch {
+      /* skip */
+    }
+  }
+
+  return { snapshot: freshSnapshot, activePayment, qrCodeDataUrl, qrCodeValue };
+}
+
+// ─── Order Payment Functions ───────────────────────────────────────
+
+export async function getOrderPaymentSnapshot(orderId) {
+  const order = await Order.findById(orderId).lean();
+  if (!order) return null;
+
+  // Find invoice for this order (orderIds contains this orderId)
+  const invoice = await Invoice.findOne({ orderIds: orderId }).lean();
+  if (!invoice) return null;
+
+  const payments = await Payment.find({ invoiceId: invoice._id })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  const successPaid = payments
+    .filter((p) => p.paymentStatus === "Success")
+    .reduce((s, p) => s + Math.round(Number(p.amount || 0)), 0);
+
+  const totalAmount = Math.round(Number(invoice.totalAmount || 0));
+  const remainingAmount = Math.max(0, Math.round(totalAmount - successPaid));
+
+  const pendingPayOSPayment = payments.find(
+    (p) =>
+      p.paymentMethod === PAYOS_PAYMENT_METHOD &&
+      p.paymentStatus === "Pending" &&
+      p.payos?.checkoutUrl,
+  );
+  const latestPayOSPayment = payments.find(
+    (p) => p.paymentMethod === PAYOS_PAYMENT_METHOD && p.payos,
+  );
+
+  let stateLabel = "Chưa thanh toán";
+  let stateVariant = "secondary";
+  if (remainingAmount <= 0) {
+    stateLabel = "Đã thanh toán";
+    stateVariant = "success";
+  } else if (pendingPayOSPayment) {
+    stateLabel = "Đang chờ thanh toán";
+    stateVariant = "warning";
+  }
+
+  return {
+    order,
+    invoice,
+    payments,
+    pendingPayOSPayment,
+    latestPayOSPayment,
+    paymentUi: {
+      remainingAmount,
+      canPay: remainingAmount > 0,
+      stateLabel,
+      stateVariant,
+    },
+  };
+}
+
+export async function createOrReuseOrderPayOSPayment({ order, buyer, origin }) {
+  const payOS = createPayOSClient();
+  
+  // Find invoice for this order
+  const invoice = await Invoice.findOne({ orderIds: order._id }).lean();
+  if (!invoice) {
+    throw new Error("Invoice not found for this order");
+  }
+
+  const paymentHistory = await Payment.find({ invoiceId: invoice._id })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  const successPaid = paymentHistory
+    .filter((p) => p.paymentStatus === "Success")
+    .reduce((s, p) => s + Math.round(Number(p.amount || 0)), 0);
+  const remainingAmount = Math.max(
+    0,
+    Math.round(Number(invoice.totalAmount || 0) - successPaid),
+  );
+
+  console.log("createOrReuseOrderPayOSPayment:", {
+    orderId: order._id,
+    invoiceTotal: invoice.totalAmount,
+    successPaid,
+    remainingAmount,
+    pendingPayments: paymentHistory.filter((p) => p.paymentStatus === "Pending").length,
+  });
+
+  if (remainingAmount <= 0) return { alreadyPaid: true };
+
+  // Check for active pending payment with matching amount
+  const activePending = paymentHistory.find(
+    (p) =>
+      p.paymentMethod === PAYOS_PAYMENT_METHOD &&
+      p.paymentStatus === "Pending" &&
+      p.payos?.checkoutUrl &&
+      Math.round(Number(p.amount || 0)) === remainingAmount,
+  );
+
+  if (activePending) {
+    try {
+      const link = await payOS.paymentRequests.get(activePending.payos.orderCode);
+      if (PAYOS_PENDING_STATUSES.has(link.status)) {
+        console.log("Reusing order payment link:", activePending.payos.orderCode);
+        return { reused: true, payment: activePending };
+      }
+      if (PAYOS_FAILED_STATUSES.has(link.status)) {
+        await syncPayOSPaymentRecord({
+          orderCode: activePending.payos.orderCode,
+          paymentLink: link,
+        });
+      }
+    } catch { /* ignore, create new */ }
+  }
+
+  // Cancel old pending payments with wrong amounts
+  const oldPendingPayments = paymentHistory.filter(
+    (p) =>
+      p.paymentMethod === PAYOS_PAYMENT_METHOD &&
+      p.paymentStatus === "Pending" &&
+      p._id.toString() !== activePending?._id?.toString(),
+  );
+
+  if (oldPendingPayments.length > 0) {
+    console.log("Cancelling old order pending payments:", oldPendingPayments.length);
+  }
+
+  for (const oldPayment of oldPendingPayments) {
+    try {
+      if (oldPayment.payos?.orderCode) {
+        await payOS.paymentRequests.cancel(oldPayment.payos.orderCode);
+      }
+      await Payment.findByIdAndUpdate(oldPayment._id, {
+        paymentStatus: "Cancelled",
+        "payos.status": "CANCELLED",
+      });
+    } catch (err) {
+      console.log("Could not cancel old order payment:", err.message);
+    }
+  }
+
+  console.log("Creating new order payment link for amount:", remainingAmount);
+
+  // Create new PayOS payment
+  try {
+    const amount = remainingAmount;
+    const orderCode = createOrderCode();
+    const description = createShortDescription(order._id.toString(), orderCode);
+    const cancelUrl = origin ? `${origin}/orders` : `${process.env.FRONTEND_URL || "http://localhost:5173"}/orders`;
+    const returnUrl = origin ? `${origin}/payment/order/${order._id}` : `${process.env.FRONTEND_URL || "http://localhost:5173"}/payment/order/${order._id}`;
+
+    const paymentLink = await payOS.paymentRequests.create({
+      orderCode,
+      amount,
+      description,
+      cancelUrl,
+      returnUrl,
+      expiredAt: Math.floor(Date.now() / 1000) + 15 * 60,
+      buyerName: buyer?.fullName || "Khách hàng",
+      buyerEmail: buyer?.email,
+      buyerPhone: buyer?.phone,
+      items: [
+        {
+          name: `Don hang ${order._id.toString().slice(-8)}`.slice(0, 25),
+          quantity: 1,
+          price: amount,
+        },
+      ],
+    });
+
+    const now = new Date();
+    const payment = await Payment.create({
+      invoiceId: invoice._id,
+      // No bookingId - this is order payment
+      paymentMethod: PAYOS_PAYMENT_METHOD,
+      transactionId: paymentLink.paymentLinkId,
+      amount,
+      paymentStatus: "Pending",
+      createdAt: now,
+      payos: {
+        orderCode,
+        paymentLinkId: paymentLink.paymentLinkId,
+        checkoutUrl: paymentLink.checkoutUrl,
+        qrCode: paymentLink.qrCode,
+        bin: paymentLink.bin,
+        accountNumber: paymentLink.accountNumber,
+        accountName: paymentLink.accountName,
+        status: paymentLink.status,
+        expiredAt: paymentLink.expiredAt,
+        amountPaid: 0,
+        amountRemaining: amount,
+        lastSyncedAt: now,
+        description,
+      },
+    });
+
+    return { reused: false, payment: payment.toObject() };
+  } catch (payosError) {
+    console.error("PayOS API error for order:", payosError);
+    throw new Error(
+      `Lỗi kết nối với PayOS: ${payosError.message || "Không thể tạo link thanh toán."}`,
+    );
+  }
+}
+
+export async function buildOrderPaymentPageData(orderId, userId) {
+  const snapshot = await getOrderPaymentSnapshot(orderId);
+  if (!snapshot) return null;
+
+  // Check ownership
+  if (snapshot.order.userId?.toString() !== userId.toString()) return null;
+
+  // Sync pending payment status
+  const pendingPayment = snapshot.pendingPayOSPayment;
+  let freshSnapshot = snapshot;
+  if (isPayOSConfigured() && pendingPayment?.payos?.orderCode) {
+    try {
+      const payOS = createPayOSClient();
+      const link = await payOS.paymentRequests.get(pendingPayment.payos.orderCode);
+      await syncPayOSPaymentRecord({
+        orderCode: pendingPayment.payos.orderCode,
+        paymentLink: link,
+      });
+      freshSnapshot = await getOrderPaymentSnapshot(orderId);
+    } catch { /* keep as is */ }
+  }
+
+  const activePayment =
+    freshSnapshot.pendingPayOSPayment ||
+    freshSnapshot.latestPayOSPayment ||
+    null;
+  const qrCodeValue = activePayment?.payos?.qrCode || "";
+  let qrCodeDataUrl = null;
+  if (qrCodeValue) {
+    try {
+      qrCodeDataUrl = await QRCode.toDataURL(qrCodeValue, {
+        margin: 1,
+        width: 320,
         color: { dark: "#111827", light: "#ffffff" },
       });
     } catch { /* skip */ }
