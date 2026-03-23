@@ -5,7 +5,9 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "seed:hourly": "node src/scripts/seed-hourly-analytics.js"
+    "seed:hourly": "node src/scripts/seed-hourly-analytics.js",
+    "seed:db": "node src/scripts/seed-database-from-json.js",
+    "seed:bookings:range": "node src/scripts/seed-bookings-range.js"
   },
   "dependencies": {
     "@payos/node": "^2.0.5",
