@@ -8,7 +8,9 @@
     "pricePerHour": 20000,
     "pricePerDay": 100000,
     "createdAt": { "$date": "2026-01-01T08:00:00.000Z" },
-    "__v": 0
+    "__v": 0,
+    "description": "",
+    "location": "Tầng 1 - Khu A"
   },
   {
     "_id": { "$oid": "65e6e0000000000000000002" },
@@ -19,7 +21,9 @@
     "pricePerHour": 150000,
     "pricePerDay": 1000000,
     "createdAt": { "$date": "2026-01-01T08:00:00.000Z" },
-    "__v": 0
+    "__v": 0,
+    "description": "",
+    "location": "Tầng 1 - Khu Hội nghị"
   },
   {
     "_id": { "$oid": "65e6e0000000000000000003" },
@@ -30,7 +34,9 @@
     "pricePerHour": 20000,
     "pricePerDay": 100000,
     "createdAt": { "$date": "2026-01-02T08:00:00.000Z" },
-    "__v": 0
+    "__v": 0,
+    "description": "",
+    "location": "Tầng 1 - Khu A"
   },
   {
     "_id": { "$oid": "65e6e0000000000000000004" },
@@ -41,7 +47,9 @@
     "pricePerHour": 60000,
     "pricePerDay": 320000,
     "createdAt": { "$date": "2026-01-02T08:30:00.000Z" },
-    "__v": 0
+    "__v": 0,
+    "description": "",
+    "location": "Tầng 1 - Khu B"
   },
   {
     "_id": { "$oid": "65e6e0000000000000000005" },
@@ -52,7 +60,9 @@
     "pricePerHour": 85000,
     "pricePerDay": 450000,
     "createdAt": { "$date": "2026-01-02T09:00:00.000Z" },
-    "__v": 0
+    "__v": 0,
+    "description": "",
+    "location": "Tầng 1 - Khu B"
   },
   {
     "_id": { "$oid": "65e6e0000000000000000006" },
@@ -63,7 +73,9 @@
     "pricePerHour": 120000,
     "pricePerDay": 780000,
     "createdAt": { "$date": "2026-01-03T08:00:00.000Z" },
-    "__v": 0
+    "__v": 0,
+    "description": "",
+    "location": "Tầng 2 - Khu Hội nghị"
   },
   {
     "_id": { "$oid": "65e6e0000000000000000007" },
@@ -74,7 +86,9 @@
     "pricePerHour": 90000,
     "pricePerDay": 500000,
     "createdAt": { "$date": "2026-01-04T09:00:00.000Z" },
-    "__v": 0
+    "__v": 0,
+    "description": "",
+    "location": "Tầng 2 - Khu B"
   },
   {
     "_id": { "$oid": "65e6e0000000000000000008" },
@@ -85,7 +99,9 @@
     "pricePerHour": 220000,
     "pricePerDay": 1400000,
     "createdAt": { "$date": "2026-01-05T09:00:00.000Z" },
-    "__v": 0
+    "__v": 0,
+    "description": "",
+    "location": "Tầng 3 - Khu VIP"
   },
   {
     "_id": { "$oid": "65e6e0000000000000000009" },
@@ -96,7 +112,9 @@
     "pricePerHour": 25000,
     "pricePerDay": 120000,
     "createdAt": { "$date": "2026-01-06T09:00:00.000Z" },
-    "__v": 0
+    "__v": 0,
+    "description": "",
+    "location": "Tầng 2 - Khu A"
   },
   {
     "_id": { "$oid": "65e6e000000000000000000a" },
@@ -107,7 +125,9 @@
     "pricePerHour": 25000,
     "pricePerDay": 120000,
     "createdAt": { "$date": "2026-01-06T09:15:00.000Z" },
-    "__v": 0
+    "__v": 0,
+    "description": "",
+    "location": "Tầng 2 - Khu A"
   },
   {
     "_id": { "$oid": "65e6e000000000000000000b" },
@@ -118,7 +138,9 @@
     "pricePerHour": 180000,
     "pricePerDay": 1200000,
     "createdAt": { "$date": "2026-01-07T08:00:00.000Z" },
-    "__v": 0
+    "__v": 0,
+    "description": "",
+    "location": "Tầng 1 - Khu Hội nghị"
   },
   {
     "_id": { "$oid": "65e6e000000000000000000c" },
@@ -129,6 +151,8 @@
     "pricePerHour": 130000,
     "pricePerDay": 850000,
     "createdAt": { "$date": "2026-01-09T09:00:00.000Z" },
-    "__v": 0
+    "__v": 0,
+    "description": "",
+    "location": "Tầng 3 - Khu VIP"
   }
 ]
