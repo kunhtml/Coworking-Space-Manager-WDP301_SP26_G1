@@ -75,5 +75,192 @@
     "paymentStatus": "Success",
     "paidAt": { "$date": "2026-03-24T07:30:00.000Z" },
     "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7d0000000000000000008" },
+    "invoiceId": { "$oid": "65e7c0000000000000000101" },
+    "paymentMethod": "Banking",
+    "transactionId": "VCB_TRANS_202501051015",
+    "amount": 520000,
+    "type": "Payment",
+    "paymentStatus": "Success",
+    "paidAt": { "$date": "2025-01-05T10:15:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7d0000000000000000009" },
+    "invoiceId": { "$oid": "65e7c0000000000000000102" },
+    "paymentMethod": "MoMo",
+    "transactionId": "MOMO_TRANS_202502121020",
+    "amount": 680000,
+    "type": "Payment",
+    "paymentStatus": "Success",
+    "paidAt": { "$date": "2025-02-12T10:20:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7d000000000000000000a" },
+    "invoiceId": { "$oid": "65e7c0000000000000000103" },
+    "paymentMethod": "Card",
+    "transactionId": "VISA_TRANS_202503031430",
+    "amount": 450000,
+    "type": "Deposit",
+    "paymentStatus": "Success",
+    "paidAt": { "$date": "2025-03-03T14:30:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7d000000000000000000b" },
+    "invoiceId": { "$oid": "65e7c0000000000000000104" },
+    "paymentMethod": "Cash",
+    "transactionId": "CASH_202504211145",
+    "amount": 910000,
+    "type": "Payment",
+    "paymentStatus": "Success",
+    "paidAt": { "$date": "2025-04-21T11:45:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7d000000000000000000c" },
+    "invoiceId": { "$oid": "65e7c0000000000000000105" },
+    "paymentMethod": "Banking",
+    "transactionId": "VCB_TRANS_202505081600",
+    "amount": 760000,
+    "type": "Payment",
+    "paymentStatus": "Success",
+    "paidAt": { "$date": "2025-05-08T16:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7d000000000000000000d" },
+    "invoiceId": { "$oid": "65e7c0000000000000000106" },
+    "paymentMethod": "MoMo",
+    "transactionId": "MOMO_TRANS_202506181210",
+    "amount": 835000,
+    "type": "Payment",
+    "paymentStatus": "Success",
+    "paidAt": { "$date": "2025-06-18T12:10:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7d000000000000000000e" },
+    "invoiceId": { "$oid": "65e7c0000000000000000107" },
+    "paymentMethod": "Card",
+    "transactionId": "VISA_TRANS_202507071710",
+    "amount": 690000,
+    "type": "Payment",
+    "paymentStatus": "Success",
+    "paidAt": { "$date": "2025-07-07T17:10:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7d000000000000000000f" },
+    "invoiceId": { "$oid": "65e7c0000000000000000108" },
+    "paymentMethod": "Cash",
+    "transactionId": "CASH_202508151015",
+    "amount": 540000,
+    "type": "Deposit",
+    "paymentStatus": "Success",
+    "paidAt": { "$date": "2025-08-15T10:15:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7d0000000000000000010" },
+    "invoiceId": { "$oid": "65e7c0000000000000000109" },
+    "paymentMethod": "Banking",
+    "transactionId": "VCB_TRANS_202509201500",
+    "amount": 980000,
+    "type": "Payment",
+    "paymentStatus": "Success",
+    "paidAt": { "$date": "2025-09-20T15:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7d0000000000000000011" },
+    "invoiceId": { "$oid": "65e7c0000000000000000110" },
+    "paymentMethod": "MoMo",
+    "transactionId": "MOMO_TRANS_202510091340",
+    "amount": 1120000,
+    "type": "Payment",
+    "paymentStatus": "Success",
+    "paidAt": { "$date": "2025-10-09T13:40:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7d0000000000000000012" },
+    "invoiceId": { "$oid": "65e7c0000000000000000111" },
+    "paymentMethod": "Card",
+    "transactionId": "VISA_TRANS_202511261105",
+    "amount": 730000,
+    "type": "Payment",
+    "paymentStatus": "Success",
+    "paidAt": { "$date": "2025-11-26T11:05:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7d0000000000000000013" },
+    "invoiceId": { "$oid": "65e7c0000000000000000112" },
+    "paymentMethod": "Cash",
+    "transactionId": "CASH_202512301830",
+    "amount": 1260000,
+    "type": "Payment",
+    "paymentStatus": "Success",
+    "paidAt": { "$date": "2025-12-30T18:30:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7d0000000000000000014" },
+    "invoiceId": { "$oid": "65e7c0000000000000000113" },
+    "paymentMethod": "Banking",
+    "transactionId": "VCB_TRANS_202601061030",
+    "amount": 640000,
+    "type": "Deposit",
+    "paymentStatus": "Success",
+    "paidAt": { "$date": "2026-01-06T10:30:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7d0000000000000000015" },
+    "invoiceId": { "$oid": "65e7c0000000000000000114" },
+    "paymentMethod": "MoMo",
+    "transactionId": "MOMO_TRANS_202602141555",
+    "amount": 870000,
+    "type": "Payment",
+    "paymentStatus": "Success",
+    "paidAt": { "$date": "2026-02-14T15:55:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7d0000000000000000016" },
+    "invoiceId": { "$oid": "65e7c0000000000000000115" },
+    "paymentMethod": "Card",
+    "transactionId": "VISA_TRANS_202603051025",
+    "amount": 950000,
+    "type": "Payment",
+    "paymentStatus": "Success",
+    "paidAt": { "$date": "2026-03-05T10:25:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7d0000000000000000017" },
+    "invoiceId": { "$oid": "65e7c0000000000000000116" },
+    "paymentMethod": "Banking",
+    "transactionId": "VCB_TRANS_202603230945",
+    "amount": 1180000,
+    "type": "Payment",
+    "paymentStatus": "Success",
+    "paidAt": { "$date": "2026-03-23T09:45:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7d0000000000000000018" },
+    "invoiceId": { "$oid": "65e7c0000000000000000117" },
+    "paymentMethod": "Card",
+    "transactionId": "VISA_FAIL_202602281400",
+    "amount": 500000,
+    "type": "Payment",
+    "paymentStatus": "Failed",
+    "paidAt": { "$date": "2026-02-28T14:00:00.000Z" },
+    "__v": 0
   }
 ]

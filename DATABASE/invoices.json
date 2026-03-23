@@ -68,5 +68,241 @@
     "status": "Voided",
     "createdAt": { "$date": "2026-03-24T07:15:00.000Z" },
     "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7c0000000000000000101" },
+    "bookingId": { "$oid": "65e6f000000000000000001c" },
+    "orderIds": [
+      { "$oid": "65e7a0000000000000000006" }
+    ],
+    "subTotal": 100000,
+    "discount": 0,
+    "totalAmount": 100000,
+    "remainingAmount": 0,
+    "status": "Paid",
+    "createdAt": { "$date": "2025-01-10T03:20:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7c0000000000000000102" },
+    "bookingId": { "$oid": "65e6f000000000000000001d" },
+    "orderIds": [
+      { "$oid": "65e7a0000000000000000007" }
+    ],
+    "subTotal": 280000,
+    "discount": 0,
+    "totalAmount": 280000,
+    "remainingAmount": 0,
+    "status": "Paid",
+    "createdAt": { "$date": "2025-02-14T05:20:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7c0000000000000000103" },
+    "bookingId": { "$oid": "65e6f000000000000000001e" },
+    "orderIds": [
+      { "$oid": "65e7a0000000000000000008" }
+    ],
+    "subTotal": 210000,
+    "discount": 10000,
+    "totalAmount": 200000,
+    "remainingAmount": 50000,
+    "status": "Partially_Paid",
+    "createdAt": { "$date": "2025-03-03T10:20:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7c0000000000000000104" },
+    "bookingId": { "$oid": "65e6f000000000000000001f" },
+    "orderIds": [
+      { "$oid": "65e7a0000000000000000009" }
+    ],
+    "subTotal": 300000,
+    "discount": 0,
+    "totalAmount": 300000,
+    "remainingAmount": 0,
+    "status": "Paid",
+    "createdAt": { "$date": "2025-04-21T06:20:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7c0000000000000000105" },
+    "bookingId": { "$oid": "65e6f0000000000000000020" },
+    "orderIds": [
+      { "$oid": "65e7a000000000000000000a" }
+    ],
+    "subTotal": 260000,
+    "discount": 0,
+    "totalAmount": 260000,
+    "remainingAmount": 0,
+    "status": "Paid",
+    "createdAt": { "$date": "2025-05-08T11:20:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7c0000000000000000106" },
+    "bookingId": { "$oid": "65e6f0000000000000000021" },
+    "orderIds": [
+      { "$oid": "65e7a000000000000000000b" }
+    ],
+    "subTotal": 340000,
+    "discount": 0,
+    "totalAmount": 340000,
+    "remainingAmount": 0,
+    "status": "Paid",
+    "createdAt": { "$date": "2025-06-18T06:20:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7c0000000000000000107" },
+    "bookingId": { "$oid": "65e6f0000000000000000022" },
+    "orderIds": [
+      { "$oid": "65e7a000000000000000000c" }
+    ],
+    "subTotal": 180000,
+    "discount": 180000,
+    "totalAmount": 0,
+    "remainingAmount": 0,
+    "status": "Voided",
+    "createdAt": { "$date": "2025-07-07T12:20:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7c0000000000000000108" },
+    "bookingId": { "$oid": "65e6f0000000000000000023" },
+    "orderIds": [
+      { "$oid": "65e7a000000000000000000d" }
+    ],
+    "subTotal": 240000,
+    "discount": 0,
+    "totalAmount": 240000,
+    "remainingAmount": 0,
+    "status": "Paid",
+    "createdAt": { "$date": "2025-08-15T03:20:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7c0000000000000000109" },
+    "bookingId": { "$oid": "65e6f0000000000000000024" },
+    "orderIds": [
+      { "$oid": "65e7a000000000000000000e" }
+    ],
+    "subTotal": 310000,
+    "discount": 0,
+    "totalAmount": 310000,
+    "remainingAmount": 0,
+    "status": "Paid",
+    "createdAt": { "$date": "2025-09-20T07:20:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7c0000000000000000110" },
+    "bookingId": { "$oid": "65e6f0000000000000000025" },
+    "orderIds": [
+      { "$oid": "65e7a000000000000000000f" }
+    ],
+    "subTotal": 260000,
+    "discount": 0,
+    "totalAmount": 260000,
+    "remainingAmount": 0,
+    "status": "Paid",
+    "createdAt": { "$date": "2025-10-09T09:20:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7c0000000000000000111" },
+    "bookingId": { "$oid": "65e6f0000000000000000026" },
+    "orderIds": [
+      { "$oid": "65e7a0000000000000000010" }
+    ],
+    "subTotal": 350000,
+    "discount": 0,
+    "totalAmount": 350000,
+    "remainingAmount": 0,
+    "status": "Paid",
+    "createdAt": { "$date": "2025-11-26T06:20:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7c0000000000000000112" },
+    "bookingId": { "$oid": "65e6f0000000000000000027" },
+    "orderIds": [
+      { "$oid": "65e7a0000000000000000011" }
+    ],
+    "subTotal": 280000,
+    "discount": 0,
+    "totalAmount": 280000,
+    "remainingAmount": 0,
+    "status": "Paid",
+    "createdAt": { "$date": "2025-12-30T10:20:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7c0000000000000000113" },
+    "bookingId": { "$oid": "65e6f0000000000000000028" },
+    "orderIds": [
+      { "$oid": "65e7a0000000000000000012" }
+    ],
+    "subTotal": 200000,
+    "discount": 0,
+    "totalAmount": 200000,
+    "remainingAmount": 0,
+    "status": "Paid",
+    "createdAt": { "$date": "2026-01-06T05:20:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7c0000000000000000114" },
+    "bookingId": { "$oid": "65e6f0000000000000000029" },
+    "orderIds": [
+      { "$oid": "65e7a0000000000000000013" }
+    ],
+    "subTotal": 230000,
+    "discount": 0,
+    "totalAmount": 230000,
+    "remainingAmount": 0,
+    "status": "Paid",
+    "createdAt": { "$date": "2026-02-14T04:20:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7c0000000000000000115" },
+    "bookingId": { "$oid": "65e6f000000000000000002a" },
+    "orderIds": [
+      { "$oid": "65e7a0000000000000000014" }
+    ],
+    "subTotal": 290000,
+    "discount": 0,
+    "totalAmount": 290000,
+    "remainingAmount": 0,
+    "status": "Paid",
+    "createdAt": { "$date": "2026-03-05T04:20:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7c0000000000000000116" },
+    "bookingId": { "$oid": "65e6f000000000000000002b" },
+    "orderIds": [
+      { "$oid": "65e7a0000000000000000015" }
+    ],
+    "subTotal": 360000,
+    "discount": 0,
+    "totalAmount": 360000,
+    "remainingAmount": 0,
+    "status": "Paid",
+    "createdAt": { "$date": "2026-03-23T05:20:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7c0000000000000000117" },
+    "bookingId": { "$oid": "65e6f0000000000000000029" },
+    "orderIds": [],
+    "subTotal": 230000,
+    "discount": 0,
+    "totalAmount": 230000,
+    "remainingAmount": 230000,
+    "status": "Overdue",
+    "createdAt": { "$date": "2026-02-28T14:10:00.000Z" },
+    "__v": 0
   }
 ]
