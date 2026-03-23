@@ -6,13 +6,8 @@ export default function AdminSidebar({ user, onLogout }) {
   const isAdmin = user?.role === "Admin";
 
   const isActive = (path) => {
-    if (path === "/staff-dashboard" || path === "/admin-dashboard") {
-      return [
-        "/dashboard",
-        "/admin",
-        "/staff-dashboard",
-        "/admin-dashboard",
-      ].includes(location.pathname);
+    if (path === "/staff-dashboard") {
+      return ["/staff-dashboard"].includes(location.pathname);
     }
 
     if (location.pathname.startsWith(path)) {
@@ -33,12 +28,6 @@ export default function AdminSidebar({ user, onLogout }) {
   };
 
   const adminMenuSections = [
-    {
-      title: "TỔNG QUAN",
-      items: [
-        { path: "/admin-dashboard", icon: "bi-grid", label: "Dashboard" },
-      ],
-    },
     {
       title: "QUẢN LÝ NGƯỜI DÙNG",
       items: [

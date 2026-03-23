@@ -6,7 +6,7 @@ export default function AdminToDashboard() {
 
   const targetPath =
     user?.role === "Admin"
-      ? "/admin-dashboard"
+      ? "/admin-dashboard/users"
       : user?.role === "Staff"
         ? "/staff-dashboard"
         : "/customer-dashboard";
