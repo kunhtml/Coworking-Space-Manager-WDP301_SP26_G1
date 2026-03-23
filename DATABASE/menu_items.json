@@ -576,5 +576,56 @@
       "$date": "2026-01-26T16:00:00.000Z"
     },
     "__v": 0
+  },
+  {
+    "_id": {
+      "$oid": "65e6d0000000000000000041"
+    },
+    "name": "Nước suối Lavie 500ml",
+    "categoryId": {
+      "$oid": "65e6c0000000000000000005"
+    },
+    "description": "Nước suối tinh khiết chai nhỏ",
+    "price": 15000,
+    "stockQuantity": 120,
+    "availabilityStatus": "In_Stock",
+    "createdAt": {
+      "$date": "2026-02-05T09:30:00.000Z"
+    },
+    "__v": 0
+  },
+  {
+    "_id": {
+      "$oid": "65e6d0000000000000000042"
+    },
+    "name": "Soda Chanh Muối",
+    "categoryId": {
+      "$oid": "65e6c0000000000000000005"
+    },
+    "description": "Soda mát lạnh với chanh muối",
+    "price": 30000,
+    "stockQuantity": 40,
+    "availabilityStatus": "In_Stock",
+    "createdAt": {
+      "$date": "2026-02-05T10:00:00.000Z"
+    },
+    "__v": 0
+  },
+  {
+    "_id": {
+      "$oid": "65e6d0000000000000000043"
+    },
+    "name": "Combo Nhóm 4 Người",
+    "categoryId": {
+      "$oid": "65e6c0000000000000000006"
+    },
+    "description": "2 cà phê + 2 trà + 2 bánh ngọt",
+    "price": 220000,
+    "stockQuantity": 0,
+    "availabilityStatus": "Out_Of_Stock",
+    "createdAt": {
+      "$date": "2026-02-10T10:00:00.000Z"
+    },
+    "__v": 0
   }
 ]

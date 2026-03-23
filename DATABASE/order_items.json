@@ -61,5 +61,23 @@
     "priceAtOrder": 30000,
     "note": "",
     "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7b0000000000000000008" },
+    "orderId": { "$oid": "65e7a0000000000000000004" },
+    "menuItemId": { "$oid": "65e6d0000000000000000022" },
+    "quantity": 1,
+    "priceAtOrder": 45000,
+    "note": "ít foam",
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7b0000000000000000009" },
+    "orderId": { "$oid": "65e7a0000000000000000004" },
+    "menuItemId": { "$oid": "65e6d0000000000000000036" },
+    "quantity": 1,
+    "priceAtOrder": 55000,
+    "note": "không đường",
+    "__v": 0
   }
 ]

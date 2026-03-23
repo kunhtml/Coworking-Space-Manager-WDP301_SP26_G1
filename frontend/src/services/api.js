@@ -8,6 +8,7 @@ const authHeader = () => {
 export const apiClient = {
   get: async (path) => {
     const res = await fetch(`${BASE_URL}${path}`, {
+      cache: "no-store",
       headers: { ...authHeader() },
     });
     if (!res.ok) throw new Error(await res.text());
@@ -107,6 +108,8 @@ export const getDailyTableUsageApi = ({ year, month } = {}) => {
   const params = new URLSearchParams();
   if (year) params.append("year", year);
   if (month) params.append("month", month);
+  params.append("_v", "2");
+  params.append("_t", Date.now().toString());
   const qs = params.toString();
   return apiClient.get(`/reports/analytics/daily-table-usage${qs ? `?${qs}` : ""}`);
 };
