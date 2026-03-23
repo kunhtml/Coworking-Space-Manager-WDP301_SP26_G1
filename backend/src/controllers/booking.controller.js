@@ -19,30 +19,47 @@ export const createBooking = async (req, res) => {
     } = req.body;
 
     const bookingTableId = tableSourceId || tableId;
-    const bookingDate = arrivalDate || date;
-    const bookingStartTime = arrivalTime || requestStartTime;
+    const bookingDate = date || arrivalDate;
+    const bookingStartTime = requestStartTime || arrivalTime;
+    const bookingEndTime = requestEndTime;
     let bookingDuration = Number(duration);
 
-    if ((!bookingDuration || bookingDuration <= 0) && requestEndTime && bookingStartTime && bookingDate) {
+    if ((!bookingDuration || bookingDuration <= 0) && bookingEndTime && bookingStartTime && bookingDate) {
       const start = new Date(`${bookingDate}T${bookingStartTime}:00`);
-      const end = new Date(`${bookingDate}T${requestEndTime}:00`);
+      const end = new Date(`${bookingDate}T${bookingEndTime}:00`);
       const diffHours = (end.getTime() - start.getTime()) / 3600000;
       if (isFinite(diffHours) && diffHours > 0) {
         bookingDuration = diffHours;
       }
     }
 
-    if (!bookingTableId || !bookingDate || !bookingStartTime || !bookingDuration || bookingDuration <= 0) {
+    if (!bookingTableId || !bookingDate || !bookingStartTime) {
       return res
         .status(400)
         .json({ message: "Vui lòng cung cấp đủ thông tin đặt bàn." });
     }
-    const startTime = new Date(`${arrivalDate}T${arrivalTime}:00`);
+
+    const startTime = new Date(`${bookingDate}T${bookingStartTime}:00`);
     if (!isFinite(startTime.getTime())) {
       return res.status(400).json({ message: "Ngày hoặc giờ không hợp lệ." });
     }
-    const endTime = new Date(startTime.getTime() + Number(duration) * 3600000);
-    const depositAmount = (Number(pricePerHour) || 0) * Number(duration);
+
+    let endTime;
+    if (bookingEndTime) {
+      endTime = new Date(`${bookingDate}T${bookingEndTime}:00`);
+      if (!isFinite(endTime.getTime()) || endTime.getTime() <= startTime.getTime()) {
+        return res.status(400).json({ message: "Giờ kết thúc không hợp lệ." });
+      }
+      bookingDuration = (endTime.getTime() - startTime.getTime()) / 3600000;
+    } else if (bookingDuration && bookingDuration > 0) {
+      endTime = new Date(startTime.getTime() + bookingDuration * 3600000);
+    } else {
+      return res
+        .status(400)
+        .json({ message: "Vui lòng cung cấp thời lượng hoặc giờ kết thúc hợp lệ." });
+    }
+
+    const depositAmount = (Number(pricePerHour) || 0) * bookingDuration;
 
     const count = await Booking.countDocuments();
     const bookingCode = `BK-${String(count + 1).padStart(4, "0")}`;
@@ -106,7 +123,16 @@ export const getMyBookings = async (req, res) => {
 export const updateMyBooking = async (req, res) => {
   try {
     const { id } = req.params;
-    const { guestName, guestPhone, arrivalDate, arrivalTime, duration } = req.body;
+    const {
+      guestName,
+      guestPhone,
+      arrivalDate,
+      arrivalTime,
+      duration,
+      date,
+      startTime: requestStartTime,
+      endTime: requestEndTime,
+    } = req.body;
 
     const booking = await Booking.findById(id);
     if (!booking || booking.userId?.toString() !== req.user.id) {
@@ -119,12 +145,40 @@ export const updateMyBooking = async (req, res) => {
         .json({ message: "Booking đã xác nhận hoặc đã hủy, không thể chỉnh sửa." });
     }
 
-    const nextStart = new Date(`${arrivalDate}T${arrivalTime}:00`);
-    const dur = Number(duration);
-    if (!isFinite(nextStart.getTime()) || !dur || dur <= 0) {
+    const bookingDate = date || arrivalDate;
+    const bookingStartTime = requestStartTime || arrivalTime;
+    const bookingEndTime = requestEndTime;
+    let bookingDuration = Number(duration);
+
+    if ((!bookingDuration || bookingDuration <= 0) && bookingEndTime && bookingDate && bookingStartTime) {
+      const start = new Date(`${bookingDate}T${bookingStartTime}:00`);
+      const end = new Date(`${bookingDate}T${bookingEndTime}:00`);
+      const diffHours = (end.getTime() - start.getTime()) / 3600000;
+      if (isFinite(diffHours) && diffHours > 0) {
+        bookingDuration = diffHours;
+      }
+    }
+
+    if (!bookingDate || !bookingStartTime) {
+      return res.status(400).json({ message: "Vui lòng cung cấp ngày và giờ bắt đầu hợp lệ." });
+    }
+
+    const nextStart = new Date(`${bookingDate}T${bookingStartTime}:00`);
+    if (!isFinite(nextStart.getTime())) {
       return res.status(400).json({ message: "Thông tin ngày giờ hoặc thời lượng không hợp lệ." });
     }
-    const nextEnd = new Date(nextStart.getTime() + dur * 3600000);
+
+    let nextEnd;
+    if (bookingEndTime) {
+      nextEnd = new Date(`${bookingDate}T${bookingEndTime}:00`);
+      if (!isFinite(nextEnd.getTime()) || nextEnd.getTime() <= nextStart.getTime()) {
+        return res.status(400).json({ message: "Giờ kết thúc không hợp lệ." });
+      }
+    } else if (bookingDuration && bookingDuration > 0) {
+      nextEnd = new Date(nextStart.getTime() + bookingDuration * 3600000);
+    } else {
+      return res.status(400).json({ message: "Vui lòng cung cấp thời lượng hoặc giờ kết thúc hợp lệ." });
+    }
 
     const overlapping = await Booking.find({
       _id: { $ne: booking._id },
