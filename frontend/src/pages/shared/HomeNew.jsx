@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
 import {
   Button,
   Card,
@@ -180,7 +181,25 @@ const categories = [
 
 export default function Home() {
   const navigate = useNavigate();
+
+  // Auto-redirect Admin/Staff về dashboard của họ
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("user");
+      if (stored) {
+        const user = JSON.parse(stored);
+        const role = (user?.role || "").toLowerCase();
+        if (role === "admin") navigate("/admin-dashboard/users", { replace: true });
+        else if (role === "staff") navigate("/staff-dashboard", { replace: true });
+
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }, [navigate]);
+
   // const [selectedCategory, setSelectedCategory] = useState("all");
+
 
   // const filteredMenuItems =
   //   selectedCategory === "all"
