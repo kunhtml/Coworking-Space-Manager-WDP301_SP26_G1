@@ -43,10 +43,10 @@ import {
 
 export function meta() {
   return [
-    { title: "–on h‡ng & –?t ch? | Coworking Space" },
+    { title: "ƒê∆°n h√†ng & ƒê·∫∑t ch·ªó | Coworking Space" },
     {
       name: "description",
-      content: "Theo dıi booking, t?o don h‡ng v‡ c?p nh?t don h‡ng cho kh·ch h‡ng.",
+      content: "Theo d√µi booking, t·∫°o ƒë∆°n h√†ng v√† c·∫≠p nh·∫≠t ƒë∆°n h√†ng cho kh√°ch h√†ng.",
     },
   ];
 }
@@ -116,7 +116,7 @@ export default function Dashboard() {
         setActiveOrderKey(String(orderRows[0].id));
       }
     } catch (err) {
-      setError(err.message || "KhÙng th? t?i d? li?u.");
+      setError(err.message || "KhÔøΩng th? t?i d? li?u.");
     } finally {
       setLoading(false);
     }
@@ -314,7 +314,7 @@ export default function Dashboard() {
       setShowOrderModal(false);
       await loadData();
     } catch (err) {
-      setError(err.message || "Luu don h‡ng th?t b?i.");
+      setError(err.message || "Luu don hÔøΩng th?t b?i.");
     } finally {
       setSavingOrder(false);
     }
@@ -332,22 +332,22 @@ export default function Dashboard() {
         <Container>
           <Row className="mb-4 align-items-center">
             <Col>
-              <h2 className="fw-bold mb-1 text-dark">Qu?n l˝ Booking & –on h‡ng</h2>
+              <h2 className="fw-bold mb-1 text-dark">Qu·∫£n l√Ω Booking & ƒê∆°n h√†ng</h2>
               <p className="text-muted mb-0">
-                Xin ch‡o, <span className="fw-medium text-dark">{user?.fullName || user?.email || "Kh·ch"}</span>
+                Xin ch√†o, <span className="fw-medium text-dark">{user?.fullName || user?.email || "Kh√°ch"}</span>
               </p>
             </Col>
           </Row>
 
           <Row className="g-4 mb-4">
             <Col md={4}>
-              <Card className="border-0 shadow-sm rounded-4 h-100"><Card.Body className="p-4"><h6 className="text-muted mb-1">T?ng booking</h6><h3 className="fw-bold mb-0">{loading ? "-" : total}</h3></Card.Body></Card>
+              <Card className="border-0 shadow-sm rounded-4 h-100"><Card.Body className="p-4"><h6 className="text-muted mb-1">T·ªïng booking</h6><h3 className="fw-bold mb-0">{loading ? "-" : total}</h3></Card.Body></Card>
             </Col>
             <Col md={4}>
-              <Card className="border-0 shadow-sm rounded-4 h-100"><Card.Body className="p-4"><h6 className="text-muted mb-1">Ch? thanh to·n</h6><h3 className="fw-bold mb-0">{loading ? "-" : pendingCount}</h3></Card.Body></Card>
+              <Card className="border-0 shadow-sm rounded-4 h-100"><Card.Body className="p-4"><h6 className="text-muted mb-1">Ch·ªù thanh to√°n</h6><h3 className="fw-bold mb-0">{loading ? "-" : pendingCount}</h3></Card.Body></Card>
             </Col>
             <Col md={4}>
-              <Card className="border-0 shadow-sm rounded-4 h-100"><Card.Body className="p-4"><h6 className="text-muted mb-1">–„ ho‡n th‡nh</h6><h3 className="fw-bold mb-0">{loading ? "-" : completedCount}</h3></Card.Body></Card>
+              <Card className="border-0 shadow-sm rounded-4 h-100"><Card.Body className="p-4"><h6 className="text-muted mb-1">ƒê√£ ho√†n th√†nh</h6><h3 className="fw-bold mb-0">{loading ? "-" : completedCount}</h3></Card.Body></Card>
             </Col>
           </Row>
 
@@ -366,7 +366,7 @@ export default function Dashboard() {
               <Row className="g-3 mb-3">
                 <Col md={5}>
                   <Form.Control
-                    placeholder="TÏm theo m„ booking..."
+                    placeholder="T√¨m theo m√£ booking..."
                     value={bookingSearch}
                     onChange={(e) => setBookingSearch(e.target.value)}
                   />
@@ -383,7 +383,7 @@ export default function Dashboard() {
                     value={bookingStatusFilter}
                     onChange={(e) => setBookingStatusFilter(e.target.value)}
                   >
-                    <option value="all">T?t c? tr?ng th·i</option>
+                    <option value="all">T·∫•t c·∫£ tr·∫°ng th√°i</option>
                     {Object.entries(BOOKING_STATUS_MAP).map(([value, cfg]) => (
                       <option key={value} value={value}>{cfg.label}</option>
                     ))}
@@ -408,8 +408,8 @@ export default function Dashboard() {
                 <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>
               ) : filteredBookings.length === 0 ? (
                 <div className="text-center py-5">
-                  <p className="text-muted mb-3">KhÙng tÏm th?y booking ph˘ h?p b? l?c.</p>
-                  <Button as={Link} to="/order-table" variant="primary" className="rounded-pill px-4">–?t ch? ngay</Button>
+                  <p className="text-muted mb-3">Kh√¥ng t√¨m th·∫•y booking ph√π h·ª£p v·ªõi b·ªô l·ªçc.</p>
+                  <Button as={Link} to="/order-table" variant="primary" className="rounded-pill px-4">ƒê·∫∑t ch·ªó ngay</Button>
                 </div>
               ) : (
                 <Accordion activeKey={activeBookingKey} onSelect={(k) => setActiveBookingKey(k)}>
@@ -431,12 +431,12 @@ export default function Dashboard() {
                         </Accordion.Header>
                         <Accordion.Body className="bg-light">
                           <Row className="g-3 mb-3">
-                            <Col md={6}><div className="small text-muted">KhÙng gian</div><div className="fw-semibold">{booking.spaceName}</div></Col>
-                            <Col md={6}><div className="small text-muted">M„ booking</div><div className="fw-semibold">{booking.bookingCode}</div></Col>
-                            <Col md={6}><div className="small text-muted">B?t d?u</div><div className="fw-semibold">{formatDateTime(booking.startTime)}</div></Col>
-                            <Col md={6}><div className="small text-muted">K?t th˙c</div><div className="fw-semibold">{formatDateTime(booking.endTime)}</div></Col>
-                            <Col md={6}><div className="small text-muted">Gi· tr? booking</div><div className="fw-semibold">{fmt(booking.depositAmount)}d</div></Col>
-                            <Col md={6}><div className="small text-muted">Tr?ng th·i</div><div><StatusPill status={booking.status} map={BOOKING_STATUS_MAP} /></div></Col>
+                            <Col md={6}><div className="small text-muted">Kh√¥ng gian</div><div className="fw-semibold">{booking.spaceName}</div></Col>
+                            <Col md={6}><div className="small text-muted">M√£ booking</div><div className="fw-semibold">{booking.bookingCode}</div></Col>
+                            <Col md={6}><div className="small text-muted">B·∫Øt ƒë·∫ßu</div><div className="fw-semibold">{formatDateTime(booking.startTime)}</div></Col>
+                            <Col md={6}><div className="small text-muted">K·∫øt th√∫c</div><div className="fw-semibold">{formatDateTime(booking.endTime)}</div></Col>
+                            <Col md={6}><div className="small text-muted">Gi√° tr·ªã booking</div><div className="fw-semibold">{fmt(booking.depositAmount)}d</div></Col>
+                            <Col md={6}><div className="small text-muted">Tr·∫°ng th√°i</div><div><StatusPill status={booking.status} map={BOOKING_STATUS_MAP} /></div></Col>
                           </Row>
 
                           <div className="d-flex flex-wrap gap-2">
@@ -453,14 +453,14 @@ export default function Dashboard() {
                                 setShowBookingInvoiceModal(true);
                               }}
                             >
-                              <i className="bi bi-receipt me-1"></i>HÛa don
+                              <i className="bi bi-receipt me-1"></i>H√≥a ƒë∆°n
                             </Button>
                             <Button size="sm" variant="primary" onClick={() => openCreateOrder(booking.id)} disabled={booking.status === "Cancelled"}>
-                              <i className="bi bi-receipt me-1"></i>T?o order
+                              <i className="bi bi-receipt me-1"></i>T·∫°o order
                             </Button>
                             {["Pending", "Awaiting_Payment"].includes(booking.status) && (
                               <Button size="sm" variant="success" onClick={() => navigate(`/payment/${booking.id}`)}>
-                                <i className="bi bi-credit-card me-1"></i>Thanh to·n booking
+                                <i className="bi bi-credit-card me-1"></i>Thanh to√°n booking
                               </Button>
                             )}
                           </div>
@@ -489,7 +489,7 @@ export default function Dashboard() {
               <Row className="g-3 mb-3">
                 <Col md={5}>
                   <Form.Control
-                    placeholder="TÏm theo m„ order..."
+                    placeholder="T√¨m theo m√£ order..."
                     value={orderSearch}
                     onChange={(e) => setOrderSearch(e.target.value)}
                   />
@@ -506,7 +506,7 @@ export default function Dashboard() {
                     value={orderStatusFilter}
                     onChange={(e) => setOrderStatusFilter(e.target.value)}
                   >
-                    <option value="all">T?t c? tr?ng th·i</option>
+                    <option value="all">T·∫•t c·∫£ tr·∫°ng th√°i</option>
                     {Object.entries(ORDER_STATUS_MAP).map(([value, cfg]) => (
                       <option key={value} value={value}>{cfg.label}</option>
                     ))}
@@ -530,7 +530,7 @@ export default function Dashboard() {
               {loading ? (
                 <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>
               ) : filteredOrders.length === 0 ? (
-                <Alert variant="secondary" className="mb-0">KhÙng tÏm th?y order ph˘ h?p b? l?c.</Alert>
+                <Alert variant="secondary" className="mb-0">Kh√¥ng t√¨m th·∫•y order ph√π h·ª£p v·ªõi b·ªô l·ªçc.</Alert>
               ) : (
                 <Accordion activeKey={activeOrderKey} onSelect={(k) => setActiveOrderKey(k)}>
                   {pagedOrders.map((order) => {
@@ -552,21 +552,21 @@ export default function Dashboard() {
                         </Accordion.Header>
                         <Accordion.Body className="bg-light">
                           <Row className="g-3 mb-3">
-                            <Col md={6}><div className="small text-muted">M„ order</div><div className="fw-semibold">#{String(order.id).slice(-6).toUpperCase()}</div></Col>
-                            <Col md={6}><div className="small text-muted">Th?i gian t?o</div><div className="fw-semibold">{formatDateTime(order.createdAt)}</div></Col>
-                            <Col md={6}><div className="small text-muted">Booking liÍn quan</div><div className="fw-semibold">{relatedBooking?.bookingCode || "--"}</div></Col>
-                            <Col md={6}><div className="small text-muted">KhÙng gian</div><div className="fw-semibold">{relatedBooking?.spaceName || "--"}</div></Col>
+                            <Col md={6}><div className="small text-muted">M√£ order</div><div className="fw-semibold">#{String(order.id).slice(-6).toUpperCase()}</div></Col>
+                            <Col md={6}><div className="small text-muted">Th·ªùi gian t·∫°o</div><div className="fw-semibold">{formatDateTime(order.createdAt)}</div></Col>
+                            <Col md={6}><div className="small text-muted">Booking li√™n quan</div><div className="fw-semibold">{relatedBooking?.bookingCode || "--"}</div></Col>
+                            <Col md={6}><div className="small text-muted">Kh√¥ng gian</div><div className="fw-semibold">{relatedBooking?.spaceName || "--"}</div></Col>
                           </Row>
 
                           <div className="table-responsive mb-3">
                             <table className="table table-sm align-middle mb-0">
                               <thead>
                                 <tr>
-                                  <th>MÛn</th>
+                                  <th>M√≥n</th>
                                   <th>SL</th>
-                                  <th>–on gi·</th>
-                                  <th>Ghi ch˙</th>
-                                  <th className="text-end">Th‡nh ti?n</th>
+                                  <th>ƒê∆°n gi√°</th>
+                                  <th>Ghi ch√∫</th>
+                                  <th className="text-end">Th√†nh ti·ªÅn</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -585,7 +585,7 @@ export default function Dashboard() {
 
                           {canEditOrder(order.status) && (
                             <Button size="sm" variant="outline-primary" onClick={() => openEditOrder(order)}>
-                              <i className="bi bi-pencil-square me-1"></i>Edit order
+                              <i className="bi bi-pencil-square me-1"></i>S·ª≠a ho√° ƒë∆°n
                             </Button>
                           )}
                           <Button
@@ -596,7 +596,7 @@ export default function Dashboard() {
                               setShowInvoiceModal(true);
                             }}
                           >
-                            <i className="bi bi-receipt me-1"></i>HÛa don
+                            <i className="bi bi-receipt me-1"></i>H√≥a ƒë∆°n
                           </Button>
                         </Accordion.Body>
                       </Accordion.Item>
@@ -619,19 +619,19 @@ export default function Dashboard() {
 
       <Modal show={showBookingModal} onHide={() => setShowBookingModal(false)} centered>
         <Form onSubmit={submitBookingUpdate}>
-          <Modal.Header closeButton><Modal.Title>Ch?nh s?a booking</Modal.Title></Modal.Header>
+          <Modal.Header closeButton><Modal.Title>Ch·ªânh s·ª≠a booking</Modal.Title></Modal.Header>
           <Modal.Body>
             <Row className="g-3">
-              <Col md={6}><Form.Label>H? tÍn</Form.Label><Form.Control value={bookingForm.guestName} onChange={(e) => setBookingForm((p) => ({ ...p, guestName: e.target.value }))} required /></Col>
-              <Col md={6}><Form.Label>S? di?n tho?i</Form.Label><Form.Control value={bookingForm.guestPhone} onChange={(e) => setBookingForm((p) => ({ ...p, guestPhone: e.target.value }))} required /></Col>
-              <Col md={6}><Form.Label>Ng‡y</Form.Label><Form.Control type="date" value={bookingForm.arrivalDate} onChange={(e) => setBookingForm((p) => ({ ...p, arrivalDate: e.target.value }))} required /></Col>
-              <Col md={6}><Form.Label>Gi?</Form.Label><Form.Control type="time" value={bookingForm.arrivalTime} onChange={(e) => setBookingForm((p) => ({ ...p, arrivalTime: e.target.value }))} required /></Col>
-              <Col md={6}><Form.Label>Th?i lu?ng (gi?)</Form.Label><Form.Control type="number" min={1} step={1} value={bookingForm.duration} onChange={(e) => setBookingForm((p) => ({ ...p, duration: e.target.value }))} required /></Col>
+              <Col md={6}><Form.Label>H·ªç t√™n</Form.Label><Form.Control value={bookingForm.guestName} onChange={(e) => setBookingForm((p) => ({ ...p, guestName: e.target.value }))} required /></Col>
+              <Col md={6}><Form.Label>S·ªë ƒëi·ªán tho·∫°i</Form.Label><Form.Control value={bookingForm.guestPhone} onChange={(e) => setBookingForm((p) => ({ ...p, guestPhone: e.target.value }))} required /></Col>
+              <Col md={6}><Form.Label>Ng√†y</Form.Label><Form.Control type="date" value={bookingForm.arrivalDate} onChange={(e) => setBookingForm((p) => ({ ...p, arrivalDate: e.target.value }))} required /></Col>
+              <Col md={6}><Form.Label>Gi·ªù</Form.Label><Form.Control type="time" value={bookingForm.arrivalTime} onChange={(e) => setBookingForm((p) => ({ ...p, arrivalTime: e.target.value }))} required /></Col>
+              <Col md={6}><Form.Label>Th·ªùi l∆∞·ª£ng (gi·ªù)</Form.Label><Form.Control type="number" min={1} step={1} value={bookingForm.duration} onChange={(e) => setBookingForm((p) => ({ ...p, duration: e.target.value }))} required /></Col>
             </Row>
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={() => setShowBookingModal(false)}>H?y</Button>
-            <Button type="submit" variant="primary" disabled={savingBooking}>{savingBooking ? "–ang luu..." : "Luu booking"}</Button>
+            <Button type="submit" variant="primary" disabled={savingBooking}>{savingBooking ? "ÔøΩang luu..." : "Luu booking"}</Button>
           </Modal.Footer>
         </Form>
       </Modal>
@@ -639,25 +639,25 @@ export default function Dashboard() {
       <Modal show={showOrderModal} onHide={() => setShowOrderModal(false)} size="lg" centered>
         <Form onSubmit={submitOrder}>
           <Modal.Header closeButton>
-            <Modal.Title>{orderMode === "create" ? "T?o don h‡ng" : "C?p nh?t don h‡ng"}</Modal.Title>
+            <Modal.Title>{orderMode === "create" ? "T?o don hÔøΩng" : "C?p nh?t don hÔøΩng"}</Modal.Title>
           </Modal.Header>
           <Modal.Body>
             <div className="d-flex justify-content-between align-items-center mb-3">
               <small className="text-muted">Booking: {targetBookingId ? String(targetBookingId).slice(-6).toUpperCase() : "--"}</small>
               <Button size="sm" variant="outline-primary" onClick={addOrderLine} type="button">
-                <i className="bi bi-plus-lg me-1"></i>ThÍm mÛn
+                <i className="bi bi-plus-lg me-1"></i>Th√™m m√≥n
               </Button>
             </div>
 
             <Row className="g-2 fw-semibold text-muted small mb-2 px-1">
-              <Col md={5}>MÛn</Col><Col md={2}>S? lu?ng</Col><Col md={4}>Ghi ch˙</Col><Col md={1}></Col>
+              <Col md={5}>M√≥n</Col><Col md={2}>S·ªë l∆∞·ª£ng</Col><Col md={4}>Ghi ch√∫</Col><Col md={1}></Col>
             </Row>
 
             {orderLines.map((line, idx) => (
               <Row className="g-2 mb-2" key={`${idx}-${line.menuItemId}`}>
                 <Col md={5}>
                   <Form.Select value={line.menuItemId} onChange={(e) => updateOrderLine(idx, "menuItemId", e.target.value)} required>
-                    <option value="">Ch?n mÛn...</option>
+                    <option value="">Ch?n mÔøΩn...</option>
                     {menuItems.map((m) => (
                       <option key={m._id} value={m._id}>{m.name} - {fmt(m.price)}d</option>
                     ))}
@@ -667,7 +667,7 @@ export default function Dashboard() {
                   <Form.Control type="number" min={1} value={line.quantity} onChange={(e) => updateOrderLine(idx, "quantity", e.target.value)} required />
                 </Col>
                 <Col md={4}>
-                  <Form.Control value={line.note} onChange={(e) => updateOrderLine(idx, "note", e.target.value)} placeholder="Ghi ch˙" />
+                  <Form.Control value={line.note} onChange={(e) => updateOrderLine(idx, "note", e.target.value)} placeholder="Ghi ch√∫" />
                 </Col>
                 <Col md={1} className="d-grid">
                   <Button type="button" variant="outline-danger" onClick={() => removeOrderLine(idx)}>
@@ -678,8 +678,8 @@ export default function Dashboard() {
             ))}
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={() => setShowOrderModal(false)}>H?y</Button>
-            <Button type="submit" variant="primary" disabled={savingOrder}>{savingOrder ? "–ang luu..." : "Luu don h‡ng"}</Button>
+            <Button variant="secondary" onClick={() => setShowOrderModal(false)}>H·ªßy</Button>
+            <Button type="submit" variant="primary" disabled={savingOrder}>{savingOrder ? "ƒêang l∆∞u..." : "L∆∞u ƒë∆°n h√†ng"}</Button>
           </Modal.Footer>
         </Form>
       </Modal>
@@ -696,37 +696,37 @@ export default function Dashboard() {
         <Modal.Body className="p-4">
           <div className="border rounded-4 p-4">
             <h3 className="fw-bold mb-0">Coworking Space</h3>
-            <div className="text-secondary fw-semibold">H”A –ON BOOKING</div>
+            <div className="text-secondary fw-semibold">HO√Å ƒê∆†N BOOKING</div>
             <hr />
-            <div className="fw-bold mb-2">TH‘NG TIN BOOKING</div>
+            <div className="fw-bold mb-2">TH√îNG TIN BOOKING</div>
             <div className="d-flex justify-content-between">
-              <span>M„ booking</span>
+              <span>M√£ booking</span>
               <strong>{invoiceBooking?.bookingCode || "--"}</strong>
             </div>
             <div className="d-flex justify-content-between">
-              <span>KhÙng gian</span>
+              <span>Kh√¥ng gian</span>
               <strong>{invoiceBooking?.spaceName || "--"}</strong>
             </div>
             <div className="d-flex justify-content-between">
-              <span>B?t d?u</span>
+              <span>B·∫Øt ƒë·∫ßu</span>
               <strong>{formatDateTime(invoiceBooking?.startTime)}</strong>
             </div>
             <div className="d-flex justify-content-between">
-              <span>K?t th˙c</span>
+              <span>K·∫øt th√∫c</span>
               <strong>{formatDateTime(invoiceBooking?.endTime)}</strong>
             </div>
             <div className="d-flex justify-content-between">
-              <span>Tr?ng th·i</span>
+              <span>Tr·∫°ng th√°i</span>
               <strong>{BOOKING_STATUS_MAP[invoiceBooking?.status]?.label || invoiceBooking?.status || "--"}</strong>
             </div>
             <div className="d-flex justify-content-between">
-              <span>S? order liÍn quan</span>
+              <span>S·ªë order li√™n quan</span>
               <strong>{orderCountByBooking.get(String(invoiceBooking?.id || "")) || 0}</strong>
             </div>
 
             <hr />
             <div className="d-flex justify-content-between align-items-center">
-              <h5 className="mb-0 text-secondary">T?NG BOOKING</h5>
+              <h5 className="mb-0 text-secondary">T·ªïNG BOOKING</h5>
               <h3 className="text-primary fw-bold mb-0">
                 {fmt(invoiceBooking?.depositAmount)}d
               </h3>
@@ -742,10 +742,10 @@ export default function Dashboard() {
               setInvoiceBooking(null);
             }}
           >
-            –Ûng
+            ƒê√≥ng
           </Button>
           <Button className="w-100" variant="primary" onClick={() => window.print()}>
-            <i className="bi bi-printer me-2"></i>In hÛa don booking
+            <i className="bi bi-printer me-2"></i>In ho√° ƒë∆°n booking
           </Button>
         </Modal.Footer>
       </Modal>
@@ -762,29 +762,29 @@ export default function Dashboard() {
         <Modal.Body className="p-4">
           <div className="border rounded-4 p-4">
             <h3 className="fw-bold mb-0">Coworking Space</h3>
-            <div className="text-secondary fw-semibold">H”A –ON –I?N T?</div>
+            <div className="text-secondary fw-semibold">HO√Å ƒê∆†N ƒê·∫∂T H√ÄNG</div>
             <hr />
-            <div className="fw-bold mb-2">TH‘NG TIN –ON H¿NG</div>
+            <div className="fw-bold mb-2">TH√îNG TIN ƒê·∫∂T H√ÄNG</div>
             <div className="d-flex justify-content-between">
-              <span>M„ don</span>
+              <span>M√£ ƒë∆°n</span>
               <strong>
                 #{String(invoiceOrder?.order?.id || "").slice(-6).toUpperCase()}
               </strong>
             </div>
             <div className="d-flex justify-content-between">
-              <span>Ng‡y t?o</span>
+              <span>Ng√†y t·∫°o</span>
               <strong>{formatDateTime(invoiceOrder?.order?.createdAt)}</strong>
             </div>
             <div className="d-flex justify-content-between">
-              <span>M„ booking</span>
+              <span>M√£ booking</span>
               <strong>{invoiceOrder?.relatedBooking?.bookingCode || "--"}</strong>
             </div>
             <div className="d-flex justify-content-between">
-              <span>KhÙng gian</span>
+              <span>Kh√¥ng gian</span>
               <strong>{invoiceOrder?.relatedBooking?.spaceName || "--"}</strong>
             </div>
 
-            <div className="fw-bold mt-3 mb-2">CHI TI?T M”N</div>
+            <div className="fw-bold mt-3 mb-2">CHI TI·∫æT M√ìN</div>
             {(invoiceOrder?.order?.items || []).map((item) => (
               <div
                 key={item.id}
@@ -799,7 +799,7 @@ export default function Dashboard() {
 
             <hr />
             <div className="d-flex justify-content-between align-items-center">
-              <h5 className="mb-0 text-secondary">T?NG C?NG</h5>
+              <h5 className="mb-0 text-secondary">T·ªîNG C·ªòNG</h5>
               <h3 className="text-primary fw-bold mb-0">
                 {fmt(invoiceOrder?.order?.totalAmount)}d
               </h3>
@@ -815,10 +815,10 @@ export default function Dashboard() {
               setInvoiceOrder(null);
             }}
           >
-            –Ûng
+            ƒê√≥ng
           </Button>
           <Button className="w-100" variant="primary" onClick={() => window.print()}>
-            <i className="bi bi-printer me-2"></i>In hÛa don
+            <i className="bi bi-printer me-2"></i>In ho√° ƒë∆°n
           </Button>
         </Modal.Footer>
       </Modal>
