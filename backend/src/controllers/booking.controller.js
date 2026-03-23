@@ -49,12 +49,12 @@ export const createBooking = async (req, res) => {
         .status(400)
         .json({ message: "Vui lòng cung cấp đủ thông tin đặt bàn." });
     }
-    const startTime = new Date(`${arrivalDate}T${arrivalTime}:00`);
+    const startTime = new Date(`${bookingDate}T${bookingStartTime}:00`);
     if (!isFinite(startTime.getTime())) {
       return res.status(400).json({ message: "Ngày hoặc giờ không hợp lệ." });
     }
-    const endTime = new Date(startTime.getTime() + Number(duration) * 3600000);
-    const depositAmount = (Number(pricePerHour) || 0) * Number(duration);
+    const endTime = new Date(startTime.getTime() + bookingDuration * 3600000);
+    const depositAmount = Math.round((Number(pricePerHour) || 0) * bookingDuration);
 
     const count = await Booking.countDocuments();
     const bookingCode = `BK-${String(count + 1).padStart(4, "0")}`;
@@ -139,25 +139,7 @@ export const updateMyBooking = async (req, res) => {
         .status(400)
         .json({ message: "Thông tin ngày giờ hoặc thời lượng không hợp lệ." });
     }
-
-    let nextEnd;
-    if (bookingEndTime) {
-      nextEnd = new Date(`${bookingDate}T${bookingEndTime}:00`);
-      if (
-        !isFinite(nextEnd.getTime()) ||
-        nextEnd.getTime() <= nextStart.getTime()
-      ) {
-        return res.status(400).json({ message: "Giờ kết thúc không hợp lệ." });
-      }
-    } else if (bookingDuration && bookingDuration > 0) {
-      nextEnd = new Date(nextStart.getTime() + bookingDuration * 3600000);
-    } else {
-      return res
-        .status(400)
-        .json({
-          message: "Vui lòng cung cấp thời lượng hoặc giờ kết thúc hợp lệ.",
-        });
-    }
+    const nextEnd = new Date(nextStart.getTime() + dur * 3600000);
 
     const overlapping = await Booking.find({
       _id: { $ne: booking._id },

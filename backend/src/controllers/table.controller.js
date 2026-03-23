@@ -38,6 +38,14 @@ export const getAvailableTables = async (req, res) => {
       tableType,
     } = req.body;
 
+    console.log("getAvailableTables request:", {
+      date: date || arrivalDate,
+      startTime: requestStartTime || arrivalTime,
+      endTime: requestEndTime,
+      duration,
+      tableType,
+    });
+
     const requestedDate = arrivalDate || date;
     const requestedStartTime = arrivalTime || requestStartTime;
     let requestedDuration = Number(duration);
@@ -59,16 +67,35 @@ export const getAvailableTables = async (req, res) => {
         requestedDuration <= 0) &&
       requestEndTime
     ) {
-      const start = new Date(`${requestedDate}T${requestedStartTime}:00`);
-      const end = new Date(`${requestedDate}T${requestEndTime}:00`);
+      const startStr = `${requestedDate}T${requestedStartTime}:00`;
+      const endStr = `${requestedDate}T${requestEndTime}:00`;
+      console.log("Parsing dates:", { startStr, endStr });
+      
+      const start = new Date(startStr);
+      const end = new Date(endStr);
+      
+      console.log("Parsed dates:", { 
+        start: start.toString(), 
+        end: end.toString(),
+        startTime: start.getTime(),
+        endTime: end.getTime(),
+        isStartValid: isFinite(start.getTime()),
+        isEndValid: isFinite(end.getTime())
+      });
+      
       if (!isFinite(start.getTime()) || !isFinite(end.getTime())) {
+        console.error("Invalid date/time format");
         return res
           .status(400)
           .json({ message: "Định dạng ngày hoặc giờ không hợp lệ." });
       }
       const diffHours = (end.getTime() - start.getTime()) / 3600000;
+      console.log("Duration calculated:", { diffHours });
+      
       if (isFinite(diffHours) && diffHours > 0) {
         requestedDuration = diffHours;
+      } else {
+        console.error("Invalid duration:", diffHours);
       }
     }
 

@@ -85,18 +85,10 @@ export const getMyOrders = async (req, res) => {
 export const createOrder = async (req, res) => {
   try {
     const { bookingId, items } = req.body;
-<<<<<<< HEAD
     if (!bookingId || !Array.isArray(items) || items.length === 0) {
       return res
         .status(400)
         .json({ message: "Vui lòng chọn booking và ít nhất 1 món." });
-=======
-    if (!bookingId) {
-      return res.status(400).json({ message: "bookingId là bắt buộc." });
-    }
-    if (!Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ message: "Vui lòng chọn ít nhất 1 món." });
->>>>>>> 765f72acc4f1bd1779ab2e3d1c8dfee0bd49f3d2
     }
 
     const booking = await Booking.findById(bookingId).lean();
@@ -201,18 +193,12 @@ export const updateMyOrder = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy đơn hàng." });
     }
 
-<<<<<<< HEAD
     if (["Confirmed", "Cancelled"].includes(order.status)) {
       return res
         .status(400)
         .json({
           message: "Đơn hàng đã xác nhận hoặc đã hủy, không thể chỉnh sửa.",
         });
-=======
-    const currentStatus = normalizeOrderStatus(order.status);
-    if (currentStatus !== "Pending") {
-      return res.status(400).json({ message: "Chỉ có thể chỉnh sửa đơn hàng ở trạng thái Pending." });
->>>>>>> 765f72acc4f1bd1779ab2e3d1c8dfee0bd49f3d2
     }
 
     const menuIds = [
