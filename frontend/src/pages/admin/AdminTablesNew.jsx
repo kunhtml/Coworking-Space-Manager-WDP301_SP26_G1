@@ -26,7 +26,6 @@ export default function TableManagementPage() {
   const { user } = useAuth();
 
   const [tables, setTables] = useState([]);
-  const [tableTypes, setTableTypes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -39,7 +38,6 @@ export default function TableManagementPage() {
   // Form state
   const [formData, setFormData] = useState({
     name: "",
-    typeId: "",
     capacity: "",
     pricePerHour: "",
     location: "",
@@ -49,6 +47,10 @@ export default function TableManagementPage() {
   const [editingId, setEditingId] = useState(null);
   const [deletingTable, setDeletingTable] = useState(null);
 
+  // Validation error states
+  const [capacityError, setCapacityError] = useState("");
+  const [priceError, setPriceError] = useState("");
+
   useEffect(() => {
     loadData();
   }, []);
@@ -56,12 +58,8 @@ export default function TableManagementPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [tablesData, typesData] = await Promise.all([
-        api.get("/tables"),
-        api.get("/table-types"),
-      ]);
+      const tablesData = await api.get("/tables");
       setTables(tablesData);
-      setTableTypes(typesData);
     } catch (err) {
       setError(err.message || "Lỗi khi tải dữ liệu");
     } finally {
@@ -72,7 +70,6 @@ export default function TableManagementPage() {
   const resetForm = () => {
     setFormData({
       name: "",
-      typeId: "",
       capacity: "",
       pricePerHour: "",
       location: "",
@@ -80,6 +77,8 @@ export default function TableManagementPage() {
       status: "Available",
     });
     setEditingId(null);
+    setCapacityError("");
+    setPriceError("");
   };
 
   const openAdd = () => {
@@ -105,7 +104,6 @@ export default function TableManagementPage() {
   const openEdit = (table) => {
     setFormData({
       name: table.name,
-      typeId: table.typeId?._id || "",
       capacity: table.capacity || "",
       pricePerHour: table.pricePerHour || "",
       location: table.location || "",
@@ -296,7 +294,6 @@ export default function TableManagementPage() {
                 <thead className="table-light">
                   <tr>
                     <th className="px-4 py-3">Tên bàn</th>
-                    <th className="px-4 py-3">Loại</th>
                     <th className="px-4 py-3">Sức chứa</th>
                     <th className="px-4 py-3">Giá/giờ</th>
                     <th className="px-4 py-3">Vị trí</th>
@@ -310,13 +307,6 @@ export default function TableManagementPage() {
                     return (
                       <tr key={table._id}>
                         <td className="px-4 py-3 fw-medium">{table.name}</td>
-                        <td className="px-4 py-3">
-                          {table.typeId ? (
-                            <Badge bg="secondary">{table.typeId.name}</Badge>
-                          ) : (
-                            "—"
-                          )}
-                        </td>
                         <td className="px-4 py-3">{table.capacity} người</td>
                         <td className="px-4 py-3 fw-bold text-primary">
                           {formatPrice(table.pricePerHour)}/h
@@ -386,34 +376,36 @@ export default function TableManagementPage() {
                 </Col>
                 <Col md={6}>
                   <Form.Group>
-                    <Form.Label>Loại bàn</Form.Label>
-                    <Form.Select
-                      value={formData.typeId}
-                      onChange={(e) =>
-                        setFormData({ ...formData, typeId: e.target.value })
-                      }
-                    >
-                      <option value="">-- Chọn loại --</option>
-                      {tableTypes.map((type) => (
-                        <option key={type._id} value={type._id}>
-                          {type.name}
-                        </option>
-                      ))}
-                    </Form.Select>
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group>
                     <Form.Label>Sức chứa *</Form.Label>
                     <Form.Control
                       type="number"
                       min="1"
+                      step="1"
                       value={formData.capacity}
-                      onChange={(e) =>
-                        setFormData({ ...formData, capacity: e.target.value })
-                      }
+                      isInvalid={!!capacityError}
+                      onKeyDown={(e) => {
+                        if (['-', 'e', 'E', '+', '.'].includes(e.key)) {
+                          e.preventDefault();
+                          setCapacityError("Sức chứa phải là số nguyên dương");
+                        }
+                      }}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          setFormData({ ...formData, capacity: value });
+                          setCapacityError("");
+                        } else if (Number(value) >= 1 && Number.isInteger(Number(value))) {
+                          setFormData({ ...formData, capacity: value });
+                          setCapacityError("");
+                        } else {
+                          setCapacityError("Sức chứa phải là số nguyên dương (≥ 1)");
+                        }
+                      }}
                       required
                     />
+                    <Form.Control.Feedback type="invalid">
+                      {capacityError}
+                    </Form.Control.Feedback>
                   </Form.Group>
                 </Col>
                 <Col md={6}>
@@ -422,18 +414,35 @@ export default function TableManagementPage() {
                     <Form.Control
                       type="number"
                       min="0"
+                      step="1000"
                       value={formData.pricePerHour}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          pricePerHour: e.target.value,
-                        })
-                      }
+                      isInvalid={!!priceError}
+                      onKeyDown={(e) => {
+                        if (['-', 'e', 'E', '+'].includes(e.key)) {
+                          e.preventDefault();
+                          setPriceError("Giá không được âm");
+                        }
+                      }}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          setFormData({ ...formData, pricePerHour: value });
+                          setPriceError("");
+                        } else if (Number(value) >= 0) {
+                          setFormData({ ...formData, pricePerHour: value });
+                          setPriceError("");
+                        } else {
+                          setPriceError("Giá phải là số không âm (≥ 0)");
+                        }
+                      }}
                       required
                     />
+                    <Form.Control.Feedback type="invalid">
+                      {priceError}
+                    </Form.Control.Feedback>
                   </Form.Group>
                 </Col>
-                <Col md={12}>
+                <Col md={6}>
                   <Form.Group>
                     <Form.Label>Vị trí</Form.Label>
                     <Form.Control
@@ -509,34 +518,36 @@ export default function TableManagementPage() {
                 </Col>
                 <Col md={6}>
                   <Form.Group>
-                    <Form.Label>Loại bàn</Form.Label>
-                    <Form.Select
-                      value={formData.typeId}
-                      onChange={(e) =>
-                        setFormData({ ...formData, typeId: e.target.value })
-                      }
-                    >
-                      <option value="">-- Chọn loại --</option>
-                      {tableTypes.map((type) => (
-                        <option key={type._id} value={type._id}>
-                          {type.name}
-                        </option>
-                      ))}
-                    </Form.Select>
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group>
                     <Form.Label>Sức chứa *</Form.Label>
                     <Form.Control
                       type="number"
                       min="1"
+                      step="1"
                       value={formData.capacity}
-                      onChange={(e) =>
-                        setFormData({ ...formData, capacity: e.target.value })
-                      }
+                      isInvalid={!!capacityError}
+                      onKeyDown={(e) => {
+                        if (['-', 'e', 'E', '+', '.'].includes(e.key)) {
+                          e.preventDefault();
+                          setCapacityError("Sức chứa phải là số nguyên dương");
+                        }
+                      }}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          setFormData({ ...formData, capacity: value });
+                          setCapacityError("");
+                        } else if (Number(value) >= 1 && Number.isInteger(Number(value))) {
+                          setFormData({ ...formData, capacity: value });
+                          setCapacityError("");
+                        } else {
+                          setCapacityError("Sức chứa phải là số nguyên dương (≥ 1)");
+                        }
+                      }}
                       required
                     />
+                    <Form.Control.Feedback type="invalid">
+                      {capacityError}
+                    </Form.Control.Feedback>
                   </Form.Group>
                 </Col>
                 <Col md={6}>
@@ -545,18 +556,47 @@ export default function TableManagementPage() {
                     <Form.Control
                       type="number"
                       min="0"
+                      step="1000"
                       value={formData.pricePerHour}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          pricePerHour: e.target.value,
-                        })
-                      }
+                      isInvalid={!!priceError}
+                      onKeyDown={(e) => {
+                        if (['-', 'e', 'E', '+'].includes(e.key)) {
+                          e.preventDefault();
+                          setPriceError("Giá không được âm");
+                        }
+                      }}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          setFormData({ ...formData, pricePerHour: value });
+                          setPriceError("");
+                        } else if (Number(value) >= 0) {
+                          setFormData({ ...formData, pricePerHour: value });
+                          setPriceError("");
+                        } else {
+                          setPriceError("Giá phải là số không âm (≥ 0)");
+                        }
+                      }}
                       required
                     />
+                    <Form.Control.Feedback type="invalid">
+                      {priceError}
+                    </Form.Control.Feedback>
                   </Form.Group>
                 </Col>
                 <Col md={6}>
+                  <Form.Group>
+                    <Form.Label>Vị trí</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={formData.location}
+                      onChange={(e) =>
+                        setFormData({ ...formData, location: e.target.value })
+                      }
+                    />
+                  </Form.Group>
+                </Col>
+                <Col md={12}>
                   <Form.Group>
                     <Form.Label>Trạng thái</Form.Label>
                     <Form.Select
@@ -570,18 +610,6 @@ export default function TableManagementPage() {
                       <option value="Maintenance">Bảo trì</option>
                       <option value="Reserved">Đã đặt</option>
                     </Form.Select>
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group>
-                    <Form.Label>Vị trí</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={formData.location}
-                      onChange={(e) =>
-                        setFormData({ ...formData, location: e.target.value })
-                      }
-                    />
                   </Form.Group>
                 </Col>
                 <Col md={12}>

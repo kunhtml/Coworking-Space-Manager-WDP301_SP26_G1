@@ -6,16 +6,20 @@ export const getTables = async (req, res) => {
     const tables = await Table.find().sort({ name: 1 }).lean();
     res.json(
       tables.map((t) => ({
+        _id: t._id.toString(),
         sourceId: t._id.toString(),
         name: t.name,
         tableType: t.tableType,
         capacity: t.capacity,
         status: t.status,
+        location: t.location || "",
+        description: t.description || "",
         pricePerHour: t.pricePerHour || 0,
         pricePerDay: t.pricePerDay || 0,
       })),
     );
   } catch (err) {
+    console.error("getTables error:", err);
     res.status(500).json({ message: "Lỗi server." });
   }
 };
@@ -105,20 +109,22 @@ export const getAvailableTables = async (req, res) => {
 
 export const createTable = async (req, res) => {
   try {
-    const { name, tableType, capacity, status, pricePerHour, pricePerDay } =
+    const { name, tableType, capacity, status, pricePerHour, pricePerDay, location, description } =
       req.body;
-    if (!name || !tableType || !capacity) {
+    if (!name || !capacity) {
       return res
         .status(400)
-        .json({ message: "Vui lòng cung cấp tên, loại và sức chứa." });
+        .json({ message: "Vui lòng cung cấp tên và sức chứa." });
     }
     const table = await Table.create({
       name,
-      tableType,
+      tableType: tableType || "",
       capacity,
       status: status || "Available",
       pricePerHour: pricePerHour || 0,
       pricePerDay: pricePerDay || 0,
+      location: location || "",
+      description: description || "",
     });
     res.status(201).json({ message: "Thêm bàn thành công!", table });
   } catch (err) {
@@ -131,11 +137,11 @@ export const createTable = async (req, res) => {
 
 export const updateTable = async (req, res) => {
   try {
-    const { name, tableType, capacity, status, pricePerHour, pricePerDay } =
+    const { name, tableType, capacity, status, pricePerHour, pricePerDay, location, description } =
       req.body;
     const table = await Table.findByIdAndUpdate(
       req.params.id,
-      { name, tableType, capacity, status, pricePerHour, pricePerDay },
+      { name, tableType, capacity, status, pricePerHour, pricePerDay, location, description },
       { new: true, runValidators: true },
     );
     if (!table) return res.status(404).json({ message: "Không tìm thấy bàn." });
