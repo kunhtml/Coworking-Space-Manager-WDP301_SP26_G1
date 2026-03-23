@@ -104,6 +104,13 @@ export const getHourlyOccupancyApi = ({ date, period } = {}) => {
   return apiClient.get(`/reports/analytics/hourly${qs ? `?${qs}` : ""}`);
 };
 
+export const getReportAnalyticsApi = ({ timeFilter } = {}) => {
+  const params = new URLSearchParams();
+  if (timeFilter) params.append("timeFilter", timeFilter);
+  const qs = params.toString();
+  return apiClient.get(`/reports/analytics${qs ? `?${qs}` : ""}`);
+};
+
 export const getDailyTableUsageApi = ({ year, month } = {}) => {
   const params = new URLSearchParams();
   if (year) params.append("year", year);
