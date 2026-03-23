@@ -256,6 +256,7 @@ export const getAllBookings = async (req, res) => {
         id: b._id,
         bookingCode: b.bookingCode || b._id.toString().slice(-6).toUpperCase(),
         spaceName: table?.name || "Không xác định",
+        tableStatus: table?.status || "Unknown",
         customerName: b.guestInfo?.name || user?.fullName || "Không xác định",
         customerPhone: b.guestInfo?.phone || user?.phone || "",
         startTime: b.startTime,

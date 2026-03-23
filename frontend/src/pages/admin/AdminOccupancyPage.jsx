@@ -73,6 +73,7 @@ export default function AdminOccupancyPage() {
             name: tableName,
             capacity: null,
             location: "",
+            status: row.tableStatus || "Unknown",
             bookings: [],
           });
         }
@@ -176,6 +177,39 @@ export default function AdminOccupancyPage() {
       Awaiting_Payment: { label: "Chờ thanh toán", bg: "warning" },
     };
     return map[status] || { label: status || "Không xác định", bg: "secondary" };
+  };
+
+  const getTableStatusInfo = (status, bookings = []) => {
+    const map = {
+      Available: { label: "Có sẵn", bg: "success" },
+      Occupied: { label: "Đang có khách", bg: "warning" },
+      Maintenance: { label: "Bảo trì", bg: "secondary" },
+      Reserved: { label: "Đã đặt trước", bg: "info" },
+      Unknown: { label: "Chưa rõ", bg: "dark" },
+    };
+
+    if (!status || status === "Unknown") {
+      const statuses = new Set((bookings || []).map((b) => b.status));
+      if (statuses.has("In_Use") || statuses.has("CheckedIn")) {
+        return { label: "Đang có khách", bg: "warning" };
+      }
+      if (
+        statuses.has("Confirmed") ||
+        statuses.has("Pending") ||
+        statuses.has("Awaiting_Payment")
+      ) {
+        return { label: "Đã đặt trước", bg: "info" };
+      }
+      if (statuses.has("Completed")) {
+        return { label: "Đã sử dụng", bg: "secondary" };
+      }
+      if (statuses.has("Cancelled") || statuses.has("Canceled")) {
+        return { label: "Đã hủy", bg: "secondary" };
+      }
+      return { label: "Chưa rõ", bg: "dark" };
+    }
+
+    return map[status] || { label: status || "Chưa rõ", bg: "dark" };
   };
 
   const monthNames = [
@@ -727,6 +761,9 @@ export default function AdminOccupancyPage() {
                                 <i className={`bi ${isExpanded ? "bi-chevron-down" : "bi-chevron-right"}`}></i>
                                 <span style={{ fontWeight: "600", color: "#1e293b" }}>{table.name}</span>
                                 <Badge bg="primary">{table.bookings?.length || 0} lượt đặt</Badge>
+                                <Badge bg={getTableStatusInfo(table.status, table.bookings).bg}>
+                                  {getTableStatusInfo(table.status, table.bookings).label}
+                                </Badge>
                               </div>
                               <div style={{ fontSize: "12px", color: "#64748b" }}>
                                 {table.capacity ? `${table.capacity} người` : "-"} • {table.location || "-"}
