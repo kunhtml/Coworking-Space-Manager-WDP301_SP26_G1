@@ -3,8 +3,11 @@ import Booking from "../models/booking.js";
 import Order from "../models/order.js";
 import OrderItem from "../models/order_item.js";
 import Table from "../models/table.js";
+import TableType from "../models/tableType.js";
 import MenuItem from "../models/menu_item.js";
 import User from "../models/user.js";
+import Invoice from "../models/invoice.js";
+import { createCounterOrderPayment } from "../services/payos.service.js";
 
 const STAFF_TABLE_STATUSES = new Set([
   "Available",
@@ -277,13 +280,20 @@ export const createCounterOrder = async (req, res) => {
       const end = new Date(start.getTime() + hrs * 3600000);
       const bookingCode = `WALK-${Date.now().toString().slice(-6)}`;
 
+      // Calculate deposit based on table price and duration
+      const pricePerHour = Number(table.pricePerHour || 0);
+      if (pricePerHour === 0) {
+        return res.status(400).json({ message: "Bàn chưa có giá. Vui lòng cập nhật giá bàn trước." });
+      }
+      const depositAmount = Math.round(pricePerHour * hrs);
+
       booking = await Booking.create({
         bookingCode,
         tableId: table._id,
         startTime: start,
         endTime: end,
         status: "CheckedIn",
-        depositAmount: 0,
+        depositAmount,
         guestInfo: {
           name: customerName || "Khách lẻ",
           phone: customerPhone || "",
@@ -337,11 +347,42 @@ export const createCounterOrder = async (req, res) => {
       })),
     );
 
+    // Create combined invoice for booking + order
+    const bookingAmount = Math.round(Number(booking.depositAmount || 0));
+    const orderAmount = Math.round(Number(order.totalAmount || 0));
+    const combinedTotal = bookingAmount + orderAmount;
+
+    const invoice = await Invoice.create({
+      bookingId: booking._id,
+      orderIds: [order._id],
+      totalAmount: combinedTotal,
+      remainingAmount: combinedTotal,
+      status: combinedTotal > 0 ? "Pending" : "Paid",
+    });
+
+    // Create payment link
+    const origin = req.get("origin") || `http://localhost:${process.env.PORT || 5000}`;
+    const paymentResult = await createCounterOrderPayment({
+      booking,
+      order,
+      invoice,
+      buyer: {
+        name: customerName || "Khách lẻ",
+        phone: customerPhone || "",
+      },
+      origin,
+    });
+
     res.status(201).json({
       message: "Tạo counter order thành công.",
       bookingId: booking._id,
       orderId: order._id,
       orderCode: `#${String(order._id).slice(-6).toUpperCase()}`,
+      invoiceId: invoice._id,
+      payment: paymentResult,
+      bookingAmount,
+      orderAmount,
+      totalAmount: combinedTotal,
     });
   } catch (err) {
     console.error(err);
