@@ -7,6 +7,8 @@ const tableSchema = new Schema(
         tableType: String,
         capacity: Number,
         status: String,
+        location: String,
+        description: String,
         pricePerHour: Number,
         pricePerDay: Number,
         createdAt: {
