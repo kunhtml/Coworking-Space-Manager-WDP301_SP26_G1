@@ -26,11 +26,9 @@ export const getPaymentData = async (req, res) => {
 
     const data = await buildPaymentPageData(bookingId, req.user.id);
     if (!data) {
-      return res
-        .status(404)
-        .json({
-          message: "Không tìm thấy booking hoặc bạn không có quyền truy cập.",
-        });
+      return res.status(404).json({
+        message: "Không tìm thấy booking hoặc bạn không có quyền truy cập.",
+      });
     }
     const { snapshot, activePayment, qrCodeDataUrl, qrCodeValue } = data;
     const booking = snapshot.booking;
@@ -116,11 +114,9 @@ export const getOrderPaymentData = async (req, res) => {
 
     const data = await buildOrderPaymentPageData(orderId, req.user.id);
     if (!data) {
-      return res
-        .status(404)
-        .json({
-          message: "Không tìm thấy đơn hàng hoặc bạn không có quyền truy cập.",
-        });
+      return res.status(404).json({
+        message: "Không tìm thấy đơn hàng hoặc bạn không có quyền truy cập.",
+      });
     }
 
     const { snapshot, activePayment, qrCodeDataUrl, qrCodeValue } = data;
@@ -210,11 +206,9 @@ export const createPayment = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy booking." });
     }
     if (booking.userId?.toString() !== req.user.id) {
-      return res
-        .status(403)
-        .json({
-          message: "Bạn không có quyền tạo thanh toán cho booking này.",
-        });
+      return res.status(403).json({
+        message: "Bạn không có quyền tạo thanh toán cho booking này.",
+      });
     }
     const user = await User.findById(req.user.id).lean();
     const origin = `${req.protocol}://${req.get("host")}`;
@@ -254,11 +248,9 @@ export const createOrderPayment = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy đơn hàng." });
     }
     if (order.userId?.toString() !== req.user.id) {
-      return res
-        .status(403)
-        .json({
-          message: "Bạn không có quyền tạo thanh toán cho đơn hàng này.",
-        });
+      return res.status(403).json({
+        message: "Bạn không có quyền tạo thanh toán cho đơn hàng này.",
+      });
     }
 
     const user = await User.findById(req.user.id).lean();

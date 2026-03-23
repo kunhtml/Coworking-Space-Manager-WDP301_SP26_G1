@@ -156,7 +156,9 @@ export const createOrder = async (req, res) => {
       status: "Pending",
     });
 
-    console.log(`Created separate invoice ${orderInvoice._id} for order ${order._id}`);
+    console.log(
+      `Created separate invoice ${orderInvoice._id} for order ${order._id}`,
+    );
 
     res
       .status(201)
@@ -194,11 +196,9 @@ export const updateMyOrder = async (req, res) => {
     }
 
     if (["Confirmed", "Cancelled"].includes(order.status)) {
-      return res
-        .status(400)
-        .json({
-          message: "Đơn hàng đã xác nhận hoặc đã hủy, không thể chỉnh sửa.",
-        });
+      return res.status(400).json({
+        message: "Đơn hàng đã xác nhận hoặc đã hủy, không thể chỉnh sửa.",
+      });
     }
 
     const menuIds = [

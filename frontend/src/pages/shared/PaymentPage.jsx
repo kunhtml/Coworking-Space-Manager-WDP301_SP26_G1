@@ -292,11 +292,11 @@ export default function PaymentPage() {
     if (criticalError) return; // Don't retry if we have a critical error
 
     try {
-      const res = isOrderPayment 
+      const res = isOrderPayment
         ? await getOrderPaymentData(orderId)
         : await getPaymentData(bookingId);
-      
-      console.log(`${isOrderPayment ? 'Order' : 'Booking'} payment data:`, {
+
+      console.log(`${isOrderPayment ? "Order" : "Booking"} payment data:`, {
         paymentStatus: res?.payment?.paymentStatus,
         remainingAmount: res?.invoice?.remainingAmount,
         invoiceStatus: res?.invoice?.status,
@@ -588,7 +588,7 @@ export default function PaymentPage() {
                 lineHeight: 1.6,
               }}
             >
-              {isOrderPayment 
+              {isOrderPayment
                 ? "Đơn hàng của bạn đã được xác nhận thanh toán"
                 : "Đơn đặt bàn của bạn đã được xác nhận thanh toán"}
             </p>
@@ -1125,14 +1125,21 @@ export default function PaymentPage() {
                     <>Booking #{data.booking?.id}</>
                   )}
                 </span>
-                {!isOrderPayment && data.booking?.date && <span>📅 {data.booking.date}</span>}
-                {!isOrderPayment && data.booking?.startTime && data.booking?.endTime && (
-                  <span>
-                    🕐 {data.booking.startTime} – {data.booking.endTime}
-                  </span>
+                {!isOrderPayment && data.booking?.date && (
+                  <span>📅 {data.booking.date}</span>
                 )}
+                {!isOrderPayment &&
+                  data.booking?.startTime &&
+                  data.booking?.endTime && (
+                    <span>
+                      🕐 {data.booking.startTime} – {data.booking.endTime}
+                    </span>
+                  )}
                 {isOrderPayment && data.order?.createdAt && (
-                  <span>📅 {new Date(data.order.createdAt).toLocaleDateString("vi-VN")}</span>
+                  <span>
+                    📅{" "}
+                    {new Date(data.order.createdAt).toLocaleDateString("vi-VN")}
+                  </span>
                 )}
               </div>
               <div
@@ -1363,7 +1370,9 @@ export default function PaymentPage() {
                         borderRadius: 4,
                       }}
                     >
-                      {isOrderPayment ? `Order ${data.order?.id?.slice(-8)}` : `Booking #${data.booking?.id}`}
+                      {isOrderPayment
+                        ? `Order ${data.order?.id?.slice(-8)}`
+                        : `Booking #${data.booking?.id}`}
                     </code>
                   </div>
                 </div>

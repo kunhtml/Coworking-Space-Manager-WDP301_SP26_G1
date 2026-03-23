@@ -493,7 +493,7 @@ export async function getOrderPaymentSnapshot(orderId) {
 
 export async function createOrReuseOrderPayOSPayment({ order, buyer, origin }) {
   const payOS = createPayOSClient();
-  
+
   // Find invoice for this order
   const invoice = await Invoice.findOne({ orderIds: order._id }).lean();
   if (!invoice) {
@@ -517,7 +517,8 @@ export async function createOrReuseOrderPayOSPayment({ order, buyer, origin }) {
     invoiceTotal: invoice.totalAmount,
     successPaid,
     remainingAmount,
-    pendingPayments: paymentHistory.filter((p) => p.paymentStatus === "Pending").length,
+    pendingPayments: paymentHistory.filter((p) => p.paymentStatus === "Pending")
+      .length,
   });
 
   if (remainingAmount <= 0) return { alreadyPaid: true };
@@ -533,9 +534,14 @@ export async function createOrReuseOrderPayOSPayment({ order, buyer, origin }) {
 
   if (activePending) {
     try {
-      const link = await payOS.paymentRequests.get(activePending.payos.orderCode);
+      const link = await payOS.paymentRequests.get(
+        activePending.payos.orderCode,
+      );
       if (PAYOS_PENDING_STATUSES.has(link.status)) {
-        console.log("Reusing order payment link:", activePending.payos.orderCode);
+        console.log(
+          "Reusing order payment link:",
+          activePending.payos.orderCode,
+        );
         return { reused: true, payment: activePending };
       }
       if (PAYOS_FAILED_STATUSES.has(link.status)) {
@@ -544,7 +550,9 @@ export async function createOrReuseOrderPayOSPayment({ order, buyer, origin }) {
           paymentLink: link,
         });
       }
-    } catch { /* ignore, create new */ }
+    } catch {
+      /* ignore, create new */
+    }
   }
 
   // Cancel old pending payments with wrong amounts
@@ -556,7 +564,10 @@ export async function createOrReuseOrderPayOSPayment({ order, buyer, origin }) {
   );
 
   if (oldPendingPayments.length > 0) {
-    console.log("Cancelling old order pending payments:", oldPendingPayments.length);
+    console.log(
+      "Cancelling old order pending payments:",
+      oldPendingPayments.length,
+    );
   }
 
   for (const oldPayment of oldPendingPayments) {
@@ -580,8 +591,12 @@ export async function createOrReuseOrderPayOSPayment({ order, buyer, origin }) {
     const amount = remainingAmount;
     const orderCode = createOrderCode();
     const description = createShortDescription(order._id.toString(), orderCode);
-    const cancelUrl = origin ? `${origin}/orders` : `${process.env.FRONTEND_URL || "http://localhost:5173"}/orders`;
-    const returnUrl = origin ? `${origin}/payment/order/${order._id}` : `${process.env.FRONTEND_URL || "http://localhost:5173"}/payment/order/${order._id}`;
+    const cancelUrl = origin
+      ? `${origin}/orders`
+      : `${process.env.FRONTEND_URL || "http://localhost:5173"}/orders`;
+    const returnUrl = origin
+      ? `${origin}/payment/order/${order._id}`
+      : `${process.env.FRONTEND_URL || "http://localhost:5173"}/payment/order/${order._id}`;
 
     const paymentLink = await payOS.paymentRequests.create({
       orderCode,
@@ -650,13 +665,17 @@ export async function buildOrderPaymentPageData(orderId, userId) {
   if (isPayOSConfigured() && pendingPayment?.payos?.orderCode) {
     try {
       const payOS = createPayOSClient();
-      const link = await payOS.paymentRequests.get(pendingPayment.payos.orderCode);
+      const link = await payOS.paymentRequests.get(
+        pendingPayment.payos.orderCode,
+      );
       await syncPayOSPaymentRecord({
         orderCode: pendingPayment.payos.orderCode,
         paymentLink: link,
       });
       freshSnapshot = await getOrderPaymentSnapshot(orderId);
-    } catch { /* keep as is */ }
+    } catch {
+      /* keep as is */
+    }
   }
 
   const activePayment =
@@ -672,7 +691,9 @@ export async function buildOrderPaymentPageData(orderId, userId) {
         width: 320,
         color: { dark: "#111827", light: "#ffffff" },
       });
-    } catch { /* skip */ }
+    } catch {
+      /* skip */
+    }
   }
 
   return { snapshot: freshSnapshot, activePayment, qrCodeDataUrl, qrCodeValue };

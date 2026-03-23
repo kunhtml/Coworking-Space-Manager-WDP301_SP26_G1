@@ -70,19 +70,19 @@ export const getAvailableTables = async (req, res) => {
       const startStr = `${requestedDate}T${requestedStartTime}:00`;
       const endStr = `${requestedDate}T${requestEndTime}:00`;
       console.log("Parsing dates:", { startStr, endStr });
-      
+
       const start = new Date(startStr);
       const end = new Date(endStr);
-      
-      console.log("Parsed dates:", { 
-        start: start.toString(), 
+
+      console.log("Parsed dates:", {
+        start: start.toString(),
         end: end.toString(),
         startTime: start.getTime(),
         endTime: end.getTime(),
         isStartValid: isFinite(start.getTime()),
-        isEndValid: isFinite(end.getTime())
+        isEndValid: isFinite(end.getTime()),
       });
-      
+
       if (!isFinite(start.getTime()) || !isFinite(end.getTime())) {
         console.error("Invalid date/time format");
         return res
@@ -91,7 +91,7 @@ export const getAvailableTables = async (req, res) => {
       }
       const diffHours = (end.getTime() - start.getTime()) / 3600000;
       console.log("Duration calculated:", { diffHours });
-      
+
       if (isFinite(diffHours) && diffHours > 0) {
         requestedDuration = diffHours;
       } else {
@@ -105,12 +105,10 @@ export const getAvailableTables = async (req, res) => {
       !isFinite(requestedDuration) ||
       requestedDuration <= 0
     ) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Vui lòng cung cấp thời gian sử dụng hợp lệ (duration hoặc endTime).",
-        });
+      return res.status(400).json({
+        message:
+          "Vui lòng cung cấp thời gian sử dụng hợp lệ (duration hoặc endTime).",
+      });
     }
 
     const startTime = new Date(`${requestedDate}T${requestedStartTime}:00`);
