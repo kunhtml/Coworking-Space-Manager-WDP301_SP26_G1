@@ -222,5 +222,74 @@
     "depositAmount": 60000,
     "createdAt": { "$date": "2026-03-23T14:00:00.000Z" },
     "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6f0000000000000000017" },
+    "bookingCode": "BK-2015",
+    "userId": { "$oid": "65e6b0000000000000000006" },
+    "guestInfo": null,
+    "tableId": { "$oid": "65e6e0000000000000000001" },
+    "startTime": { "$date": "2026-03-18T01:00:00.000Z" },
+    "endTime": { "$date": "2026-03-18T03:00:00.000Z" },
+    "status": "Completed",
+    "depositAmount": 20000,
+    "createdAt": { "$date": "2026-03-17T16:30:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6f0000000000000000018" },
+    "bookingCode": "BK-2016",
+    "userId": { "$oid": "65e6b0000000000000000009" },
+    "guestInfo": null,
+    "tableId": { "$oid": "65e6e0000000000000000004" },
+    "startTime": { "$date": "2026-03-18T06:30:00.000Z" },
+    "endTime": { "$date": "2026-03-18T09:30:00.000Z" },
+    "status": "Completed",
+    "depositAmount": 60000,
+    "createdAt": { "$date": "2026-03-17T17:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6f0000000000000000019" },
+    "bookingCode": "BK-2017",
+    "userId": null,
+    "guestInfo": {
+      "name": "Nhom hoc IELTS",
+      "email": "ielts.group@example.com",
+      "phone": "0933000019"
+    },
+    "tableId": { "$oid": "65e6e0000000000000000006" },
+    "startTime": { "$date": "2026-03-19T02:00:00.000Z" },
+    "endTime": { "$date": "2026-03-19T05:00:00.000Z" },
+    "status": "Completed",
+    "depositAmount": 120000,
+    "createdAt": { "$date": "2026-03-18T18:30:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6f000000000000000001a" },
+    "bookingCode": "BK-2018",
+    "userId": { "$oid": "65e6b000000000000000000a" },
+    "guestInfo": null,
+    "tableId": { "$oid": "65e6e0000000000000000008" },
+    "startTime": { "$date": "2026-03-20T07:30:00.000Z" },
+    "endTime": { "$date": "2026-03-20T10:30:00.000Z" },
+    "status": "Completed",
+    "depositAmount": 220000,
+    "createdAt": { "$date": "2026-03-19T19:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6f000000000000000001b" },
+    "bookingCode": "BK-2019",
+    "userId": { "$oid": "65e6b0000000000000000003" },
+    "guestInfo": null,
+    "tableId": { "$oid": "65e6e0000000000000000005" },
+    "startTime": { "$date": "2026-03-21T03:00:00.000Z" },
+    "endTime": { "$date": "2026-03-21T05:00:00.000Z" },
+    "status": "Completed",
+    "depositAmount": 85000,
+    "createdAt": { "$date": "2026-03-20T12:00:00.000Z" },
+    "__v": 0
   }
 ]
