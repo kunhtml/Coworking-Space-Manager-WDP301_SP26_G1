@@ -42,5 +42,38 @@
     "paymentStatus": "Success",
     "paidAt": { "$date": "2026-03-21T16:20:00.000Z" },
     "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7d0000000000000000005" },
+    "invoiceId": { "$oid": "65e7c0000000000000000004" },
+    "paymentMethod": "Banking",
+    "transactionId": "VCB_TRANS_202603240205",
+    "amount": 85000,
+    "type": "Deposit",
+    "paymentStatus": "Success",
+    "paidAt": { "$date": "2026-03-24T02:05:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7d0000000000000000006" },
+    "invoiceId": { "$oid": "65e7c0000000000000000004" },
+    "paymentMethod": "Card",
+    "transactionId": "VISA_DECLINED_202603240315",
+    "amount": 200000,
+    "type": "Payment",
+    "paymentStatus": "Failed",
+    "paidAt": { "$date": "2026-03-24T03:15:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e7d0000000000000000007" },
+    "invoiceId": { "$oid": "65e7c0000000000000000005" },
+    "paymentMethod": "Cash",
+    "transactionId": "CASH_REFUND_202603240730",
+    "amount": 85000,
+    "type": "Refund",
+    "paymentStatus": "Success",
+    "paidAt": { "$date": "2026-03-24T07:30:00.000Z" },
+    "__v": 0
   }
 ]

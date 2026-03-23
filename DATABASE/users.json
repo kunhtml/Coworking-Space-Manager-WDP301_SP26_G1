@@ -97,5 +97,38 @@
     "membershipStatus": "Active",
     "createdAt": { "$date": "2026-03-01T07:45:00.000Z" },
     "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6b000000000000000000a" },
+    "fullName": "Nguyen Hoang Long",
+    "email": "long.nguyen@workcafe.com",
+    "passwordHash": "$2b$10$qP4o784M3v/w7vEOFSJcs./GTeqovXhMnnzyDeoQypgcTAaTjBzO6",
+    "phone": "0900000010",
+    "role": "Customer",
+    "membershipStatus": "Active",
+    "createdAt": { "$date": "2026-03-10T08:15:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6b000000000000000000b" },
+    "fullName": "Tran Bao Nghi",
+    "email": "bao.nghi@workcafe.com",
+    "passwordHash": "$2b$10$qP4o784M3v/w7vEOFSJcs./GTeqovXhMnnzyDeoQypgcTAaTjBzO6",
+    "phone": "0900000011",
+    "role": "Customer",
+    "membershipStatus": "Suspended",
+    "createdAt": { "$date": "2026-03-14T10:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6b000000000000000000c" },
+    "fullName": "Pham Gia Han",
+    "email": "gia.han@workcafe.com",
+    "passwordHash": "$2b$10$qP4o784M3v/w7vEOFSJcs./GTeqovXhMnnzyDeoQypgcTAaTjBzO6",
+    "phone": "0900000012",
+    "role": "Staff",
+    "membershipStatus": "Active",
+    "createdAt": { "$date": "2026-03-16T06:30:00.000Z" },
+    "__v": 0
   }
 ]

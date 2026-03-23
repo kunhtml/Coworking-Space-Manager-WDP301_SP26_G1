@@ -476,7 +476,9 @@ export const getHourlyOccupancyAnalytics = async (req, res) => {
 };
 
 // Get daily table usage count for a month
+// Daily table usage analytics API - v2024-03-23
 export const getDailyTableUsage = async (req, res) => {
+  console.log("[getDailyTableUsage] API called with query:", req.query);
   try {
     const { year, month } = req.query;
     
@@ -487,9 +489,11 @@ export const getDailyTableUsage = async (req, res) => {
     const monthStart = new Date(targetYear, targetMonth, 1, 0, 0, 0, 0);
     const monthEnd = new Date(targetYear, targetMonth + 1, 1, 0, 0, 0, 0);
     
-    // Get all tables
+    // Get all tables and create a map for quick lookup
     const tables = await Table.find().lean();
     const totalTables = tables.length;
+    const tablesMap = new Map();
+    tables.forEach(t => tablesMap.set(String(t._id), t));
     
     // Get all bookings for the month
     const bookings = await Booking.find({
@@ -497,16 +501,22 @@ export const getDailyTableUsage = async (req, res) => {
       endTime: { $gt: monthStart },
       status: { $nin: ["Cancelled", "No_Show", "NoShow", "Rejected"] },
     })
-      .populate("tableId", "_id name")
+      .populate("tableId", "_id name capacity pricePerHour location")
+      .populate("userId", "_id name email phone")
       .lean();
     
     // Calculate table usage for each day
     const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
     const dailyUsage = {};
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     
     for (let day = 1; day <= daysInMonth; day++) {
       const dayStart = new Date(targetYear, targetMonth, day, 0, 0, 0, 0);
       const dayEnd = new Date(targetYear, targetMonth, day, 23, 59, 59, 999);
+      
+      // Check if this day is in the future
+      const isFutureDay = dayStart > today;
       
       // Find bookings that overlap with this day
       const dayBookings = bookings.filter((booking) => {
@@ -515,22 +525,91 @@ export const getDailyTableUsage = async (req, res) => {
         return bookingStart < dayEnd && bookingEnd > dayStart;
       });
       
-      // Count unique tables used on this day
-      const uniqueTableIds = new Set();
+      // Count unique tables used on this day and collect table details
+      const uniqueTablesMap = new Map();
+      const bookingsWithoutTable = [];
+      
       dayBookings.forEach((booking) => {
-        if (booking.tableId?._id) {
-          uniqueTableIds.add(String(booking.tableId._id));
+        // Handle both populated tableId (object) and non-populated (ObjectId/string)
+        let tableIdStr = null;
+        let tableData = null;
+        
+        if (booking.tableId) {
+          if (booking.tableId._id) {
+            // tableId was populated successfully
+            tableIdStr = String(booking.tableId._id);
+            tableData = booking.tableId;
+          } else {
+            // tableId is ObjectId or string (not populated - table might be deleted)
+            tableIdStr = String(booking.tableId);
+            // Try to find table in our map
+            tableData = tablesMap.get(tableIdStr);
+          }
+        }
+        
+        if (tableIdStr && tableData) {
+          if (!uniqueTablesMap.has(tableIdStr)) {
+            uniqueTablesMap.set(tableIdStr, {
+              _id: tableData._id,
+              name: tableData.name,
+              capacity: tableData.capacity,
+              pricePerHour: tableData.pricePerHour,
+              location: tableData.location,
+              bookings: [],
+            });
+          }
+          // Add booking info to this table
+          uniqueTablesMap.get(tableIdStr).bookings.push({
+            _id: booking._id,
+            startTime: booking.startTime,
+            endTime: booking.endTime,
+            status: booking.status,
+            totalPrice: booking.totalPrice,
+            user: booking.userId ? {
+              _id: booking.userId._id,
+              name: booking.userId.name,
+              email: booking.userId.email,
+              phone: booking.userId.phone,
+            } : null,
+          });
+        } else {
+          // Booking without valid tableId (table deleted or never assigned)
+          bookingsWithoutTable.push({
+            _id: booking._id,
+            tableIdRaw: booking.tableId, // for debugging
+            startTime: booking.startTime,
+            endTime: booking.endTime,
+            status: booking.status,
+            totalPrice: booking.totalPrice,
+            user: booking.userId ? {
+              _id: booking.userId._id,
+              name: booking.userId.name,
+              email: booking.userId.email,
+              phone: booking.userId.phone,
+            } : null,
+          });
         }
       });
       
-      const tablesUsed = uniqueTableIds.size;
+      const tablesUsed = uniqueTablesMap.size;
       const occupancyRate = totalTables > 0 ? Math.round((tablesUsed / totalTables) * 100) : 0;
+      
+      // Debug log for days with bookings
+      if (dayBookings.length > 0 && day <= 10) {
+        console.log(`[DEBUG] Day ${day}: ${dayBookings.length} bookings, ${uniqueTablesMap.size} tables, ${bookingsWithoutTable.length} without table`);
+        if (uniqueTablesMap.size === 0 && dayBookings.length > 0) {
+          console.log(`  Sample booking:`, JSON.stringify(dayBookings[0], null, 2));
+        }
+      }
       
       dailyUsage[day] = {
         tablesUsed,
         totalTables,
         occupancyRate,
         bookingCount: dayBookings.length,
+        tables: Array.from(uniqueTablesMap.values()),
+        bookingsWithoutTable,
+        isFutureDay,
       };
     }
     
@@ -544,7 +623,8 @@ export const getDailyTableUsage = async (req, res) => {
       dailyUsage,
     });
   } catch (err) {
-    console.error("Daily table usage error:", err);
+    console.error("[getDailyTableUsage] ERROR:", err);
+    console.error(err.stack);
     return res.status(500).json({ message: "Loi khi tai du lieu su dung ban theo ngay." });
   }
 };

@@ -97,5 +97,38 @@
     "pricePerDay": 120000,
     "createdAt": { "$date": "2026-01-06T09:00:00.000Z" },
     "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6e000000000000000000a" },
+    "name": "Bàn cá nhân Tầng 2 - 02",
+    "tableType": "Hot_Desk",
+    "capacity": 1,
+    "status": "Available",
+    "pricePerHour": 25000,
+    "pricePerDay": 120000,
+    "createdAt": { "$date": "2026-01-06T09:15:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6e000000000000000000b" },
+    "name": "Phòng họp B",
+    "tableType": "Meeting_Room",
+    "capacity": 12,
+    "status": "Maintenance",
+    "pricePerHour": 180000,
+    "pricePerDay": 1200000,
+    "createdAt": { "$date": "2026-01-07T08:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6e000000000000000000c" },
+    "name": "Phòng Podcast",
+    "tableType": "VIP_Room",
+    "capacity": 3,
+    "status": "Reserved",
+    "pricePerHour": 130000,
+    "pricePerDay": 850000,
+    "createdAt": { "$date": "2026-01-09T09:00:00.000Z" },
+    "__v": 0
   }
 ]

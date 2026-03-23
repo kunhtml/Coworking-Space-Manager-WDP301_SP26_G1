@@ -14,8 +14,14 @@ router.get(
   requireStaff,
   getHourlyOccupancyAnalytics,
 );
+
+// TEMP: Remove middleware to test
 router.get(
   "/reports/analytics/daily-table-usage",
+  (req, res, next) => {
+    console.log("[ROUTE] daily-table-usage hit!");
+    next();
+  },
   requireStaff,
   getDailyTableUsage,
 );

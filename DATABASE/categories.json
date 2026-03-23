@@ -34,5 +34,23 @@
     "createdAt": { "$date": "2026-01-02T10:00:00.000Z" },
     "updatedAt": { "$date": "2026-01-02T10:00:00.000Z" },
     "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6c0000000000000000005" },
+    "name": "Nước đóng chai",
+    "description": "Nước suối, soda và đồ uống đóng chai tiện lợi",
+    "isActive": true,
+    "createdAt": { "$date": "2026-02-05T09:00:00.000Z" },
+    "updatedAt": { "$date": "2026-02-05T09:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6c0000000000000000006" },
+    "name": "Combo theo nhóm",
+    "description": "Combo đồ ăn và thức uống dành cho nhóm làm việc",
+    "isActive": false,
+    "createdAt": { "$date": "2026-02-10T09:00:00.000Z" },
+    "updatedAt": { "$date": "2026-03-01T09:00:00.000Z" },
+    "__v": 0
   }
 ]

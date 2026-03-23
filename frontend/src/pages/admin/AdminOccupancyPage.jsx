@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Card, Button } from "react-bootstrap";
+import { Card, Button, Modal, Badge } from "react-bootstrap";
 import AdminLayout from "../../components/admin/AdminLayout";
 import { getDailyTableUsageApi } from "../../services/api";
+import { getAllBookingsApi } from "../../services/bookingService";
 
 export function meta() {
   return [
@@ -18,6 +19,14 @@ export default function AdminOccupancyPage() {
   const [monthlyData, setMonthlyData] = useState({});
   const [totalTables, setTotalTables] = useState(0);
   const [loading, setLoading] = useState(true);
+  
+  // Modal state
+  const [showDayModal, setShowDayModal] = useState(false);
+  const [selectedDay, setSelectedDay] = useState(null);
+  const [dayDetailsLoading, setDayDetailsLoading] = useState(false);
+  const [dayTableDetails, setDayTableDetails] = useState([]);
+  const [dayDetailsError, setDayDetailsError] = useState("");
+  const [expandedTableId, setExpandedTableId] = useState(null);
 
   useEffect(() => {
     loadMonthlyOccupancy();
@@ -39,6 +48,69 @@ export default function AdminOccupancyPage() {
     }
     
     setLoading(false);
+  };
+
+  const toDateParam = (year, monthIndex, day) => {
+    const y = String(year);
+    const m = String(monthIndex + 1).padStart(2, "0");
+    const d = String(day).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
+
+  const loadDayTableDetails = async (day) => {
+    setDayDetailsLoading(true);
+    setDayDetailsError("");
+    try {
+      const date = toDateParam(currentDate.getFullYear(), currentDate.getMonth(), day);
+      const rows = await getAllBookingsApi({ date });
+      const grouped = new Map();
+
+      rows.forEach((row) => {
+        const tableName = row.spaceName || "Không xác định";
+        if (!grouped.has(tableName)) {
+          grouped.set(tableName, {
+            _id: tableName,
+            name: tableName,
+            capacity: null,
+            location: "",
+            bookings: [],
+          });
+        }
+        grouped.get(tableName).bookings.push({
+          _id: row.id || row.bookingCode,
+          startTime: row.startTime,
+          endTime: row.endTime,
+          status: row.status,
+          totalPrice: row.depositAmount || 0,
+          user: {
+            name: row.customerName,
+            phone: row.customerPhone,
+          },
+        });
+      });
+
+      setDayTableDetails(Array.from(grouped.values()));
+    } catch (err) {
+      setDayDetailsError(err.message || "Không tải được chi tiết bàn theo ngày");
+      setDayTableDetails([]);
+    } finally {
+      setDayDetailsLoading(false);
+    }
+  };
+
+  const openDayModal = (day) => {
+    setSelectedDay(day);
+    setShowDayModal(true);
+    setExpandedTableId(null);
+    loadDayTableDetails(day);
+  };
+
+  const closeDayModal = () => {
+    setShowDayModal(false);
+    setSelectedDay(null);
+    setDayTableDetails([]);
+    setDayDetailsError("");
+    setExpandedTableId(null);
   };
 
   const goToPreviousMonth = () => {
@@ -90,6 +162,20 @@ export default function AdminOccupancyPage() {
 
   const getBarWidthForOccupancy = (rate) => {
     return `${rate}%`;
+  };
+
+  const getStatusInfo = (status) => {
+    const map = {
+      Confirmed: { label: "Đã xác nhận", bg: "success" },
+      Pending: { label: "Chờ xác nhận", bg: "warning" },
+      Completed: { label: "Đã sử dụng", bg: "info" },
+      Cancelled: { label: "Đã hủy", bg: "secondary" },
+      Canceled: { label: "Đã hủy", bg: "secondary" },
+      In_Use: { label: "Đang sử dụng", bg: "secondary" },
+      CheckedIn: { label: "Đã check-in", bg: "primary" },
+      Awaiting_Payment: { label: "Chờ thanh toán", bg: "warning" },
+    };
+    return map[status] || { label: status || "Không xác định", bg: "secondary" };
   };
 
   const monthNames = [
@@ -337,6 +423,7 @@ export default function AdminOccupancyPage() {
                     const dayData = monthlyData[day] || {};
                     const tablesUsed = dayData.tablesUsed || 0;
                     const occupancyRate = dayData.occupancyRate || 0;
+                    const isFutureDay = dayData.isFutureDay || false;
                     const colors = getColorForOccupancy(occupancyRate);
                     const isToday = isCurrentMonth && day === today.getDate();
                     const dayOfWeek = idx % 7;
@@ -345,9 +432,10 @@ export default function AdminOccupancyPage() {
                     return (
                       <div
                         key={day}
+                        onClick={() => openDayModal(day)}
                         style={{
-                          backgroundColor: isToday ? "#eff6ff" : "#fafafa",
-                          border: isToday ? "2px solid #3b82f6" : "1px solid #e5e7eb",
+                          backgroundColor: isToday ? "#eff6ff" : isFutureDay ? "#fefce8" : "#fafafa",
+                          border: isToday ? "2px solid #3b82f6" : isFutureDay ? "1px dashed #fbbf24" : "1px solid #e5e7eb",
                           borderRadius: "8px",
                           padding: "12px",
                           minHeight: "100px",
@@ -357,13 +445,13 @@ export default function AdminOccupancyPage() {
                         }}
                         onMouseEnter={(e) => {
                           if (!isToday) {
-                            e.currentTarget.style.backgroundColor = "#f9fafb";
+                            e.currentTarget.style.backgroundColor = isFutureDay ? "#fef9c3" : "#f9fafb";
                             e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.08)";
                           }
                         }}
                         onMouseLeave={(e) => {
                           if (!isToday) {
-                            e.currentTarget.style.backgroundColor = "#fafafa";
+                            e.currentTarget.style.backgroundColor = isFutureDay ? "#fefce8" : "#fafafa";
                             e.currentTarget.style.boxShadow = "none";
                           }
                         }}
@@ -436,11 +524,12 @@ export default function AdminOccupancyPage() {
                           <div
                             style={{
                               fontSize: "11px",
-                              color: "#64748b",
+                              color: isFutureDay ? "#d97706" : "#64748b",
                               marginBottom: "6px",
+                              fontStyle: isFutureDay ? "italic" : "normal",
                             }}
                           >
-                            Lấp đầy
+                            {isFutureDay ? "Đặt trước" : "Lấp đầy"}
                           </div>
                         )}
 
@@ -498,6 +587,298 @@ export default function AdminOccupancyPage() {
             )}
           </Card.Body>
         </Card>
+
+        {/* Day Detail Modal */}
+        <Modal show={showDayModal} onHide={closeDayModal} size="lg" centered>
+          <Modal.Header closeButton>
+            <Modal.Title>
+              <i className="bi bi-calendar-event me-2 text-primary"></i>
+              Chi tiết ngày {selectedDay}/{currentDate.getMonth() + 1}/{currentDate.getFullYear()}
+              {selectedDay && monthlyData[selectedDay]?.isFutureDay && (
+                <Badge bg="warning" className="ms-2" style={{ fontSize: "12px" }}>
+                  Ngày tương lai
+                </Badge>
+              )}
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {selectedDay && monthlyData[selectedDay] ? (
+              <div>
+                {/* Future day notice */}
+                {monthlyData[selectedDay].isFutureDay && (
+                  <div
+                    className="mb-3 p-3"
+                    style={{
+                      backgroundColor: "#fef3c7",
+                      borderRadius: "8px",
+                      border: "1px solid #fbbf24",
+                    }}
+                  >
+                    <i className="bi bi-info-circle me-2 text-warning"></i>
+                    <span style={{ color: "#92400e" }}>
+                      Đây là ngày trong tương lai. Dữ liệu hiển thị là các <strong>đặt chỗ trước</strong>, chưa phải thực tế sử dụng.
+                    </span>
+                  </div>
+                )}
+
+                {/* Summary */}
+                <div className="d-flex gap-3 mb-4">
+                  <div
+                    style={{
+                      flex: 1,
+                      backgroundColor: "#f0f9ff",
+                      borderRadius: "8px",
+                      padding: "16px",
+                      textAlign: "center",
+                    }}
+                  >
+                    <div style={{ fontSize: "24px", fontWeight: "700", color: "#0369a1" }}>
+                      {monthlyData[selectedDay].tablesUsed}
+                    </div>
+                    <div style={{ fontSize: "13px", color: "#64748b" }}>
+                      {monthlyData[selectedDay].isFutureDay ? "Bàn đặt trước" : "Bàn được sử dụng"}
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      flex: 1,
+                      backgroundColor: "#f0fdf4",
+                      borderRadius: "8px",
+                      padding: "16px",
+                      textAlign: "center",
+                    }}
+                  >
+                    <div style={{ fontSize: "24px", fontWeight: "700", color: "#16a34a" }}>
+                      {monthlyData[selectedDay].totalTables}
+                    </div>
+                    <div style={{ fontSize: "13px", color: "#64748b" }}>Tổng số bàn</div>
+                  </div>
+                  <div
+                    style={{
+                      flex: 1,
+                      backgroundColor: "#fefce8",
+                      borderRadius: "8px",
+                      padding: "16px",
+                      textAlign: "center",
+                    }}
+                  >
+                    <div style={{ fontSize: "24px", fontWeight: "700", color: "#ca8a04" }}>
+                      {monthlyData[selectedDay].occupancyRate}%
+                    </div>
+                    <div style={{ fontSize: "13px", color: "#64748b" }}>
+                      {monthlyData[selectedDay].isFutureDay ? "Tỉ lệ đặt trước" : "Tỉ lệ lấp đầy"}
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      flex: 1,
+                      backgroundColor: "#fdf4ff",
+                      borderRadius: "8px",
+                      padding: "16px",
+                      textAlign: "center",
+                    }}
+                  >
+                    <div style={{ fontSize: "24px", fontWeight: "700", color: "#a855f7" }}>
+                      {monthlyData[selectedDay].bookingCount}
+                    </div>
+                    <div style={{ fontSize: "13px", color: "#64748b" }}>Lượt đặt bàn</div>
+                  </div>
+                </div>
+
+                {/* Tables List */}
+                {dayDetailsLoading ? (
+                  <div className="text-center py-4" style={{ color: "#64748b" }}>
+                    Đang tải chi tiết bàn...
+                  </div>
+                ) : dayDetailsError ? (
+                  <div className="text-center py-4" style={{ color: "#dc2626" }}>
+                    {dayDetailsError}
+                  </div>
+                ) : dayTableDetails.length > 0 ? (
+                  <div>
+                    <h6 className="mb-3" style={{ fontWeight: "600", color: "#1e293b" }}>
+                      <i className="bi bi-list-ul me-2"></i>
+                      {monthlyData[selectedDay].isFutureDay ? "Danh sách bàn đặt trước" : "Danh sách bàn được sử dụng"}
+                    </h6>
+                    <div>
+                      {dayTableDetails.map((table) => {
+                        const isExpanded = expandedTableId === table._id;
+                        return (
+                          <div
+                            key={table._id}
+                            className="mb-2"
+                            style={{ border: "1px solid #e2e8f0", borderRadius: "8px", overflow: "hidden" }}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => setExpandedTableId(isExpanded ? null : table._id)}
+                              style={{
+                                width: "100%",
+                                border: "none",
+                                background: "#f8fafc",
+                                padding: "10px 12px",
+                                textAlign: "left",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                              }}
+                            >
+                              <div className="d-flex align-items-center gap-2" style={{ minWidth: 0 }}>
+                                <i className={`bi ${isExpanded ? "bi-chevron-down" : "bi-chevron-right"}`}></i>
+                                <span style={{ fontWeight: "600", color: "#1e293b" }}>{table.name}</span>
+                                <Badge bg="primary">{table.bookings?.length || 0} lượt đặt</Badge>
+                              </div>
+                              <div style={{ fontSize: "12px", color: "#64748b" }}>
+                                {table.capacity ? `${table.capacity} người` : "-"} • {table.location || "-"}
+                              </div>
+                            </button>
+
+                            {isExpanded && (
+                              <div style={{ padding: "10px", backgroundColor: "white", fontSize: "12px" }}>
+                                {table.bookings && table.bookings.length > 0 ? (
+                                  table.bookings.map((booking, idx) => (
+                                    <div
+                                      key={booking._id}
+                                      style={{
+                                        padding: "6px 8px",
+                                        backgroundColor: idx % 2 === 0 ? "#f8fafc" : "white",
+                                        borderRadius: "4px",
+                                        marginBottom: "6px",
+                                        border: "1px solid #e2e8f0",
+                                      }}
+                                    >
+                                      <div className="d-flex justify-content-between align-items-center">
+                                        <span>
+                                          <i className="bi bi-clock me-1"></i>
+                                          {new Date(booking.startTime).toLocaleTimeString("vi-VN", {
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                          })}{" "}
+                                          -{" "}
+                                          {new Date(booking.endTime).toLocaleTimeString("vi-VN", {
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                          })}
+                                        </span>
+                                        <Badge
+                                          bg={getStatusInfo(booking.status).bg}
+                                          style={{ fontSize: "10px" }}
+                                        >
+                                          {getStatusInfo(booking.status).label}
+                                        </Badge>
+                                      </div>
+                                      {booking.user && (
+                                        <div style={{ color: "#64748b", marginTop: "2px" }}>
+                                          <i className="bi bi-person me-1"></i>
+                                          {booking.user.name || booking.user.email}
+                                          {booking.user.phone && ` - ${booking.user.phone}`}
+                                        </div>
+                                      )}
+                                      {booking.totalPrice > 0 && (
+                                        <div style={{ color: "#16a34a", fontWeight: "500" }}>
+                                          <i className="bi bi-cash me-1"></i>
+                                          {booking.totalPrice.toLocaleString("vi-VN")}đ
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))
+                                ) : (
+                                  <span style={{ color: "#94a3b8" }}>Không có lượt đặt</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className="text-center py-4"
+                    style={{ color: "#94a3b8", fontStyle: "italic" }}
+                  >
+                    <i className="bi bi-inbox" style={{ fontSize: "32px" }}></i>
+                    <p className="mb-0 mt-2">
+                      {monthlyData[selectedDay]?.bookingCount > 0
+                        ? `Có ${monthlyData[selectedDay].bookingCount} lượt đặt nhưng chưa có dữ liệu chi tiết bàn.`
+                        : monthlyData[selectedDay]?.isFutureDay
+                          ? "Chưa có bàn nào được đặt trước cho ngày này"
+                          : "Không có bàn nào được sử dụng trong ngày này"}
+                    </p>
+                  </div>
+                )}
+
+                {/* Bookings without table (table might be deleted) */}
+                {monthlyData[selectedDay].bookingsWithoutTable && monthlyData[selectedDay].bookingsWithoutTable.length > 0 && (
+                  <div className="mt-4">
+                    <h6 className="mb-3" style={{ fontWeight: "600", color: "#dc2626" }}>
+                      <i className="bi bi-exclamation-triangle me-2"></i>
+                       Lượt đặt không có thông tin bàn ({monthlyData[selectedDay].bookingsWithoutTable.length})
+                    </h6>
+                    <div
+                      className="p-3"
+                      style={{
+                        backgroundColor: "#fef2f2",
+                        borderRadius: "8px",
+                        border: "1px solid #fecaca",
+                      }}
+                    >
+                      <p style={{ fontSize: "12px", color: "#991b1b", marginBottom: "12px" }}>
+                        Các lượt đặt này có thể do bàn đã bị xóa hoặc dữ liệu không đồng bộ.
+                      </p>
+                      {monthlyData[selectedDay].bookingsWithoutTable.map((booking) => (
+                        <div
+                          key={booking._id}
+                          style={{
+                            padding: "8px 12px",
+                            backgroundColor: "white",
+                            borderRadius: "6px",
+                            marginBottom: "8px",
+                            fontSize: "12px",
+                          }}
+                        >
+                          <div className="d-flex justify-content-between align-items-center">
+                            <span>
+                              <i className="bi bi-clock me-1"></i>
+                              {new Date(booking.startTime).toLocaleTimeString("vi-VN", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}{" "}
+                              -{" "}
+                              {new Date(booking.endTime).toLocaleTimeString("vi-VN", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                            <Badge bg={getStatusInfo(booking.status).bg} style={{ fontSize: "10px" }}>
+                              {getStatusInfo(booking.status).label}
+                            </Badge>
+                          </div>
+                          {booking.user && (
+                            <div style={{ color: "#64748b", marginTop: "4px" }}>
+                              <i className="bi bi-person me-1"></i>
+                              {booking.user.name || booking.user.email}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-4" style={{ color: "#94a3b8" }}>
+                <i className="bi bi-calendar-x" style={{ fontSize: "32px" }}></i>
+                <p className="mb-0 mt-2">Không có dữ liệu cho ngày này</p>
+              </div>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={closeDayModal}>
+              Đóng
+            </Button>
+          </Modal.Footer>
+        </Modal>
       </div>
     </AdminLayout>
   );
