@@ -69,7 +69,7 @@ export const login = async (req, res) => {
 
 export const register = async (req, res) => {
   try {
-    const { fullName, email, phone, passwordHash, role, membershipStatus } =
+    const { fullName, email, phone, passwordHash } =
       req.body;
 
     // Validate required fields
@@ -108,8 +108,8 @@ export const register = async (req, res) => {
       email: email.toLowerCase().trim(),
       phone: phone?.trim() || null,
       passwordHash: hashedPassword,
-      role: role || "customer",
-      membershipStatus: membershipStatus || "active",
+      role: "customer",
+      membershipStatus: "active",
     });
 
     await newUser.save();
