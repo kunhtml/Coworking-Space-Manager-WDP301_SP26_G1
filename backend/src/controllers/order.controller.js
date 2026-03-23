@@ -2,6 +2,8 @@ import Booking from "../models/booking.js";
 import Order from "../models/order.js";
 import OrderItem from "../models/order_item.js";
 import MenuItem from "../models/menu_item.js";
+import Invoice from "../models/invoice.js";
+import Payment from "../models/payment.js";
 
 export const getMyOrders = async (req, res) => {
   try {
@@ -19,14 +21,18 @@ export const getMyOrders = async (req, res) => {
     );
 
     const orderIds = orders.map((o) => o._id);
-    const bookingIds = [...new Set(orders.map((o) => o.bookingId?.toString()).filter(Boolean))];
+    const bookingIds = [
+      ...new Set(orders.map((o) => o.bookingId?.toString()).filter(Boolean)),
+    ];
 
     const [items, bookings] = await Promise.all([
       OrderItem.find({ orderId: { $in: orderIds } }).lean(),
       Booking.find({ _id: { $in: bookingIds } }).lean(),
     ]);
 
-    const menuIds = [...new Set(items.map((i) => i.menuItemId?.toString()).filter(Boolean))];
+    const menuIds = [
+      ...new Set(items.map((i) => i.menuItemId?.toString()).filter(Boolean)),
+    ];
     const menuItems = await MenuItem.find({ _id: { $in: menuIds } }).lean();
 
     const bookingMap = new Map(bookings.map((b) => [b._id.toString(), b]));
@@ -75,7 +81,9 @@ export const createOrder = async (req, res) => {
   try {
     const { bookingId, items } = req.body;
     if (!bookingId || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ message: "Vui lòng chọn booking và ít nhất 1 món." });
+      return res
+        .status(400)
+        .json({ message: "Vui lòng chọn booking và ít nhất 1 món." });
     }
 
     const booking = await Booking.findById(bookingId).lean();
@@ -83,10 +91,14 @@ export const createOrder = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy booking." });
     }
     if (booking.status === "Cancelled") {
-      return res.status(400).json({ message: "Booking đã hủy, không thể tạo đơn hàng." });
+      return res
+        .status(400)
+        .json({ message: "Booking đã hủy, không thể tạo đơn hàng." });
     }
 
-    const menuIds = [...new Set(items.map((i) => i.menuItemId).filter(Boolean))];
+    const menuIds = [
+      ...new Set(items.map((i) => i.menuItemId).filter(Boolean)),
+    ];
     const menus = await MenuItem.find({ _id: { $in: menuIds } }).lean();
     const menuMap = new Map(menus.map((m) => [m._id.toString(), m]));
 
@@ -117,7 +129,7 @@ export const createOrder = async (req, res) => {
       userId: req.user.id,
       bookingId,
       status: "Pending",
-      totalAmount,
+      totalAmount: Math.round(totalAmount),
     });
 
     await OrderItem.insertMany(
@@ -130,7 +142,20 @@ export const createOrder = async (req, res) => {
       })),
     );
 
-    res.status(201).json({ message: "Tạo đơn hàng thành công.", orderId: order._id });
+    // Create separate invoice for this order (not shared with booking)
+    const orderInvoice = await Invoice.create({
+      // No bookingId - this is an order invoice, separate from booking deposit
+      orderIds: [order._id],
+      totalAmount: Math.round(totalAmount),
+      remainingAmount: Math.round(totalAmount),
+      status: "Pending",
+    });
+
+    console.log(`Created separate invoice ${orderInvoice._id} for order ${order._id}`);
+
+    res
+      .status(201)
+      .json({ message: "Tạo đơn hàng thành công.", orderId: order._id });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Lỗi server." });
@@ -144,7 +169,9 @@ export const updateMyOrder = async (req, res) => {
     const { id } = req.params;
     const { items } = req.body;
     if (!Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ message: "Vui lòng truyền danh sách món cần cập nhật." });
+      return res
+        .status(400)
+        .json({ message: "Vui lòng truyền danh sách món cần cập nhật." });
     }
 
     const order = await Order.findById(id);
@@ -152,7 +179,9 @@ export const updateMyOrder = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy đơn hàng." });
     }
 
-    const booking = order.bookingId ? await Booking.findById(order.bookingId).lean() : null;
+    const booking = order.bookingId
+      ? await Booking.findById(order.bookingId).lean()
+      : null;
     const isOwnerByOrder = order.userId?.toString() === req.user.id;
     const isOwnerByBooking = booking?.userId?.toString() === req.user.id;
     if (!isOwnerByOrder && !isOwnerByBooking) {
@@ -160,10 +189,16 @@ export const updateMyOrder = async (req, res) => {
     }
 
     if (["Confirmed", "Cancelled"].includes(order.status)) {
-      return res.status(400).json({ message: "Đơn hàng đã xác nhận hoặc đã hủy, không thể chỉnh sửa." });
+      return res
+        .status(400)
+        .json({
+          message: "Đơn hàng đã xác nhận hoặc đã hủy, không thể chỉnh sửa.",
+        });
     }
 
-    const menuIds = [...new Set(items.map((i) => i.menuItemId).filter(Boolean))];
+    const menuIds = [
+      ...new Set(items.map((i) => i.menuItemId).filter(Boolean)),
+    ];
     const menus = await MenuItem.find({ _id: { $in: menuIds } }).lean();
     const menuMap = new Map(menus.map((m) => [m._id.toString(), m]));
 
@@ -190,6 +225,9 @@ export const updateMyOrder = async (req, res) => {
       0,
     );
 
+    const oldTotalAmount = Number(order.totalAmount || 0);
+    const newTotalAmount = Math.round(totalAmount);
+
     await OrderItem.deleteMany({ orderId: order._id });
     await OrderItem.insertMany(
       normalized.map((i) => ({
@@ -201,8 +239,41 @@ export const updateMyOrder = async (req, res) => {
       })),
     );
 
-    order.totalAmount = totalAmount;
+    order.totalAmount = newTotalAmount;
     await order.save();
+
+    // Update invoice for this order (find invoice containing this orderId)
+    const invoice = await Invoice.findOne({ orderIds: order._id });
+    if (invoice) {
+      // Adjust total: remove old order amount, add new order amount
+      const totalDiff = newTotalAmount - oldTotalAmount;
+      invoice.totalAmount = Math.round(
+        Number(invoice.totalAmount || 0) + totalDiff,
+      );
+
+      // Recalculate remaining
+      const successPayments = await Payment.find({
+        invoiceId: invoice._id,
+        paymentStatus: "Success",
+      }).lean();
+      const totalPaid = successPayments.reduce(
+        (s, p) => s + Math.round(Number(p.amount || 0)),
+        0,
+      );
+      invoice.remainingAmount = Math.max(0, invoice.totalAmount - totalPaid);
+
+      // Update status
+      if (invoice.remainingAmount <= 0) {
+        invoice.status = "Paid";
+      } else if (totalPaid > 0) {
+        invoice.status = "Partially_Paid";
+      } else {
+        invoice.status = "Pending";
+      }
+
+      await invoice.save();
+      console.log(`Updated invoice ${invoice._id} for order ${order._id}`);
+    }
 
     res.json({ message: "Cập nhật đơn hàng thành công." });
   } catch (err) {

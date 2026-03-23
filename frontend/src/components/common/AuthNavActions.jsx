@@ -102,13 +102,13 @@ export default function AuthNavActions({
                   backgroundColor: roleMeta.color ?? "#aaa",
                   color: "#000",
                   fontSize: "0.7rem",
-                  marginTop: "4px"
+                  marginTop: "4px",
                 }}
               >
                 {roleMeta.label ?? role}
               </Badge>
             </div>
-            
+
             {dashboardPath &&
               (isCustomer ? (
                 <>
@@ -150,7 +150,10 @@ export default function AuthNavActions({
             <Dropdown.Divider
               className={isCustomer ? "border-light" : "border-secondary"}
             />
-            <Dropdown.Item onClick={handleLogout} className="text-danger py-2 fw-medium">
+            <Dropdown.Item
+              onClick={handleLogout}
+              className="text-danger py-2 fw-medium"
+            >
               <i className="bi bi-box-arrow-right me-2"></i>Đăng xuất
             </Dropdown.Item>
           </Dropdown.Menu>

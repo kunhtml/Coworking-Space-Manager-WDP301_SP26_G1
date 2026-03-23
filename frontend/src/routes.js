@@ -9,7 +9,8 @@ export default [
   route("register", "pages/shared/Register.jsx"),
   route("spaces", "pages/shared/SpacesPage.jsx"),
   route("menu", "pages/shared/OrderPage.jsx"),
-  route("payment/:bookingId", "pages/shared/PaymentPage.jsx"),
+  route("payment/:bookingId", "pages/shared/PaymentPage.jsx", { id: "booking-payment" }),
+  route("payment/order/:orderId", "pages/shared/PaymentPage.jsx", { id: "order-payment" }),
 
   // Customer pages
   route("order-table", "pages/customer/BookingPage.jsx"),

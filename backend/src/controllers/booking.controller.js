@@ -23,7 +23,12 @@ export const createBooking = async (req, res) => {
     const bookingStartTime = arrivalTime || requestStartTime;
     let bookingDuration = Number(duration);
 
-    if ((!bookingDuration || bookingDuration <= 0) && requestEndTime && bookingStartTime && bookingDate) {
+    if (
+      (!bookingDuration || bookingDuration <= 0) &&
+      requestEndTime &&
+      bookingStartTime &&
+      bookingDate
+    ) {
       const start = new Date(`${bookingDate}T${bookingStartTime}:00`);
       const end = new Date(`${bookingDate}T${requestEndTime}:00`);
       const diffHours = (end.getTime() - start.getTime()) / 3600000;
@@ -32,17 +37,25 @@ export const createBooking = async (req, res) => {
       }
     }
 
-    if (!bookingTableId || !bookingDate || !bookingStartTime || !bookingDuration || bookingDuration <= 0) {
+    if (
+      !bookingTableId ||
+      !bookingDate ||
+      !bookingStartTime ||
+      !bookingDuration ||
+      bookingDuration <= 0
+    ) {
       return res
         .status(400)
         .json({ message: "Vui lòng cung cấp đủ thông tin đặt bàn." });
     }
-    const startTime = new Date(`${arrivalDate}T${arrivalTime}:00`);
+    const startTime = new Date(`${bookingDate}T${bookingStartTime}:00`);
     if (!isFinite(startTime.getTime())) {
       return res.status(400).json({ message: "Ngày hoặc giờ không hợp lệ." });
     }
-    const endTime = new Date(startTime.getTime() + Number(duration) * 3600000);
-    const depositAmount = (Number(pricePerHour) || 0) * Number(duration);
+    const endTime = new Date(startTime.getTime() + bookingDuration * 3600000);
+    const depositAmount = Math.round(
+      (Number(pricePerHour) || 0) * bookingDuration,
+    );
 
     const count = await Booking.countDocuments();
     const bookingCode = `BK-${String(count + 1).padStart(4, "0")}`;
@@ -106,7 +119,8 @@ export const getMyBookings = async (req, res) => {
 export const updateMyBooking = async (req, res) => {
   try {
     const { id } = req.params;
-    const { guestName, guestPhone, arrivalDate, arrivalTime, duration } = req.body;
+    const { guestName, guestPhone, arrivalDate, arrivalTime, duration } =
+      req.body;
 
     const booking = await Booking.findById(id);
     if (!booking || booking.userId?.toString() !== req.user.id) {
@@ -116,13 +130,17 @@ export const updateMyBooking = async (req, res) => {
     if (["Confirmed", "Cancelled"].includes(booking.status)) {
       return res
         .status(400)
-        .json({ message: "Booking đã xác nhận hoặc đã hủy, không thể chỉnh sửa." });
+        .json({
+          message: "Booking đã xác nhận hoặc đã hủy, không thể chỉnh sửa.",
+        });
     }
 
     const nextStart = new Date(`${arrivalDate}T${arrivalTime}:00`);
     const dur = Number(duration);
     if (!isFinite(nextStart.getTime()) || !dur || dur <= 0) {
-      return res.status(400).json({ message: "Thông tin ngày giờ hoặc thời lượng không hợp lệ." });
+      return res
+        .status(400)
+        .json({ message: "Thông tin ngày giờ hoặc thời lượng không hợp lệ." });
     }
     const nextEnd = new Date(nextStart.getTime() + dur * 3600000);
 
@@ -135,7 +153,11 @@ export const updateMyBooking = async (req, res) => {
     }).lean();
 
     if (overlapping.length > 0) {
-      return res.status(409).json({ message: "Khung giờ này đã có người đặt. Vui lòng chọn giờ khác." });
+      return res
+        .status(409)
+        .json({
+          message: "Khung giờ này đã có người đặt. Vui lòng chọn giờ khác.",
+        });
     }
 
     booking.startTime = nextStart;
@@ -229,11 +251,9 @@ export const checkInBooking = async (req, res) => {
     if (!booking)
       return res.status(404).json({ message: "Không tìm thấy booking." });
     if (!["Confirmed", "Awaiting_Payment"].includes(booking.status)) {
-      return res
-        .status(400)
-        .json({
-          message: `Chỉ có thể check-in booking đã xác nhận/chờ thanh toán (trạng thái hiện tại: ${booking.status}).`,
-        });
+      return res.status(400).json({
+        message: `Chỉ có thể check-in booking đã xác nhận/chờ thanh toán (trạng thái hiện tại: ${booking.status}).`,
+      });
     }
     booking.status = "CheckedIn";
     await booking.save();

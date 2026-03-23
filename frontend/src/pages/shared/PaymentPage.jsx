@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
 import { Spinner } from "react-bootstrap";
-import { useParams, useNavigate, Link } from "react-router";
+import { useParams, useNavigate, Link, useLocation } from "react-router";
 import { useAuth } from "../../hooks/useAuth";
 import {
   getPaymentData,
+  getOrderPaymentData,
   createPaymentApi,
+  createOrderPaymentApi,
   cancelPaymentApi,
 } from "../../services/bookingService";
 
@@ -266,9 +268,14 @@ const confettiIcons = [HiSparkles, RiStarFill, HiSparkles, RiStarFill];
    MAIN COMPONENT
    ════════════════════════════════════════════ */
 export default function PaymentPage() {
-  const { bookingId } = useParams();
+  const { bookingId, orderId } = useParams();
+  const location = useLocation();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  // Determine payment type based on URL path
+  const isOrderPayment = location.pathname.includes("/payment/order/");
+  const paymentId = isOrderPayment ? orderId : bookingId;
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -277,29 +284,66 @@ export default function PaymentPage() {
   const [countdown, setCountdown] = useState(null);
   const [timeLeft, setTimeLeft] = useState(null); // 5-min cancel timer (seconds)
   const [cancelled, setCancelled] = useState(false);
+  const [criticalError, setCriticalError] = useState(false); // Stop auto-retry on critical errors
 
   useEffect(() => injectKeyframes(), []);
 
   const fetchData = useCallback(async () => {
+    if (criticalError) return; // Don't retry if we have a critical error
+
     try {
-      const res = await getPaymentData(bookingId);
+      const res = isOrderPayment 
+        ? await getOrderPaymentData(orderId)
+        : await getPaymentData(bookingId);
+      
+      console.log(`${isOrderPayment ? 'Order' : 'Booking'} payment data:`, {
+        paymentStatus: res?.payment?.paymentStatus,
+        remainingAmount: res?.invoice?.remainingAmount,
+        invoiceStatus: res?.invoice?.status,
+      });
       setData(res);
       setError("");
     } catch (err) {
-      setError(err.message || "Không thể tải dữ liệu thanh toán.");
+      const errorMsg = err.message || "Không thể tải dữ liệu thanh toán.";
+      setError(errorMsg);
+
+      // If it's a 404 or 403 error, stop auto-retrying
+      if (
+        errorMsg.includes("không tìm thấy") ||
+        errorMsg.includes("không có quyền") ||
+        errorMsg.includes("không hợp lệ")
+      ) {
+        setCriticalError(true);
+      }
     } finally {
       setLoading(false);
     }
-  }, [bookingId]);
+  }, [bookingId, orderId, isOrderPayment, criticalError]);
 
   const handleCreatePayment = async () => {
+    if (criticalError) return; // Don't try to create payment if we have a critical error
+
     setCreatingPayment(true);
     setError("");
     try {
-      await createPaymentApi(bookingId);
+      if (isOrderPayment) {
+        await createOrderPaymentApi(orderId);
+      } else {
+        await createPaymentApi(bookingId);
+      }
       await fetchData();
     } catch (err) {
-      setError(err.message || "Không thể tạo link thanh toán.");
+      const errorMsg = err.message || "Không thể tạo link thanh toán.";
+      setError(errorMsg);
+
+      // If it's a critical error, stop auto-retrying
+      if (
+        errorMsg.includes("không tìm thấy") ||
+        errorMsg.includes("không có quyền") ||
+        errorMsg.includes("không hợp lệ")
+      ) {
+        setCriticalError(true);
+      }
     } finally {
       setCreatingPayment(false);
     }
@@ -315,7 +359,7 @@ export default function PaymentPage() {
 
   // Auto-create payment when data loads and no payment exists yet
   useEffect(() => {
-    if (!data) return;
+    if (!data || criticalError) return;
     if (
       data.payosEnabled &&
       data.ui?.canPay &&
@@ -325,13 +369,18 @@ export default function PaymentPage() {
       handleCreatePayment();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data?.payment, data?.payosEnabled, data?.ui?.canPay]);
+  }, [data?.payment, data?.payosEnabled, data?.ui?.canPay, criticalError]);
 
   useEffect(() => {
-    if (!data?.ui?.canPay || data?.payment?.paymentStatus !== "Pending") return;
+    if (
+      !data?.ui?.canPay ||
+      data?.payment?.paymentStatus !== "Pending" ||
+      criticalError
+    )
+      return;
     const timer = setInterval(() => fetchData(), 5000);
     return () => clearInterval(timer);
-  }, [data, fetchData]);
+  }, [data, fetchData, criticalError]);
 
   // Start 5-minute cancel countdown when QR becomes visible
   useEffect(() => {
@@ -364,12 +413,20 @@ export default function PaymentPage() {
   }, [timeLeft, bookingId]);
 
   // Backend maps PayOS PAID -> "Success"
-  const isPaid = ["Paid", "PAID", "Success", "success"].includes(
-    data?.payment?.paymentStatus,
-  );
+  // Only consider paid if payment status is Success AND remaining amount is 0
+  const isPaid =
+    data?.payment?.paymentStatus === "Success" &&
+    data?.invoice?.remainingAmount === 0;
+
+  console.log("isPaid check:", {
+    paymentStatus: data?.payment?.paymentStatus,
+    remainingAmount: data?.invoice?.remainingAmount,
+    isPaid,
+  });
 
   useEffect(() => {
     if (!isPaid || countdown !== null) return;
+    console.log("Starting success countdown...");
     setCountdown(3);
   }, [isPaid, countdown]);
 
@@ -531,7 +588,9 @@ export default function PaymentPage() {
                 lineHeight: 1.6,
               }}
             >
-              Đơn đặt bàn của bạn đã được xác nhận thanh toán
+              {isOrderPayment 
+                ? "Đơn hàng của bạn đã được xác nhận thanh toán"
+                : "Đơn đặt bàn của bạn đã được xác nhận thanh toán"}
             </p>
 
             {/* Countdown ring */}
@@ -801,33 +860,63 @@ export default function PaymentPage() {
           >
             {error}
           </p>
-          <button
-            onClick={fetchData}
-            style={{
-              background: "linear-gradient(135deg, #6366f1, #4f46e5)",
-              color: "#fff",
-              border: "none",
-              borderRadius: 14,
-              padding: "13px 40px",
-              cursor: "pointer",
-              fontWeight: 700,
-              fontSize: 14,
-              boxShadow: "0 8px 24px rgba(99,102,241,.3)",
-              transition: "all .2s ease",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.transform = "translateY(-2px)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.transform = "translateY(0)")
-            }
-          >
-            <HiArrowPath size={16} />
-            Thử lại
-          </button>
+          {criticalError ? (
+            <button
+              onClick={() => navigate("/dashboard")}
+              style={{
+                background: "linear-gradient(135deg, #6366f1, #4f46e5)",
+                color: "#fff",
+                border: "none",
+                borderRadius: 14,
+                padding: "13px 40px",
+                cursor: "pointer",
+                fontWeight: 700,
+                fontSize: 14,
+                boxShadow: "0 8px 24px rgba(99,102,241,.3)",
+                transition: "all .2s ease",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.transform = "translateY(-2px)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.transform = "translateY(0)")
+              }
+            >
+              <HiArrowPath size={16} />
+              Quay về Dashboard
+            </button>
+          ) : (
+            <button
+              onClick={fetchData}
+              style={{
+                background: "linear-gradient(135deg, #6366f1, #4f46e5)",
+                color: "#fff",
+                border: "none",
+                borderRadius: 14,
+                padding: "13px 40px",
+                cursor: "pointer",
+                fontWeight: 700,
+                fontSize: 14,
+                boxShadow: "0 8px 24px rgba(99,102,241,.3)",
+                transition: "all .2s ease",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.transform = "translateY(-2px)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.transform = "translateY(0)")
+              }
+            >
+              <HiArrowPath size={16} />
+              Thử lại
+            </button>
+          )}
         </div>
       )}
 
@@ -966,6 +1055,112 @@ export default function PaymentPage() {
               <HiXMark size={18} strokeWidth={1} />
             </Link>
           </div>
+
+          {/* ── Booking Summary ── */}
+          {data && (
+            <div
+              style={{
+                padding: "16px 24px",
+                borderBottom: "1px solid #f1f5f9",
+                background: "#fafbfc",
+              }}
+            >
+              {data.table && (
+                <div
+                  style={{
+                    fontWeight: 700,
+                    fontSize: 16,
+                    color: "#1e293b",
+                    marginBottom: 6,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 30,
+                      height: 30,
+                      borderRadius: 8,
+                      background: "rgba(99,102,241,.1)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <HiBuildingLibrary size={15} color="#6366f1" />
+                  </span>
+                  {data.table.name}
+                  {data.table.location && (
+                    <span
+                      style={{
+                        fontSize: 12,
+                        color: "#94a3b8",
+                        fontWeight: 500,
+                      }}
+                    >
+                      · {data.table.location}
+                    </span>
+                  )}
+                </div>
+              )}
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "6px 20px",
+                  fontSize: 13,
+                  color: "#64748b",
+                  fontWeight: 500,
+                }}
+              >
+                <span>
+                  <HiDocumentText
+                    size={13}
+                    style={{ marginRight: 4, verticalAlign: "middle" }}
+                  />
+                  {isOrderPayment ? (
+                    <>Đơn hàng #{data.order?.id?.slice(-8)}</>
+                  ) : (
+                    <>Booking #{data.booking?.id}</>
+                  )}
+                </span>
+                {!isOrderPayment && data.booking?.date && <span>📅 {data.booking.date}</span>}
+                {!isOrderPayment && data.booking?.startTime && data.booking?.endTime && (
+                  <span>
+                    🕐 {data.booking.startTime} – {data.booking.endTime}
+                  </span>
+                )}
+                {isOrderPayment && data.order?.createdAt && (
+                  <span>📅 {new Date(data.order.createdAt).toLocaleDateString("vi-VN")}</span>
+                )}
+              </div>
+              <div
+                style={{
+                  marginTop: 8,
+                  background: "linear-gradient(135deg, #ede9fe, #e0e7ff)",
+                  borderRadius: 10,
+                  padding: "8px 14px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  border: "1px solid rgba(99,102,241,.12)",
+                }}
+              >
+                <span
+                  style={{ fontSize: 13, color: "#4338ca", fontWeight: 600 }}
+                >
+                  Số tiền cần thanh toán
+                </span>
+                <span
+                  style={{ fontSize: 16, color: "#6366f1", fontWeight: 800 }}
+                >
+                  {data.invoice?.remainingFormatted ||
+                    data.booking?.depositFormatted}
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* ── QR Area ── */}
           <div style={{ padding: "24px 24px 16px" }}>
@@ -1120,33 +1315,75 @@ export default function PaymentPage() {
             {!data.payosEnabled && (
               <div
                 style={{
-                  background: "linear-gradient(135deg, #fefce8, #fef9c3)",
+                  background: "linear-gradient(135deg, #f0f9ff, #e0f2fe)",
                   borderRadius: 16,
                   padding: "20px",
-                  color: "#854d0e",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 14,
-                  border: "1px solid #fde68a",
+                  border: "1px solid #bae6fd",
                   fontSize: 14,
-                  fontWeight: 500,
                 }}
               >
                 <div
                   style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 12,
-                    background: "rgba(234,179,8,.12)",
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
+                    gap: 12,
+                    marginBottom: 14,
+                    fontWeight: 700,
+                    color: "#0369a1",
+                    fontSize: 15,
                   }}
                 >
-                  <HiCog6Tooth size={20} color="#ca8a04" />
+                  <span style={{ fontSize: 22 }}>🏦</span>
+                  Chuyển khoản thủ công
                 </div>
-                PayOS chưa được cấu hình trên môi trường này.
+                <div
+                  style={{
+                    background: "#fff",
+                    borderRadius: 12,
+                    padding: "14px 16px",
+                    marginBottom: 10,
+                    border: "1px solid #e0f2fe",
+                    fontSize: 13,
+                    color: "#0f172a",
+                    lineHeight: 1.8,
+                  }}
+                >
+                  <div>
+                    <strong>Ngân hàng:</strong> MB Bank / VietcomBank / TPBank
+                  </div>
+                  <div>
+                    <strong>Số TK:</strong> Liên hệ nhân viên tại quầy
+                  </div>
+                  <div>
+                    <strong>Nội dung CK:</strong>{" "}
+                    <code
+                      style={{
+                        background: "#f1f5f9",
+                        padding: "1px 6px",
+                        borderRadius: 4,
+                      }}
+                    >
+                      {isOrderPayment ? `Order ${data.order?.id?.slice(-8)}` : `Booking #${data.booking?.id}`}
+                    </code>
+                  </div>
+                </div>
+                <div
+                  style={{
+                    background: "rgba(3,105,161,.08)",
+                    borderRadius: 10,
+                    padding: "10px 14px",
+                    color: "#0369a1",
+                    fontSize: 13,
+                    fontWeight: 500,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <HiLightBulb size={15} />
+                  Vui lòng liên hệ nhân viên để xác nhận thanh toán sau khi
+                  chuyển khoản.
+                </div>
               </div>
             )}
           </div>
@@ -1410,4 +1647,3 @@ export default function PaymentPage() {
     </div>
   );
 }
-

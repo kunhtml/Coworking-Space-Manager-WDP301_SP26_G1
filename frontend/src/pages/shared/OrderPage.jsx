@@ -31,28 +31,44 @@ export function meta() {
 
 const getCategoryVisuals = (categoryName) => {
   const name = categoryName.toLowerCase();
-  
+
   // Nhóm Cà phê
   if (name.includes("cà phê") || name.includes("coffee")) {
     return { icon: "bi-cup-hot", color: "rgba(139, 92, 246, 0.1)" }; // Tím nhạt
   }
   // Nhóm Bánh / Đồ ăn nhẹ
-  if (name.includes("đồ ăn") || name.includes("bánh") || name.includes("muffin")) {
+  if (
+    name.includes("đồ ăn") ||
+    name.includes("bánh") ||
+    name.includes("muffin")
+  ) {
     return { icon: "bi-basket", color: "rgba(251, 191, 36, 0.1)" }; // Vàng nhạt
   }
   // Nhóm Trà & Trái cây
-  if (name.includes("trà") || name.includes("trái cây") || name.includes("nước ép")) {
+  if (
+    name.includes("trà") ||
+    name.includes("trái cây") ||
+    name.includes("nước ép")
+  ) {
     return { icon: "bi-cup-straw", color: "rgba(34, 197, 94, 0.1)" }; // Xanh lá nhạt
   }
   // Nhóm Đá xay / Sinh tố
-  if (name.includes("đá xay") || name.includes("frappuccino") || name.includes("sinh tố")) {
+  if (
+    name.includes("đá xay") ||
+    name.includes("frappuccino") ||
+    name.includes("sinh tố")
+  ) {
     return { icon: "bi-cup", color: "rgba(59, 130, 246, 0.1)" }; // Xanh dương nhạt (cảm giác lạnh)
   }
   // Nhóm Dịch vụ / Khác (In ấn, văn phòng phẩm...)
-  if (name.includes("dịch vụ") || name.includes("in ấn") || name.includes("thiết bị")) {
+  if (
+    name.includes("dịch vụ") ||
+    name.includes("in ấn") ||
+    name.includes("thiết bị")
+  ) {
     return { icon: "bi-printer", color: "rgba(99, 102, 241, 0.1)" }; // Chàm
   }
-  
+
   // Mặc định nếu không khớp nhóm nào
   return { icon: "bi-tag", color: "rgba(108, 117, 125, 0.1)" }; // Xám
 };
@@ -93,29 +109,34 @@ export default function MenuPage() {
 
         const normalizedItems = items
           .filter((item) => {
-            const availability = String(item?.availabilityStatus || "In_Stock").toLowerCase();
-            const hasStockValue = item?.stockQuantity !== undefined && item?.stockQuantity !== null;
+            const availability = String(
+              item?.availabilityStatus || "In_Stock",
+            ).toLowerCase();
+            const hasStockValue =
+              item?.stockQuantity !== undefined && item?.stockQuantity !== null;
             const inStock = !hasStockValue || Number(item.stockQuantity) > 0;
             return availability === "in_stock" && inStock;
           })
           .map((item, index) => {
-          const rawCatId = item?.categoryId?._id || item?.categoryId || "uncategorized";
-          const categoryId = String(rawCatId);
-          const categoryName = item?.categoryId?.name || catMap.get(categoryId) || "Khác";
-          const visuals = getCategoryVisuals(categoryName);
+            const rawCatId =
+              item?.categoryId?._id || item?.categoryId || "uncategorized";
+            const categoryId = String(rawCatId);
+            const categoryName =
+              item?.categoryId?.name || catMap.get(categoryId) || "Khác";
+            const visuals = getCategoryVisuals(categoryName);
 
-          return {
-            id: String(item._id),
-            name: item.name || "Món không tên",
-            description: item.description || "",
-            price: Number(item.price || 0),
-            icon: visuals.icon,       
-            color: visuals.color,
-            category: categoryName,
-            categoryId,
-            popular: false,
-          };
-        });
+            return {
+              id: String(item._id),
+              name: item.name || "Món không tên",
+              description: item.description || "",
+              price: Number(item.price || 0),
+              icon: visuals.icon,
+              color: visuals.color,
+              category: categoryName,
+              categoryId,
+              popular: false,
+            };
+          });
 
         setMenuCategories(categories);
         setMenuItems(normalizedItems);
@@ -151,7 +172,9 @@ export default function MenuPage() {
   }, [isAuthenticated]);
 
   const categories = useMemo(() => {
-    const base = [{ id: "all", label: "Tất cả", icon: "", count: menuItems.length }];
+    const base = [
+      { id: "all", label: "Tất cả", icon: "", count: menuItems.length },
+    ];
 
     for (const category of menuCategories) {
       const id = String(category._id);
@@ -240,7 +263,7 @@ export default function MenuPage() {
 
     try {
       setOrdering(true);
-      await createOrderApi({
+      const result = await createOrderApi({
         bookingId: selectedBookingId,
         items: cart.map((item) => ({
           menuItemId: item.id,
@@ -249,11 +272,18 @@ export default function MenuPage() {
         })),
       });
 
+      // Clear cart and close modal
       setCart([]);
       setOrderNote("");
       setShowCartModal(false);
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
+
+      // Navigate to order payment page (not booking payment)
+      const orderId = result?.orderId || result?.data?.orderId;
+      if (orderId) {
+        navigate(`/payment/order/${orderId}`);
+      } else {
+        setOrderError("Đơn hàng đã được tạo nhưng thiếu orderId.");
+      }
     } catch (err) {
       setOrderError(err.message || "Không thể tạo order.");
     } finally {
@@ -320,9 +350,7 @@ export default function MenuPage() {
                   className="px-4 py-2 rounded-pill fw-medium position-relative"
                   onClick={() => setSelectedCategory(category.id)}
                 >
-                  {category.icon && (
-                    <i className={`${category.icon} me-2`}></i>
-                  )}
+                  {category.icon && <i className={`${category.icon} me-2`}></i>}
                   {category.label}
                   <Badge
                     bg={selectedCategory === category.id ? "light" : "primary"}
@@ -656,4 +684,3 @@ export default function MenuPage() {
     </div>
   );
 }
-

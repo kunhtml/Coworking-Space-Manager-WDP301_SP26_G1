@@ -42,19 +42,48 @@ export const getAvailableTables = async (req, res) => {
     const requestedStartTime = arrivalTime || requestStartTime;
     let requestedDuration = Number(duration);
 
-    if ((!requestedDuration || requestedDuration <= 0) && requestEndTime && requestedStartTime && requestedDate) {
+    // Validate date and start time first
+    if (!requestedDate) {
+      return res.status(400).json({ message: "Vui lòng cung cấp ngày." });
+    }
+    if (!requestedStartTime) {
+      return res
+        .status(400)
+        .json({ message: "Vui lòng cung cấp giờ bắt đầu." });
+    }
+
+    // Calculate duration from startTime and endTime if not provided
+    if (
+      (!requestedDuration ||
+        !isFinite(requestedDuration) ||
+        requestedDuration <= 0) &&
+      requestEndTime
+    ) {
       const start = new Date(`${requestedDate}T${requestedStartTime}:00`);
       const end = new Date(`${requestedDate}T${requestEndTime}:00`);
+      if (!isFinite(start.getTime()) || !isFinite(end.getTime())) {
+        return res
+          .status(400)
+          .json({ message: "Định dạng ngày hoặc giờ không hợp lệ." });
+      }
       const diffHours = (end.getTime() - start.getTime()) / 3600000;
       if (isFinite(diffHours) && diffHours > 0) {
         requestedDuration = diffHours;
       }
     }
 
-    if (!requestedDate || !requestedStartTime || !requestedDuration || requestedDuration <= 0) {
+    // Final validation for duration
+    if (
+      !requestedDuration ||
+      !isFinite(requestedDuration) ||
+      requestedDuration <= 0
+    ) {
       return res
         .status(400)
-        .json({ message: "Vui lòng cung cấp ngày, giờ và thời gian sử dụng." });
+        .json({
+          message:
+            "Vui lòng cung cấp thời gian sử dụng hợp lệ (duration hoặc endTime).",
+        });
     }
 
     const startTime = new Date(`${requestedDate}T${requestedStartTime}:00`);
@@ -81,7 +110,9 @@ export const getAvailableTables = async (req, res) => {
     if (tableType) {
       const normalizedType = String(tableType).toLowerCase();
       tables = tables.filter((t) =>
-        String(t.tableType || "").toLowerCase().includes(normalizedType),
+        String(t.tableType || "")
+          .toLowerCase()
+          .includes(normalizedType),
       );
     }
 
@@ -109,8 +140,16 @@ export const getAvailableTables = async (req, res) => {
 
 export const createTable = async (req, res) => {
   try {
-    const { name, tableType, capacity, status, pricePerHour, pricePerDay, location, description } =
-      req.body;
+    const {
+      name,
+      tableType,
+      capacity,
+      status,
+      pricePerHour,
+      pricePerDay,
+      location,
+      description,
+    } = req.body;
     if (!name || !capacity) {
       return res
         .status(400)
@@ -137,11 +176,28 @@ export const createTable = async (req, res) => {
 
 export const updateTable = async (req, res) => {
   try {
-    const { name, tableType, capacity, status, pricePerHour, pricePerDay, location, description } =
-      req.body;
+    const {
+      name,
+      tableType,
+      capacity,
+      status,
+      pricePerHour,
+      pricePerDay,
+      location,
+      description,
+    } = req.body;
     const table = await Table.findByIdAndUpdate(
       req.params.id,
-      { name, tableType, capacity, status, pricePerHour, pricePerDay, location, description },
+      {
+        name,
+        tableType,
+        capacity,
+        status,
+        pricePerHour,
+        pricePerDay,
+        location,
+        description,
+      },
       { new: true, runValidators: true },
     );
     if (!table) return res.status(404).json({ message: "Không tìm thấy bàn." });

@@ -20,8 +20,16 @@ export async function getPaymentData(bookingId) {
   return apiClient.get(`/payments/${bookingId}`);
 }
 
+export async function getOrderPaymentData(orderId) {
+  return apiClient.get(`/payments/order/${orderId}`);
+}
+
 export async function createPaymentApi(bookingId) {
   return apiClient.post("/payments/create", { bookingId });
+}
+
+export async function createOrderPaymentApi(orderId) {
+  return apiClient.post("/payments/create-order", { orderId });
 }
 
 export async function cancelPaymentApi(bookingId) {
