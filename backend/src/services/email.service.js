@@ -18,7 +18,9 @@ const createGmailTransporter = () => {
 };
 
 const getPurposeText = (purpose) => {
-  const normalized = String(purpose || "").trim().toUpperCase();
+  const normalized = String(purpose || "")
+    .trim()
+    .toUpperCase();
 
   if (normalized === "REGISTER") return "đăng ký tài khoản";
   if (normalized === "FORGOT_PASSWORD") return "quên mật khẩu";
@@ -110,4 +112,3 @@ export default {
   isEmailConfigured,
   sendOtpEmail,
 };
-

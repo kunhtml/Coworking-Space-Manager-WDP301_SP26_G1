@@ -301,7 +301,11 @@ export default function Register() {
                           onClick={handleSendOtp}
                           disabled={loading || otpLoading}
                         >
-                          {otpLoading ? "Đang gửi..." : otpSent ? "Gửi lại OTP" : "Gửi OTP"}
+                          {otpLoading
+                            ? "Đang gửi..."
+                            : otpSent
+                              ? "Gửi lại OTP"
+                              : "Gửi OTP"}
                         </Button>
                         {otpVerified && (
                           <span className="small text-success align-self-center fw-semibold">
@@ -320,7 +324,8 @@ export default function Register() {
                           className="fw-bold mb-2"
                           style={{ color: "#1f2937" }}
                         >
-                          Mã OTP email <span style={{ color: "#ef4444" }}>*</span>
+                          Mã OTP email{" "}
+                          <span style={{ color: "#ef4444" }}>*</span>
                         </Form.Label>
                         <div className="d-flex gap-2">
                           <Form.Control
@@ -334,12 +339,16 @@ export default function Register() {
                               color: "#1f2937",
                             }}
                             value={otpCode}
-                            onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+                            onChange={(e) =>
+                              setOtpCode(e.target.value.replace(/\D/g, ""))
+                            }
                             disabled={loading || otpLoading || otpVerified}
                           />
                           <Button
                             type="button"
-                            variant={otpVerified ? "success" : "outline-success"}
+                            variant={
+                              otpVerified ? "success" : "outline-success"
+                            }
                             className="rounded-3"
                             onClick={handleVerifyOtp}
                             disabled={loading || otpLoading || otpVerified}
@@ -508,4 +517,3 @@ export default function Register() {
     </div>
   );
 }
-
