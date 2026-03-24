@@ -2,6 +2,10 @@
 
 This folder contains the backend architecture scaffold.
 
+## Setup guides
+
+- Gmail SMTP: see `GMAIL_SMTP_SETUP.md`
+
 ## Structure
 
 - `src/config`: runtime and database configuration
