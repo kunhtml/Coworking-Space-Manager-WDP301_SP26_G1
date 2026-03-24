@@ -15,7 +15,7 @@ function getDashboardPath(role) {
   const r = role?.toLowerCase();
   if (r === "admin") return "/admin-dashboard/users";
   if (r === "staff") return "/staff-dashboard";
-  if (r === "customer") return "/customer-dashboard";
+  if (r === "customer") return "/customer-dashboard/orders";
   return null;
 }
 
