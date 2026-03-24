@@ -11,7 +11,11 @@ import {
 } from "react-bootstrap";
 import { Link, useNavigate } from "react-router";
 import { animate, stagger } from "animejs";
-import { registerApi } from "../../services/api";
+import {
+  registerApi,
+  sendRegisterOtpApi,
+  verifyRegisterOtpApi,
+} from "../../services/api";
 import { saveAuth } from "../../store/authSlice";
 import GuestCustomerNavbar from "../../components/common/GuestCustomerNavbar";
 
@@ -33,6 +37,10 @@ export default function Register() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [agreedTerms, setAgreedTerms] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
 
   useEffect(() => {
     animate(".register-card", {
@@ -60,11 +68,83 @@ export default function Register() {
     });
   }, []);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+  const validateBasicForm = () => {
+    if (!fullName.trim() || !email.trim() || !password.trim()) {
+      setError("Vui lòng điền đầy đủ các trường bắt buộc.");
+      return false;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("Email không đúng định dạng.");
+      return false;
+    }
+
+    if (password.length < 6) {
+      setError("Mật khẩu phải có ít nhất 6 ký tự.");
+      return false;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Mật khẩu xác nhận không khớp.");
+      return false;
+    }
+
+    if (!agreedTerms) {
+      setError("Vui lòng đồng ý với điều khoản sử dụng.");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSendOtp = async () => {
+    setError("");
+    setSuccess("");
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError("Vui lòng nhập email hợp lệ trước khi gửi OTP.");
+      return;
+    }
+
+    setOtpLoading(true);
+    try {
+      await sendRegisterOtpApi(email.trim().toLowerCase());
+      setOtpSent(true);
+      setOtpVerified(false);
+      setOtpCode("");
+      setSuccess("Đã gửi mã OTP qua email. Vui lòng kiểm tra hộp thư.");
+    } catch (err) {
+      setError(err.message || "Không thể gửi OTP. Vui lòng thử lại.");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    setError("");
+    setSuccess("");
+
+    if (!otpSent) {
+      setError("Vui lòng gửi OTP trước.");
+      return;
+    }
+
+    if (!/^\d{6}$/.test(otpCode.trim())) {
+      setError("OTP phải gồm 6 chữ số.");
+      return;
+    }
+
+    setOtpLoading(true);
+    try {
+      await verifyRegisterOtpApi(email.trim().toLowerCase(), otpCode.trim());
+      setOtpVerified(true);
+      setSuccess("Xác thực OTP thành công. Bạn có thể đăng ký ngay.");
+    } catch (err) {
+      setOtpVerified(false);
+      setError(err.message || "Xác thực OTP thất bại.");
+    } finally {
+      setOtpLoading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -72,28 +152,12 @@ export default function Register() {
     setError("");
     setSuccess("");
 
-    if (!fullName.trim() || !email.trim() || !password.trim()) {
-      setError("Vui lòng điền đầy đủ các trường bắt buộc.");
+    if (!validateBasicForm()) {
       return;
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError("Email không đúng định dạng.");
-      return;
-    }
-
-    if (password.length < 6) {
-      setError("Mật khẩu phải có ít nhất 6 ký tự.");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError("Mật khẩu xác nhận không khớp.");
-      return;
-    }
-
-    if (!agreedTerms) {
-      setError("Vui lòng đồng ý với điều khoản sử dụng.");
+    if (!otpVerified) {
+      setError("Vui lòng gửi và xác thực OTP email trước khi đăng ký.");
       return;
     }
 
@@ -220,10 +284,75 @@ export default function Register() {
                           color: "#1f2937",
                         }}
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        disabled={loading}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          setOtpSent(false);
+                          setOtpVerified(false);
+                          setOtpCode("");
+                        }}
+                        disabled={loading || otpLoading}
                       />
+
+                      <div className="d-flex gap-2 mt-2">
+                        <Button
+                          type="button"
+                          variant="outline-primary"
+                          className="rounded-3"
+                          onClick={handleSendOtp}
+                          disabled={loading || otpLoading}
+                        >
+                          {otpLoading ? "Đang gửi..." : otpSent ? "Gửi lại OTP" : "Gửi OTP"}
+                        </Button>
+                        {otpVerified && (
+                          <span className="small text-success align-self-center fw-semibold">
+                            Email đã xác thực OTP
+                          </span>
+                        )}
+                      </div>
                     </Form.Group>
+
+                    {otpSent && (
+                      <Form.Group
+                        className="mb-3 register-form-item"
+                        style={{ opacity: 1 }}
+                      >
+                        <Form.Label
+                          className="fw-bold mb-2"
+                          style={{ color: "#1f2937" }}
+                        >
+                          Mã OTP email <span style={{ color: "#ef4444" }}>*</span>
+                        </Form.Label>
+                        <div className="d-flex gap-2">
+                          <Form.Control
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={6}
+                            placeholder="Nhập mã OTP 6 số"
+                            className="py-2 px-3 rounded-3 border-2 focus-ring focus-ring-primary transition-all"
+                            style={{
+                              borderColor: "#e5e7eb",
+                              color: "#1f2937",
+                            }}
+                            value={otpCode}
+                            onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+                            disabled={loading || otpLoading || otpVerified}
+                          />
+                          <Button
+                            type="button"
+                            variant={otpVerified ? "success" : "outline-success"}
+                            className="rounded-3"
+                            onClick={handleVerifyOtp}
+                            disabled={loading || otpLoading || otpVerified}
+                          >
+                            {otpVerified
+                              ? "Đã xác thực"
+                              : otpLoading
+                                ? "Đang xác thực..."
+                                : "Xác thực OTP"}
+                          </Button>
+                        </div>
+                      </Form.Group>
+                    )}
 
                     {/* Phone */}
                     <Form.Group
