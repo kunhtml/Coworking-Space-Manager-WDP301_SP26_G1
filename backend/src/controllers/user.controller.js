@@ -130,17 +130,25 @@ export const deleteUser = async (req, res) => {
   try {
     const userId = req.params.id;
 
-    // Don't allow deleting yourself
-    if (req.user && req.user._id.toString() === userId) {
-      return res.status(400).json({ message: "Không thể xóa tài khoản của chính mình." });
+    // Don't allow deactivating yourself.
+    if (req.user && String(req.user.id) === String(userId)) {
+      return res.status(400).json({ message: "Không thể vô hiệu hóa tài khoản của chính mình." });
     }
 
-    const user = await User.findByIdAndDelete(userId);
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { membershipStatus: "Inactive" },
+      { new: true },
+    ).select("-passwordHash");
+
     if (!user) {
       return res.status(404).json({ message: "Không tìm thấy người dùng." });
     }
 
-    res.json({ message: "Xóa người dùng thành công!" });
+    res.json({
+      message: "Đã vô hiệu hóa người dùng thành công.",
+      user,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Lỗi khi xóa người dùng." });

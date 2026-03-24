@@ -1,9 +1,45 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/user.js";
+import { sendOtpEmail } from "../services/email.service.js";
+
+const OTP_TTL_MS = 5 * 60 * 1000;
+const OTP_SESSION_TTL_MS = 10 * 60 * 1000;
+const otpCache = new Map();
+const otpVerifiedCache = new Map();
+
+const OTP_PURPOSE = {
+  UPDATE_PROFILE: "UPDATE_PROFILE",
+  CHANGE_PASSWORD: "CHANGE_PASSWORD",
+};
+
+function requireJwtSecret() {
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET is required");
+  }
+}
+
+function makeOtpKey(userId, purpose) {
+  return `${String(userId)}:${String(purpose)}`;
+}
+
+function generateOtpCode() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+function ensureOtpVerified(userId, purpose) {
+  const key = makeOtpKey(userId, purpose);
+  const verified = otpVerifiedCache.get(key);
+  if (!verified || verified.expiresAt < Date.now()) {
+    return false;
+  }
+  otpVerifiedCache.delete(key);
+  return true;
+}
 
 export const login = async (req, res) => {
   try {
+    requireJwtSecret();
     const { identifier, password } = req.body;
 
     console.log("[LOGIN] Request:", {
@@ -64,7 +100,7 @@ export const login = async (req, res) => {
 
     const token = jwt.sign(
       { id: user._id, role: user.role },
-      process.env.JWT_SECRET || "nexus_secret",
+      process.env.JWT_SECRET,
       { expiresIn: "7d" },
     );
 
@@ -90,8 +126,9 @@ export const login = async (req, res) => {
 
 export const register = async (req, res) => {
   try {
-    const { fullName, email, phone, passwordHash } =
-      req.body;
+    requireJwtSecret();
+    const { fullName, email, phone, passwordHash } = req.body;
+    const role = "customer";
 
     // Validate required fields
     if (!email || !passwordHash) {
@@ -129,8 +166,8 @@ export const register = async (req, res) => {
       email: email.toLowerCase().trim(),
       phone: phone?.trim() || null,
       passwordHash: hashedPassword,
-      role: "customer",
-      membershipStatus: "active",
+      role,
+      membershipStatus: "Active",
     });
 
     await newUser.save();
@@ -138,7 +175,7 @@ export const register = async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { id: newUser._id, role: newUser.role },
-      process.env.JWT_SECRET || "nexus_secret",
+      process.env.JWT_SECRET,
       { expiresIn: "7d" },
     );
 
@@ -195,6 +232,18 @@ export const updateProfile = async (req, res) => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLower)) {
       return res.status(400).json({ message: "Email không đúng định dạng." });
     }
+    const currentUser = await User.findById(req.user.id).lean();
+    if (!currentUser) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng." });
+    }
+    if (
+      emailLower !== String(currentUser.email || "").toLowerCase() &&
+      !ensureOtpVerified(req.user.id, OTP_PURPOSE.UPDATE_PROFILE)
+    ) {
+      return res.status(403).json({
+        message: "Vui lòng xác thực OTP trước khi thay đổi email.",
+      });
+    }
     const existing = await User.findOne({
       email: emailLower,
       _id: { $ne: req.user.id },
@@ -230,6 +279,8 @@ export const updateProfile = async (req, res) => {
 
 export const changePassword = async (req, res) => {
   try {
+    ensureOtpVerified(req.user.id, OTP_PURPOSE.CHANGE_PASSWORD);
+
     const { currentPassword, newPassword, confirmPassword } = req.body;
     if (!currentPassword || !newPassword || !confirmPassword) {
       return res
@@ -253,6 +304,83 @@ export const changePassword = async (req, res) => {
     res.json({ message: "Đổi mật khẩu thành công." });
   } catch (err) {
     res.status(500).json({ message: "Lỗi server." });
+  }
+};
+
+export const sendOtp = async (req, res) => {
+  try {
+    const { purpose } = req.body;
+    const normalizedPurpose = String(purpose || "").trim().toUpperCase();
+
+    if (!Object.values(OTP_PURPOSE).includes(normalizedPurpose)) {
+      return res.status(400).json({ message: "purpose không hợp lệ." });
+    }
+
+    const user = await User.findById(req.user.id).lean();
+    if (!user?.email) {
+      return res.status(400).json({ message: "Tài khoản chưa có email để gửi OTP." });
+    }
+
+    const otpCode = generateOtpCode();
+    const key = makeOtpKey(req.user.id, normalizedPurpose);
+
+    otpCache.set(key, {
+      code: otpCode,
+      expiresAt: Date.now() + OTP_TTL_MS,
+    });
+
+    await sendOtpEmail({
+      to: user.email,
+      otpCode,
+      purpose: normalizedPurpose,
+    });
+
+    return res.json({
+      message: "Đã gửi OTP qua email.",
+      expiresInSeconds: Math.floor(OTP_TTL_MS / 1000),
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Lỗi gửi OTP." });
+  }
+};
+
+export const verifyOtp = async (req, res) => {
+  try {
+    const { purpose, otp } = req.body;
+    const normalizedPurpose = String(purpose || "").trim().toUpperCase();
+    const code = String(otp || "").trim();
+
+    if (!Object.values(OTP_PURPOSE).includes(normalizedPurpose)) {
+      return res.status(400).json({ message: "purpose không hợp lệ." });
+    }
+    if (!/^\d{6}$/.test(code)) {
+      return res.status(400).json({ message: "OTP không hợp lệ." });
+    }
+
+    const key = makeOtpKey(req.user.id, normalizedPurpose);
+    const current = otpCache.get(key);
+    if (!current || current.expiresAt < Date.now()) {
+      otpCache.delete(key);
+      return res.status(400).json({ message: "OTP đã hết hạn hoặc chưa được tạo." });
+    }
+
+    if (current.code !== code) {
+      return res.status(400).json({ message: "OTP không chính xác." });
+    }
+
+    otpCache.delete(key);
+    otpVerifiedCache.set(key, {
+      expiresAt: Date.now() + OTP_SESSION_TTL_MS,
+    });
+
+    return res.json({
+      message: "Xác thực OTP thành công.",
+      validForSeconds: Math.floor(OTP_SESSION_TTL_MS / 1000),
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Lỗi xác thực OTP." });
   }
 };
 

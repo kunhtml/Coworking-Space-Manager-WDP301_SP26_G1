@@ -1,11 +1,15 @@
 import mongoose from "mongoose";
+import { PAYMENT_METHOD_VALUES } from "../constants/domain.js";
 const { Schema } = mongoose;
 
 const paymentSchema = new Schema(
     {
         invoiceId: { type: Schema.Types.ObjectId, ref: "Invoice" },
         bookingId: { type: Schema.Types.ObjectId, ref: "Booking" },
-        paymentMethod: String,
+        paymentMethod: {
+            type: String,
+            enum: PAYMENT_METHOD_VALUES,
+        },
         transactionId: String,
         amount: Number,
         type: String,

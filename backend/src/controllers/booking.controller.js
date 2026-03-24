@@ -1,6 +1,30 @@
 import Booking from "../models/booking.js";
 import Table from "../models/table.js";
 import User from "../models/user.js";
+import Invoice from "../models/invoice.js";
+import Payment from "../models/payment.js";
+
+const normalizeBookingStatus = (status) => {
+  return String(status || "").trim();
+};
+
+const parseDateTimeInput = (dateValue, timeValue) => {
+  if (!timeValue && !dateValue) return null;
+
+  const timeText = String(timeValue || "").trim();
+  const dateText = String(dateValue || "").trim();
+
+  // Accept ISO datetime payload directly from FE.
+  if (timeText.includes("T")) {
+    const isoDate = new Date(timeText);
+    return isFinite(isoDate.getTime()) ? isoDate : null;
+  }
+
+  if (!dateText || !timeText) return null;
+  const fullTime = /^\d{2}:\d{2}$/.test(timeText) ? `${timeText}:00` : timeText;
+  const value = new Date(`${dateText}T${fullTime}`);
+  return isFinite(value.getTime()) ? value : null;
+};
 
 export const createBooking = async (req, res) => {
   try {
@@ -24,15 +48,16 @@ export const createBooking = async (req, res) => {
     const bookingEndTime = requestEndTime;
     let bookingDuration = Number(duration);
 
+    const startTime = parseDateTimeInput(bookingDate, bookingStartTime);
+    const endTimeFromPayload = parseDateTimeInput(bookingDate, bookingEndTime);
+
     if (
       (!bookingDuration || bookingDuration <= 0) &&
-      requestEndTime &&
-      bookingStartTime &&
-      bookingDate
+      startTime &&
+      endTimeFromPayload
     ) {
-      const start = new Date(`${bookingDate}T${bookingStartTime}:00`);
-      const end = new Date(`${bookingDate}T${bookingEndTime}:00`);
-      const diffHours = (end.getTime() - start.getTime()) / 3600000;
+      const diffHours =
+        (endTimeFromPayload.getTime() - startTime.getTime()) / 3600000;
       if (isFinite(diffHours) && diffHours > 0) {
         bookingDuration = diffHours;
       }
@@ -40,8 +65,7 @@ export const createBooking = async (req, res) => {
 
     if (
       !bookingTableId ||
-      !bookingDate ||
-      !bookingStartTime ||
+      !startTime ||
       !bookingDuration ||
       bookingDuration <= 0
     ) {
@@ -49,13 +73,33 @@ export const createBooking = async (req, res) => {
         .status(400)
         .json({ message: "Vui lòng cung cấp đủ thông tin đặt bàn." });
     }
-    const startTime = new Date(`${bookingDate}T${bookingStartTime}:00`);
-    if (!isFinite(startTime.getTime())) {
-      return res.status(400).json({ message: "Ngày hoặc giờ không hợp lệ." });
-    }
+
     const endTime = new Date(startTime.getTime() + bookingDuration * 3600000);
+    const table = await Table.findById(bookingTableId).lean();
+    if (!table) {
+      return res.status(404).json({ message: "Không tìm thấy bàn." });
+    }
+    if (String(table.status || "") === "Maintenance") {
+      return res.status(400).json({
+        message: "Bàn đang bảo trì, vui lòng chọn bàn khác.",
+      });
+    }
+
+    const overlapping = await Booking.find({
+      tableId: bookingTableId,
+      status: { $nin: ["Cancelled", "Canceled", "Completed"] },
+      startTime: { $lt: endTime },
+      endTime: { $gt: startTime },
+    }).lean();
+
+    if (overlapping.length > 0) {
+      return res.status(409).json({
+        message: "Khung giờ này đã có người đặt. Vui lòng chọn giờ khác.",
+      });
+    }
+
     const depositAmount = Math.round(
-      (Number(pricePerHour) || 0) * bookingDuration,
+      Number(pricePerHour ?? table.pricePerHour ?? 0) * bookingDuration,
     );
 
     const count = await Booking.countDocuments();
@@ -70,6 +114,13 @@ export const createBooking = async (req, res) => {
       status: "Pending",
       depositAmount,
       guestInfo: guestName ? { name: guestName, phone: guestPhone } : undefined,
+    });
+
+    await Invoice.create({
+      bookingId: booking._id,
+      totalAmount: Math.round(Number(depositAmount || 0)),
+      remainingAmount: Math.round(Number(depositAmount || 0)),
+      status: Number(depositAmount || 0) > 0 ? "Pending" : "Paid",
     });
 
     res.status(201).json({
@@ -105,7 +156,7 @@ export const getMyBookings = async (req, res) => {
         startTime: b.startTime,
         endTime: b.endTime,
         depositAmount: b.depositAmount || 0,
-        status: b.status || "Pending",
+        status: normalizeBookingStatus(b.status || "Pending"),
         createdAt: b.createdAt,
       };
     });
@@ -120,33 +171,59 @@ export const getMyBookings = async (req, res) => {
 export const updateMyBooking = async (req, res) => {
   try {
     const { id } = req.params;
-    const { guestName, guestPhone, arrivalDate, arrivalTime, duration } =
-      req.body;
+    const {
+      guestName,
+      guestPhone,
+      arrivalDate,
+      arrivalTime,
+      date,
+      startTime,
+      endTime,
+      duration,
+    } = req.body;
 
     const booking = await Booking.findById(id);
     if (!booking || booking.userId?.toString() !== req.user.id) {
       return res.status(404).json({ message: "Không tìm thấy booking." });
     }
 
-    if (["Confirmed", "Cancelled"].includes(booking.status)) {
+    if (["Confirmed", "Cancelled", "Canceled"].includes(booking.status)) {
       return res.status(400).json({
         message: "Booking đã xác nhận hoặc đã hủy, không thể chỉnh sửa.",
       });
     }
 
-    const nextStart = new Date(`${arrivalDate}T${arrivalTime}:00`);
-    const dur = Number(duration);
-    if (!isFinite(nextStart.getTime()) || !dur || dur <= 0) {
+    const nextDate = date || arrivalDate;
+    const nextStartRaw = startTime || arrivalTime;
+    const nextEndRaw = endTime;
+
+    const nextStart = parseDateTimeInput(nextDate, nextStartRaw);
+    const nextEndFromPayload = parseDateTimeInput(nextDate, nextEndRaw);
+
+    let effectiveDuration = Number(duration);
+    if (
+      (!effectiveDuration || effectiveDuration <= 0) &&
+      nextStart &&
+      nextEndFromPayload
+    ) {
+      const diffHours = (nextEndFromPayload.getTime() - nextStart.getTime()) / 3600000;
+      if (isFinite(diffHours) && diffHours > 0) {
+        effectiveDuration = diffHours;
+      }
+    }
+
+    if (!nextStart || !effectiveDuration || effectiveDuration <= 0) {
       return res
         .status(400)
         .json({ message: "Thông tin ngày giờ hoặc thời lượng không hợp lệ." });
     }
-    const nextEnd = new Date(nextStart.getTime() + dur * 3600000);
+    const nextEnd = new Date(nextStart.getTime() + effectiveDuration * 3600000);
+    const oldDepositAmount = Math.round(Number(booking.depositAmount || 0));
 
     const overlapping = await Booking.find({
       _id: { $ne: booking._id },
       tableId: booking.tableId,
-      status: { $nin: ["Cancelled", "Completed"] },
+      status: { $nin: ["Cancelled", "Canceled", "Completed"] },
       startTime: { $lt: nextEnd },
       endTime: { $gt: nextStart },
     }).lean();
@@ -157,14 +234,46 @@ export const updateMyBooking = async (req, res) => {
       });
     }
 
+    const table = booking.tableId ? await Table.findById(booking.tableId).lean() : null;
+    const nextDepositAmount = Math.round(
+      Number(table?.pricePerHour || 0) * effectiveDuration,
+    );
+
     booking.startTime = nextStart;
     booking.endTime = nextEnd;
+    booking.depositAmount = nextDepositAmount;
     booking.guestInfo = {
       ...(booking.guestInfo || {}),
       name: guestName || booking.guestInfo?.name || "",
       phone: guestPhone || booking.guestInfo?.phone || "",
     };
     await booking.save();
+
+    const invoice = await Invoice.findOne({ bookingId: booking._id });
+    if (invoice) {
+      const totalDiff = nextDepositAmount - oldDepositAmount;
+      const successPayments = await Payment.find({
+        invoiceId: invoice._id,
+        paymentStatus: "Success",
+      }).lean();
+      const totalPaid = successPayments.reduce(
+        (sum, payment) => sum + Math.round(Number(payment.amount || 0)),
+        0,
+      );
+
+      invoice.totalAmount = Math.max(
+        0,
+        Math.round(Number(invoice.totalAmount || 0) + totalDiff),
+      );
+      invoice.remainingAmount = Math.max(0, invoice.totalAmount - totalPaid);
+      invoice.status =
+        invoice.remainingAmount <= 0
+          ? "Paid"
+          : totalPaid > 0
+            ? "Partially_Paid"
+            : "Pending";
+      await invoice.save();
+    }
 
     res.json({ message: "Cập nhật booking thành công." });
   } catch (err) {
@@ -227,7 +336,7 @@ export const getAllBookings = async (req, res) => {
         startTime: b.startTime,
         endTime: b.endTime,
         depositAmount: b.depositAmount || 0,
-        status: b.status || "Pending",
+        status: normalizeBookingStatus(b.status || "Pending"),
         createdAt: b.createdAt,
       };
     });

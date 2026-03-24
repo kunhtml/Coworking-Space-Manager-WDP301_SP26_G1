@@ -4,14 +4,14 @@ import {
   getReportAnalytics,
   getDailyTableUsage,
 } from "../controllers/report.controller.js";
-import { requireStaff } from "../middleware/middleware.js";
+import { requireAdmin } from "../middleware/middleware.js";
 
 const router = Router();
 
-router.get("/reports/analytics", requireStaff, getReportAnalytics);
+router.get("/reports/analytics", requireAdmin, getReportAnalytics);
 router.get(
   "/reports/analytics/hourly",
-  requireStaff,
+  requireAdmin,
   getHourlyOccupancyAnalytics,
 );
 
@@ -22,7 +22,7 @@ router.get(
     console.log("[ROUTE] daily-table-usage hit!");
     next();
   },
-  requireStaff,
+  requireAdmin,
   getDailyTableUsage,
 );
 

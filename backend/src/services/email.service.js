@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
 /**
  * Email Service using Resend API
@@ -208,8 +209,59 @@ export const isEmailConfigured = () => {
   return !!process.env.RESEND_API_KEY;
 };
 
+const createGmailTransporter = () => {
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!user || !pass) return null;
+
+  return nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user,
+      pass,
+    },
+  });
+};
+
+export const sendOtpEmail = async ({ to, otpCode, purpose }) => {
+  const transporter = createGmailTransporter();
+  const appName = process.env.APP_NAME || "Coworking Space";
+
+  const subject = `[${appName}] OTP xác thực ${purpose}`;
+  const html = `
+    <div style="font-family:Arial,sans-serif;line-height:1.6">
+      <h2>${appName}</h2>
+      <p>Ma OTP cua ban la:</p>
+      <p style="font-size:26px;font-weight:700;letter-spacing:4px">${otpCode}</p>
+      <p>Ma co hieu luc trong 5 phut.</p>
+      <p>Neu ban khong yeu cau thao tac nay, vui long bo qua email.</p>
+    </div>
+  `;
+  const text = `Ma OTP cua ban la ${otpCode}. Ma co hieu luc trong 5 phut.`;
+
+  if (!transporter) {
+    console.log("OTP email not sent (missing GMAIL_USER/GMAIL_APP_PASSWORD):", {
+      to,
+      otpCode,
+      purpose,
+    });
+    return { success: true, mocked: true };
+  }
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_FROM || process.env.GMAIL_USER,
+    to,
+    subject,
+    text,
+    html,
+  });
+
+  return { success: true };
+};
+
 export default {
   sendRegistrationEmail,
   isEmailConfigured,
+  sendOtpEmail,
 };
 

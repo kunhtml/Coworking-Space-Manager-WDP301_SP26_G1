@@ -4,26 +4,31 @@ import OrderItem from "../models/order_item.js";
 import MenuItem from "../models/menu_item.js";
 import Invoice from "../models/invoice.js";
 import Payment from "../models/payment.js";
+import {
+  ORDER_STATUS,
+  normalizeOrderStatus,
+} from "../constants/domain.js";
 
-const normalizeOrderStatus = (status) => {
-  if (!status) return "Pending";
-  return status === "Completed" ? "Served" : status;
-};
+const BLOCKED_BOOKING_STATUSES = new Set(["Cancelled", "Canceled"]);
+
+function mapOrderRow(order, bookingMap, itemMap) {
+  const booking = bookingMap.get(order.bookingId?.toString());
+  return {
+    id: order._id,
+    bookingId: order.bookingId,
+    status: normalizeOrderStatus(order.status),
+    totalAmount: Number(order.totalAmount || 0),
+    createdAt: order.createdAt,
+    bookingStatus: booking?.status || "Unknown",
+    items: itemMap.get(order._id.toString()) || [],
+  };
+}
 
 export const getMyOrders = async (req, res) => {
   try {
-    const myBookings = await Booking.find({ userId: req.user.id })
-      .select("_id")
+    const orders = await Order.find({ userId: req.user.id })
+      .sort({ createdAt: -1 })
       .lean();
-    const myBookingIdSet = new Set(myBookings.map((b) => b._id.toString()));
-
-    // Keep backward compatibility for old orders that may not have userId set correctly.
-    const allOrders = await Order.find({}).sort({ createdAt: -1 }).lean();
-    const orders = allOrders.filter(
-      (o) =>
-        o.userId?.toString() === req.user.id ||
-        myBookingIdSet.has(o.bookingId?.toString()),
-    );
 
     const orderIds = orders.map((o) => o._id);
     const bookingIds = [
@@ -38,49 +43,34 @@ export const getMyOrders = async (req, res) => {
     const menuIds = [
       ...new Set(items.map((i) => i.menuItemId?.toString()).filter(Boolean)),
     ];
-    const menuItems = await MenuItem.find({ _id: { $in: menuIds } }).lean();
+    const menus = await MenuItem.find({ _id: { $in: menuIds } }).lean();
 
     const bookingMap = new Map(bookings.map((b) => [b._id.toString(), b]));
-    const menuMap = new Map(menuItems.map((m) => [m._id.toString(), m]));
+    const menuMap = new Map(menus.map((m) => [m._id.toString(), m]));
 
     const itemMap = new Map();
-    for (const i of items) {
-      const key = i.orderId?.toString();
+    for (const item of items) {
+      const key = item.orderId?.toString();
       const arr = itemMap.get(key) || [];
-      const menu = menuMap.get(i.menuItemId?.toString());
+      const menu = menuMap.get(item.menuItemId?.toString());
       arr.push({
-        id: i._id,
-        menuItemId: i.menuItemId,
-        menuName: menu?.name || i.itemName || "Món không xác định",
-        quantity: Number(i.quantity || 0),
-        priceAtOrder: Number(i.priceAtOrder || 0),
-        note: i.note || "",
-        lineTotal: Number(i.quantity || 0) * Number(i.priceAtOrder || 0),
+        id: item._id,
+        menuItemId: item.menuItemId,
+        menuName: menu?.name || item.itemName || "Món không xác định",
+        quantity: Number(item.quantity || 0),
+        priceAtOrder: Number(item.priceAtOrder || 0),
+        note: item.note || "",
+        lineTotal: Number(item.quantity || 0) * Number(item.priceAtOrder || 0),
       });
       itemMap.set(key, arr);
     }
 
-    const rows = orders.map((o) => {
-      const booking = bookingMap.get(o.bookingId?.toString());
-      return {
-        id: o._id,
-        bookingId: o.bookingId,
-        status: normalizeOrderStatus(o.status),
-        totalAmount: Number(o.totalAmount || 0),
-        createdAt: o.createdAt,
-        bookingStatus: booking?.status || "Unknown",
-        items: itemMap.get(o._id.toString()) || [],
-      };
-    });
-
-    res.json(rows);
+    res.json(orders.map((o) => mapOrderRow(o, bookingMap, itemMap)));
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Lỗi server." });
   }
 };
-
-// POST /api/orders  (Customer)
 
 export const createOrder = async (req, res) => {
   try {
@@ -95,70 +85,64 @@ export const createOrder = async (req, res) => {
     if (!booking || booking.userId?.toString() !== req.user.id) {
       return res.status(404).json({ message: "Không tìm thấy booking." });
     }
-    if (booking.status === "Cancelled") {
+    if (BLOCKED_BOOKING_STATUSES.has(String(booking.status || ""))) {
       return res
         .status(400)
         .json({ message: "Booking đã hủy, không thể tạo đơn hàng." });
     }
 
-    const menuIds = [
-      ...new Set(items.map((i) => i.menuItemId).filter(Boolean)),
-    ];
+    const menuIds = [...new Set(items.map((i) => i.menuItemId).filter(Boolean))];
     const menus = await MenuItem.find({ _id: { $in: menuIds } }).lean();
     const menuMap = new Map(menus.map((m) => [m._id.toString(), m]));
 
-    const normalized = [];
-    for (const it of items) {
-      const qty = Number(it.quantity || 0);
-      if (!it.menuItemId || qty <= 0) continue;
-      const menu = menuMap.get(it.menuItemId.toString());
+    const normalizedItems = [];
+    for (const item of items) {
+      const qty = Number(item.quantity || 0);
+      if (!item.menuItemId || qty <= 0) continue;
+      const menu = menuMap.get(String(item.menuItemId));
       if (!menu) continue;
-      normalized.push({
+      normalizedItems.push({
         menuItemId: menu._id,
         quantity: qty,
-        note: it.note || "",
+        note: item.note || "",
         priceAtOrder: Number(menu.price || 0),
       });
     }
 
-    if (!normalized.length) {
+    if (!normalizedItems.length) {
       return res.status(400).json({ message: "Danh sách món không hợp lệ." });
     }
 
-    const totalAmount = normalized.reduce(
-      (sum, i) => sum + Number(i.quantity) * Number(i.priceAtOrder),
-      0,
+    const totalAmount = Math.round(
+      normalizedItems.reduce(
+        (sum, item) => sum + Number(item.quantity) * Number(item.priceAtOrder),
+        0,
+      ),
     );
 
     const order = await Order.create({
       userId: req.user.id,
       bookingId,
-      status: "Pending",
-      totalAmount: Math.round(totalAmount),
+      status: ORDER_STATUS.PENDING,
+      totalAmount,
     });
 
     await OrderItem.insertMany(
-      normalized.map((i) => ({
+      normalizedItems.map((item) => ({
         orderId: order._id,
-        menuItemId: i.menuItemId,
-        quantity: i.quantity,
-        note: i.note,
-        priceAtOrder: i.priceAtOrder,
+        menuItemId: item.menuItemId,
+        quantity: item.quantity,
+        note: item.note,
+        priceAtOrder: item.priceAtOrder,
       })),
     );
 
-    // Create separate invoice for this order (not shared with booking)
-    const orderInvoice = await Invoice.create({
-      // No bookingId - this is an order invoice, separate from booking deposit
+    await Invoice.create({
       orderIds: [order._id],
-      totalAmount: Math.round(totalAmount),
-      remainingAmount: Math.round(totalAmount),
-      status: "Pending",
+      totalAmount,
+      remainingAmount: totalAmount,
+      status: totalAmount > 0 ? "Pending" : "Paid",
     });
-
-    console.log(
-      `Created separate invoice ${orderInvoice._id} for order ${order._id}`,
-    );
 
     res
       .status(201)
@@ -168,8 +152,6 @@ export const createOrder = async (req, res) => {
     res.status(500).json({ message: "Lỗi server." });
   }
 };
-
-// PUT /api/orders/:id  (Customer)
 
 export const updateMyOrder = async (req, res) => {
   try {
@@ -185,99 +167,82 @@ export const updateMyOrder = async (req, res) => {
     if (!order) {
       return res.status(404).json({ message: "Không tìm thấy đơn hàng." });
     }
-
-    const booking = order.bookingId
-      ? await Booking.findById(order.bookingId).lean()
-      : null;
-    const isOwnerByOrder = order.userId?.toString() === req.user.id;
-    const isOwnerByBooking = booking?.userId?.toString() === req.user.id;
-    if (!isOwnerByOrder && !isOwnerByBooking) {
+    if (String(order.userId || "") !== String(req.user.id)) {
       return res.status(404).json({ message: "Không tìm thấy đơn hàng." });
     }
 
-    if (["Confirmed", "Cancelled"].includes(order.status)) {
+    if (normalizeOrderStatus(order.status) !== ORDER_STATUS.PENDING) {
       return res.status(400).json({
-        message: "Đơn hàng đã xác nhận hoặc đã hủy, không thể chỉnh sửa.",
+        message: "Chỉ có thể cập nhật đơn hàng khi trạng thái là PENDING.",
       });
     }
 
-    const menuIds = [
-      ...new Set(items.map((i) => i.menuItemId).filter(Boolean)),
-    ];
+    const menuIds = [...new Set(items.map((i) => i.menuItemId).filter(Boolean))];
     const menus = await MenuItem.find({ _id: { $in: menuIds } }).lean();
     const menuMap = new Map(menus.map((m) => [m._id.toString(), m]));
 
-    const normalized = [];
-    for (const it of items) {
-      const qty = Number(it.quantity || 0);
-      if (!it.menuItemId || qty <= 0) continue;
-      const menu = menuMap.get(it.menuItemId.toString());
+    const normalizedItems = [];
+    for (const item of items) {
+      const qty = Number(item.quantity || 0);
+      if (!item.menuItemId || qty <= 0) continue;
+      const menu = menuMap.get(String(item.menuItemId));
       if (!menu) continue;
-      normalized.push({
+      normalizedItems.push({
         menuItemId: menu._id,
         quantity: qty,
-        note: it.note || "",
+        note: item.note || "",
         priceAtOrder: Number(menu.price || 0),
       });
     }
 
-    if (!normalized.length) {
+    if (!normalizedItems.length) {
       return res.status(400).json({ message: "Danh sách món không hợp lệ." });
     }
 
-    const totalAmount = normalized.reduce(
-      (sum, i) => sum + Number(i.quantity) * Number(i.priceAtOrder),
-      0,
-    );
-
     const oldTotalAmount = Number(order.totalAmount || 0);
-    const newTotalAmount = Math.round(totalAmount);
+    const newTotalAmount = Math.round(
+      normalizedItems.reduce(
+        (sum, item) => sum + Number(item.quantity) * Number(item.priceAtOrder),
+        0,
+      ),
+    );
 
     await OrderItem.deleteMany({ orderId: order._id });
     await OrderItem.insertMany(
-      normalized.map((i) => ({
+      normalizedItems.map((item) => ({
         orderId: order._id,
-        menuItemId: i.menuItemId,
-        quantity: i.quantity,
-        note: i.note,
-        priceAtOrder: i.priceAtOrder,
+        menuItemId: item.menuItemId,
+        quantity: item.quantity,
+        note: item.note,
+        priceAtOrder: item.priceAtOrder,
       })),
     );
 
     order.totalAmount = newTotalAmount;
     await order.save();
 
-    // Update invoice for this order (find invoice containing this orderId)
     const invoice = await Invoice.findOne({ orderIds: order._id });
     if (invoice) {
-      // Adjust total: remove old order amount, add new order amount
       const totalDiff = newTotalAmount - oldTotalAmount;
-      invoice.totalAmount = Math.round(
-        Number(invoice.totalAmount || 0) + totalDiff,
-      );
+      invoice.totalAmount = Math.round(Number(invoice.totalAmount || 0) + totalDiff);
 
-      // Recalculate remaining
       const successPayments = await Payment.find({
         invoiceId: invoice._id,
         paymentStatus: "Success",
       }).lean();
       const totalPaid = successPayments.reduce(
-        (s, p) => s + Math.round(Number(p.amount || 0)),
+        (sum, payment) => sum + Math.round(Number(payment.amount || 0)),
         0,
       );
+
       invoice.remainingAmount = Math.max(0, invoice.totalAmount - totalPaid);
-
-      // Update status
-      if (invoice.remainingAmount <= 0) {
-        invoice.status = "Paid";
-      } else if (totalPaid > 0) {
-        invoice.status = "Partially_Paid";
-      } else {
-        invoice.status = "Pending";
-      }
-
+      invoice.status =
+        invoice.remainingAmount <= 0
+          ? "Paid"
+          : totalPaid > 0
+            ? "Partially_Paid"
+            : "Pending";
       await invoice.save();
-      console.log(`Updated invoice ${invoice._id} for order ${order._id}`);
     }
 
     res.json({ message: "Cập nhật đơn hàng thành công." });
@@ -286,7 +251,3 @@ export const updateMyOrder = async (req, res) => {
     res.status(500).json({ message: "Lỗi server." });
   }
 };
-
-// ─── Payment Controllers ───────────────────────────────────────────
-
-// GET /api/bookings/all  (Staff / Admin)
