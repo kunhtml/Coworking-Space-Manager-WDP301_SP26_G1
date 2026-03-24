@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, Button, Modal, Badge } from "react-bootstrap";
 import AdminLayout from "../../components/admin/AdminLayout";
+import OccupancyChart from "../../components/admin/OccupancyChart";
 import { getDailyTableUsageApi } from "../../services/api";
 import { getAllBookingsApi } from "../../services/bookingService";
 
@@ -390,15 +391,7 @@ export default function AdminOccupancyPage() {
         </Card>
 
         {/* Calendar Grid */}
-        <Card
-          className="border-0"
-          style={{
-            backgroundColor: "white",
-            boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08)",
-            borderRadius: "12px",
-          }}
-        >
-          <Card.Body className="p-4">
+        <OccupancyChart>
             {loading ? (
               <div
                 className="d-flex align-items-center justify-content-center"
@@ -619,8 +612,7 @@ export default function AdminOccupancyPage() {
                 </div>
               </div>
             )}
-          </Card.Body>
-        </Card>
+        </OccupancyChart>
 
         {/* Day Detail Modal */}
         <Modal show={showDayModal} onHide={closeDayModal} size="lg" centered>

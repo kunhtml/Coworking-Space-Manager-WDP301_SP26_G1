@@ -2,16 +2,19 @@ import { useEffect, useState } from "react";
 import {
   Row,
   Col,
-  Card,
-  Button,
-  Form,
   Alert,
-  Spinner,
-  Badge,
 } from "react-bootstrap";
 import { useAuth } from "../../hooks/useAuth";
 import AdminLayout from "../../components/admin/AdminLayout";
-import { changePasswordApi } from "../../services/api";
+import AdminAccountStatusCard from "../../components/admin/AdminAccountStatusCard";
+import AdminPasswordFormCard from "../../components/admin/AdminPasswordFormCard";
+import AdminProfileInfoCard from "../../components/admin/AdminProfileInfoCard";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import {
+  changePasswordApi,
+  getMeApi,
+  updateProfileApi,
+} from "../../services/api";
 
 export function meta() {
   return [{ title: "Hồ sơ Admin | Nexus Admin" }];
@@ -63,21 +66,13 @@ export default function AdminProfile() {
   const loadProfile = async () => {
     try {
       setLoading(true);
-      // In a real app, you'd make an API call here
-      // const data = await getMeApi();
+      const data = await getMeApi();
+      const nextProfile = { ...authUser, ...data };
 
-      // For now, use the auth user data
-      const mockProfile = {
-        ...authUser,
-        createdAt: new Date().toISOString(),
-        lastLoginAt: new Date().toISOString(),
-        membershipStatus: "Active",
-      };
-
-      setProfile(mockProfile);
-      setFullName(mockProfile.fullName || "");
-      setEmail(mockProfile.email || "");
-      setPhone(mockProfile.phone || "");
+      setProfile(nextProfile);
+      setFullName(nextProfile.fullName || "");
+      setEmail(nextProfile.email || "");
+      setPhone(nextProfile.phone || "");
     } catch (error) {
       setMessage({
         type: "danger",
@@ -94,23 +89,21 @@ export default function AdminProfile() {
       setUpdateLoading(true);
       setMessage({ type: "", content: "" });
 
-      // In a real app, you'd make an API call here
-      // await updateProfileApi({ fullName, phone });
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const updated = await updateProfileApi({
+        fullName,
+        email,
+        phone,
+      });
 
       setMessage({
         type: "success",
         content: "Cập nhật hồ sơ thành công!",
       });
 
-      // Update local profile state
-      setProfile((prev) => ({
-        ...prev,
-        fullName,
-        phone,
-      }));
+      setProfile((prev) => ({ ...prev, ...updated }));
+      setFullName(updated.fullName || fullName);
+      setEmail(updated.email || email);
+      setPhone(updated.phone || phone);
 
       setEditMode(false);
     } catch (error) {
@@ -162,6 +155,7 @@ export default function AdminProfile() {
       await changePasswordApi({
         currentPassword: passwordForm.currentPassword,
         newPassword: passwordForm.newPassword,
+        confirmPassword: passwordForm.confirmPassword,
       });
       setPasswordMessage({
         type: "success",
@@ -218,10 +212,7 @@ export default function AdminProfile() {
         </Row>
 
         {loading ? (
-          <div className="text-center py-5">
-            <Spinner animation="border" variant="primary" />
-            <p className="text-muted mt-3 mb-0">Đang tải thông tin hồ sơ...</p>
-          </div>
+          <LoadingSpinner text="Đang tải thông tin hồ sơ..." color="#0d6efd" />
         ) : !profile ? (
           <Alert variant="warning" className="text-center">
             <i className="bi bi-exclamation-triangle me-2"></i>
@@ -251,323 +242,38 @@ export default function AdminProfile() {
             <Row className="g-4">
               {/* Profile Info Card */}
               <Col lg={8}>
-                <Card className="border-0 shadow-sm h-100">
-                  <Card.Header className="bg-white border-0 pb-0">
-                    <div className="d-flex justify-content-between align-items-center">
-                      <h5 className="mb-0 fw-semibold">
-                        <i className="bi bi-person-lines-fill text-primary me-2"></i>
-                        Thông tin cơ bản
-                      </h5>
-                      {!editMode ? (
-                        <Button
-                          variant="outline-primary"
-                          size="sm"
-                          onClick={() => setEditMode(true)}
-                        >
-                          <i className="bi bi-pencil me-1"></i>
-                          Chỉnh sửa
-                        </Button>
-                      ) : (
-                        <div className="d-flex gap-2">
-                          <Button
-                            variant="outline-secondary"
-                            size="sm"
-                            onClick={cancelEdit}
-                            disabled={updateLoading}
-                          >
-                            Hủy
-                          </Button>
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={handleUpdateProfile}
-                            disabled={updateLoading}
-                          >
-                            {updateLoading ? (
-                              <Spinner animation="border" size="sm" />
-                            ) : (
-                              <>
-                                <i className="bi bi-check-lg me-1"></i>
-                                Lưu
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </Card.Header>
-                  <Card.Body className="pt-4">
-                    {editMode ? (
-                      <Form onSubmit={handleUpdateProfile}>
-                        <Row className="g-3">
-                          <Col md={6}>
-                            <Form.Group>
-                              <Form.Label className="fw-semibold">
-                                Họ và tên <span className="text-danger">*</span>
-                              </Form.Label>
-                              <Form.Control
-                                type="text"
-                                placeholder="Nhập họ và tên"
-                                value={fullName}
-                                onChange={(e) => setFullName(e.target.value)}
-                                required
-                              />
-                            </Form.Group>
-                          </Col>
-                          <Col md={6}>
-                            <Form.Group>
-                              <Form.Label className="fw-semibold">
-                                Email
-                              </Form.Label>
-                              <Form.Control
-                                type="email"
-                                value={email}
-                                disabled
-                                className="bg-light"
-                              />
-                              <Form.Text className="text-muted">
-                                Email không thể thay đổi
-                              </Form.Text>
-                            </Form.Group>
-                          </Col>
-                          <Col md={6}>
-                            <Form.Group>
-                              <Form.Label className="fw-semibold">
-                                Số điện thoại
-                              </Form.Label>
-                              <Form.Control
-                                type="tel"
-                                placeholder="Nhập số điện thoại"
-                                value={phone}
-                                onChange={(e) => setPhone(e.target.value)}
-                              />
-                            </Form.Group>
-                          </Col>
-                        </Row>
-                      </Form>
-                    ) : (
-                      <Row className="g-4">
-                        <Col md={6}>
-                          <div>
-                            <label className="form-label fw-semibold text-muted small">
-                              HỌ VÀ TÊN
-                            </label>
-                            <p className="mb-0 fw-medium">
-                              {profile.fullName || "Chưa cập nhật"}
-                            </p>
-                          </div>
-                        </Col>
-                        <Col md={6}>
-                          <div>
-                            <label className="form-label fw-semibold text-muted small">
-                              EMAIL
-                            </label>
-                            <p className="mb-0 fw-medium">{profile.email}</p>
-                          </div>
-                        </Col>
-                        <Col md={6}>
-                          <div>
-                            <label className="form-label fw-semibold text-muted small">
-                              SỐ ĐIỆN THOẠI
-                            </label>
-                            <p className="mb-0 fw-medium">
-                              {profile.phone || "Chưa cập nhật"}
-                            </p>
-                          </div>
-                        </Col>
-                        <Col md={6}>
-                          <div>
-                            <label className="form-label fw-semibold text-muted small">
-                              VAI TRÒ
-                            </label>
-                            <p className="mb-0">
-                              <Badge bg={roleInfo.bg} className="px-2 py-1">
-                                {roleInfo.label}
-                              </Badge>
-                            </p>
-                          </div>
-                        </Col>
-                      </Row>
-                    )}
-                  </Card.Body>
-                </Card>
+                <AdminProfileInfoCard
+                  editMode={editMode}
+                  setEditMode={setEditMode}
+                  updateLoading={updateLoading}
+                  handleUpdateProfile={handleUpdateProfile}
+                  cancelEdit={cancelEdit}
+                  fullName={fullName}
+                  setFullName={setFullName}
+                  email={email}
+                  phone={phone}
+                  setPhone={setPhone}
+                  profile={profile}
+                  roleInfo={roleInfo}
+                />
               </Col>
 
               {/* Account Status Card */}
               <Col lg={4}>
-                <Card className="border-0 shadow-sm h-100">
-                  <Card.Header className="bg-white border-0 pb-0">
-                    <h5 className="mb-0 fw-semibold">
-                      <i className="bi bi-shield-check text-primary me-2"></i>
-                      Thông tin tài khoản
-                    </h5>
-                  </Card.Header>
-                  <Card.Body className="pt-4">
-                    <div className="mb-4">
-                      <label className="form-label fw-semibold text-muted small">
-                        TRẠNG THÁI TÀI KHOẢN
-                      </label>
-                      <p className="mb-0">
-                        <Badge bg={statusInfo.bg} className="px-3 py-2 fs-6">
-                          <i
-                            className="bi bi-circle-fill me-1"
-                            style={{ fontSize: "0.5rem" }}
-                          ></i>
-                          {statusInfo.label}
-                        </Badge>
-                      </p>
-                    </div>
-
-                    <div className="mb-4">
-                      <label className="form-label fw-semibold text-muted small">
-                        NGÀY TẠO TÀI KHOẢN
-                      </label>
-                      <p className="mb-0 fw-medium">
-                        <i className="bi bi-calendar-date me-2 text-muted"></i>
-                        {formatDate(profile.createdAt)}
-                      </p>
-                    </div>
-
-                    <div className="mb-4">
-                      <label className="form-label fw-semibold text-muted small">
-                        ĐĂNG NHẬP GẦN NHẤT
-                      </label>
-                      <p className="mb-0 fw-medium">
-                        <i className="bi bi-clock me-2 text-muted"></i>
-                        {formatDate(profile.lastLoginAt)}
-                      </p>
-                    </div>
-
-                    <div className="border-top pt-3">
-                      <Button
-                        variant="outline-warning"
-                        size="sm"
-                        className="w-100"
-                        disabled
-                      >
-                        <i className="bi bi-key me-2"></i>
-                        Đổi mật khẩu ở biểu mẫu bên dưới
-                      </Button>
-                    </div>
-                  </Card.Body>
-                </Card>
+                <AdminAccountStatusCard statusInfo={statusInfo} formatDate={formatDate} profile={profile} />
               </Col>
             </Row>
 
             <Row className="g-4 mt-1">
               <Col lg={8}>
-                <Card className="border-0 shadow-sm">
-                  <Card.Header className="bg-white border-0 pb-0">
-                    <h5 className="mb-0 fw-semibold">
-                      <i className="bi bi-key-fill text-primary me-2"></i>
-                      Đổi mật khẩu
-                    </h5>
-                  </Card.Header>
-                  <Card.Body className="pt-4">
-                    {passwordMessage.content && (
-                      <Alert
-                        variant={passwordMessage.type}
-                        dismissible
-                        onClose={() =>
-                          setPasswordMessage({ type: "", content: "" })
-                        }
-                      >
-                        {passwordMessage.content}
-                      </Alert>
-                    )}
-
-                    <Form onSubmit={handleChangePassword}>
-                      <Row className="g-3">
-                        <Col md={4}>
-                          <Form.Group>
-                            <Form.Label className="fw-semibold">
-                              Mật khẩu hiện tại
-                            </Form.Label>
-                            <Form.Control
-                              type="password"
-                              value={passwordForm.currentPassword}
-                              onChange={(e) =>
-                                onPasswordChange(
-                                  "currentPassword",
-                                  e.target.value,
-                                )
-                              }
-                              required
-                              disabled={passwordLoading}
-                            />
-                          </Form.Group>
-                        </Col>
-                        <Col md={4}>
-                          <Form.Group>
-                            <Form.Label className="fw-semibold">
-                              Mật khẩu mới
-                            </Form.Label>
-                            <Form.Control
-                              type="password"
-                              value={passwordForm.newPassword}
-                              minLength={6}
-                              onChange={(e) =>
-                                onPasswordChange("newPassword", e.target.value)
-                              }
-                              required
-                              disabled={passwordLoading}
-                            />
-                          </Form.Group>
-                        </Col>
-                        <Col md={4}>
-                          <Form.Group>
-                            <Form.Label className="fw-semibold">
-                              Xác nhận mật khẩu mới
-                            </Form.Label>
-                            <Form.Control
-                              type="password"
-                              value={passwordForm.confirmPassword}
-                              onChange={(e) =>
-                                onPasswordChange(
-                                  "confirmPassword",
-                                  e.target.value,
-                                )
-                              }
-                              required
-                              disabled={passwordLoading}
-                              className={
-                                passwordForm.confirmPassword &&
-                                passwordForm.newPassword !==
-                                  passwordForm.confirmPassword
-                                  ? "is-invalid"
-                                  : ""
-                              }
-                            />
-                          </Form.Group>
-                        </Col>
-                      </Row>
-
-                      <div className="d-flex justify-content-end mt-3">
-                        <Button
-                          type="submit"
-                          variant="primary"
-                          disabled={passwordLoading}
-                        >
-                          {passwordLoading ? (
-                            <>
-                              <Spinner
-                                animation="border"
-                                size="sm"
-                                className="me-2"
-                              />
-                              Đang cập nhật...
-                            </>
-                          ) : (
-                            <>
-                              <i className="bi bi-check-lg me-2"></i>
-                              Cập nhật mật khẩu
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </Form>
-                  </Card.Body>
-                </Card>
+                <AdminPasswordFormCard
+                  passwordMessage={passwordMessage}
+                  setPasswordMessage={setPasswordMessage}
+                  handleChangePassword={handleChangePassword}
+                  passwordForm={passwordForm}
+                  onPasswordChange={onPasswordChange}
+                  passwordLoading={passwordLoading}
+                />
               </Col>
             </Row>
           </>

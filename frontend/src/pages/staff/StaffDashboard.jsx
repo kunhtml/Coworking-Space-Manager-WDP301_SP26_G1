@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
-import { Badge, Button, Card, Col, Row, Spinner, Table } from "react-bootstrap";
+import { Badge, Button, Card, Col, Row } from "react-bootstrap";
 import { useNavigate } from "react-router";
 import AdminLayout from "../../components/admin/AdminLayout";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import RecentActivityTable from "../../components/staff/RecentActivityTable";
 import { getStaffDashboardStats } from "../../services/staffDashboardService";
 
 export function meta() {
@@ -12,10 +14,12 @@ export function meta() {
 }
 
 const ORDER_STATUS_UI = {
-  Pending:   { label: "Chờ xử lý",   cls: "bg-warning-subtle text-warning",  icon: "bi-hourglass-split" },
-  Confirmed: { label: "Đã xác nhận", cls: "bg-primary-subtle text-primary",   icon: "bi-check-circle"    },
-  Completed: { label: "Hoàn thành",  cls: "bg-success-subtle text-success",   icon: "bi-trophy"          },
-  Cancelled: { label: "Đã hủy",      cls: "bg-danger-subtle text-danger",     icon: "bi-x-circle"        },
+  PENDING:   { label: "Chờ xử lý", cls: "bg-warning-subtle text-warning", icon: "bi-hourglass-split" },
+  CONFIRMED: { label: "Đã xác nhận", cls: "bg-primary-subtle text-primary", icon: "bi-check-circle" },
+  PREPARING: { label: "Đang chuẩn bị", cls: "bg-info-subtle text-info", icon: "bi-fire" },
+  SERVED:    { label: "Đã phục vụ", cls: "bg-success-subtle text-success", icon: "bi-cup-hot" },
+  COMPLETED: { label: "Hoàn tất", cls: "bg-secondary-subtle text-secondary", icon: "bi-trophy" },
+  CANCELLED: { label: "Đã hủy", cls: "bg-danger-subtle text-danger", icon: "bi-x-circle" },
 };
 
 function fmtCur(v) {
@@ -58,16 +62,16 @@ export default function StaffDashboard() {
           iconWrap: "staff-stat-icon bg-info-subtle text-info",
           value: String(stats.orders.total),
           label: "Đơn hàng hôm nay",
-          trend: `${stats.orders.Completed} hoàn thành`,
-          trendClass: stats.orders.Completed > 0 ? "text-success" : "text-secondary",
+          trend: `${stats.orders.COMPLETED} hoàn tất`,
+          trendClass: stats.orders.COMPLETED > 0 ? "text-success" : "text-secondary",
         },
         {
           icon: "bi-hourglass-split",
           iconWrap: "staff-stat-icon bg-warning-subtle text-warning",
-          value: String(stats.orders.Pending),
+          value: String(stats.orders.PENDING),
           label: "Đơn chờ xử lý",
-          trend: stats.orders.Pending > 0 ? "Cần xử lý ngay" : "Không có đơn chờ",
-          trendClass: stats.orders.Pending > 0 ? "text-danger" : "text-success",
+          trend: stats.orders.PENDING > 0 ? "Cần xử lý ngay" : "Không có đơn chờ",
+          trendClass: stats.orders.PENDING > 0 ? "text-danger" : "text-success",
         },
         {
           icon: "bi-shop",
@@ -80,9 +84,9 @@ export default function StaffDashboard() {
         {
           icon: "bi-trophy",
           iconWrap: "staff-stat-icon bg-primary-subtle text-primary",
-          value: String(stats.orders.Completed),
+          value: String(stats.orders.COMPLETED),
           label: "Đơn hoàn thành",
-          trend: `${stats.orders.Cancelled} đã hủy`,
+          trend: `${stats.orders.CANCELLED} đã hủy`,
           trendClass: "text-secondary",
         },
       ]
@@ -116,10 +120,7 @@ export default function StaffDashboard() {
 
       {/* Stat Cards */}
       {loading && !stats ? (
-        <div className="text-center py-5">
-          <Spinner animation="border" style={{ color: "#6366f1" }} />
-          <p className="mt-2 text-muted fw-semibold small">Đang tải dữ liệu...</p>
-        </div>
+        <LoadingSpinner text="Đang tải dữ liệu..." color="#6366f1" />
       ) : (
         <>
           <Row className="g-3 mb-4">
@@ -157,50 +158,12 @@ export default function StaffDashboard() {
                   </Button>
                 </Card.Header>
                 <Card.Body className="p-0">
-                  {(!stats?.activity || stats.activity.length === 0) ? (
-                    <div className="text-center py-5 text-muted">
-                      <div style={{ fontSize: 40 }}>📦</div>
-                      <p className="fw-semibold mt-2 small">Chưa có đơn hàng nào</p>
-                    </div>
-                  ) : (
-                    <Table responsive className="mb-0 align-middle staff-table">
-                      <thead>
-                        <tr>
-                          <th>MÃ ĐƠN</th>
-                          <th>KHÁCH HÀNG</th>
-                          <th>BÀN</th>
-                          <th>TỔNG</th>
-                          <th>TRẠNG THÁI</th>
-                          <th>GIỜ</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {stats.activity.map((item) => {
-                          const ui = ORDER_STATUS_UI[item.status] || {
-                            label: item.status, cls: "bg-secondary-subtle text-secondary", icon: "bi-question"
-                          };
-                          return (
-                            <tr key={String(item.orderId)}>
-                              <td>
-                                <span className="fw-bold" style={{ color: "#6366f1" }}>{item.orderCode}</span>
-                              </td>
-                              <td className="fw-semibold">{item.customerName}</td>
-                              <td className="fw-semibold">{item.tableName}</td>
-                              <td>
-                                <span className="fw-bold" style={{ color: "#15803d" }}>{fmtCur(item.totalAmount)}</span>
-                              </td>
-                              <td>
-                                <Badge className={`rounded-pill border-0 px-3 py-2 ${ui.cls}`}>
-                                  <i className={`bi ${ui.icon} me-1`} />{ui.label}
-                                </Badge>
-                              </td>
-                              <td className="text-secondary fw-semibold small">{toTime(item.createdAt)}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </Table>
-                  )}
+                  <RecentActivityTable
+                    activity={stats?.activity || []}
+                    statusUi={ORDER_STATUS_UI}
+                    fmtCur={fmtCur}
+                    toTime={toTime}
+                  />
                 </Card.Body>
               </Card>
             </Col>
@@ -217,10 +180,12 @@ export default function StaffDashboard() {
                   {stats ? (
                     <div className="d-flex flex-column gap-3 mt-1">
                       {[
-                        { key: "Pending",   label: "Chờ xử lý",   cls: "bg-warning-subtle text-warning",  icon: "bi-hourglass-split" },
-                        { key: "Confirmed", label: "Đã xác nhận", cls: "bg-primary-subtle text-primary",   icon: "bi-check-circle"    },
-                        { key: "Completed", label: "Hoàn thành",  cls: "bg-success-subtle text-success",   icon: "bi-trophy"          },
-                        { key: "Cancelled", label: "Đã hủy",      cls: "bg-danger-subtle text-danger",     icon: "bi-x-circle"        },
+                        { key: "PENDING", label: "Chờ xử lý", cls: "bg-warning-subtle text-warning", icon: "bi-hourglass-split" },
+                        { key: "CONFIRMED", label: "Đã xác nhận", cls: "bg-primary-subtle text-primary", icon: "bi-check-circle" },
+                        { key: "PREPARING", label: "Đang chuẩn bị", cls: "bg-info-subtle text-info", icon: "bi-fire" },
+                        { key: "SERVED", label: "Đã phục vụ", cls: "bg-success-subtle text-success", icon: "bi-cup-hot" },
+                        { key: "COMPLETED", label: "Hoàn tất", cls: "bg-secondary-subtle text-secondary", icon: "bi-trophy" },
+                        { key: "CANCELLED", label: "Đã hủy", cls: "bg-danger-subtle text-danger", icon: "bi-x-circle" },
                       ].map(({ key, label, cls, icon }) => {
                         const count = stats.orders[key] || 0;
                         const pct   = stats.orders.total > 0 ? Math.round((count / stats.orders.total) * 100) : 0;
@@ -237,9 +202,11 @@ export default function StaffDashboard() {
                                 className="progress-bar"
                                 style={{
                                   width: `${pct}%`,
-                                  background: key === "Pending" ? "#f59e0b"
-                                    : key === "Confirmed" ? "#6366f1"
-                                    : key === "Completed" ? "#22c55e"
+                                  background: key === "PENDING" ? "#f59e0b"
+                                    : key === "CONFIRMED" ? "#6366f1"
+                                    : key === "PREPARING" ? "#0284c7"
+                                    : key === "SERVED" ? "#22c55e"
+                                    : key === "COMPLETED" ? "#64748b"
                                     : "#ef4444",
                                   borderRadius: 8,
                                   transition: "width 0.5s ease",

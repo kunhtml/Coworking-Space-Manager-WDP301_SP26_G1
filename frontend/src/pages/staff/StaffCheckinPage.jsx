@@ -1,16 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
-  Badge,
   Button,
-  Card,
   Col,
   Form,
-  Modal,
   Row,
-  Spinner,
 } from "react-bootstrap";
 import AdminLayout from "../../components/admin/AdminLayout";
+import EmptyState from "../../components/common/EmptyState";
+import FilterBar from "../../components/common/FilterBar";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import SearchInput from "../../components/common/SearchInput";
+import BookingDetailModal from "../../components/staff/BookingDetailModal";
+import CheckinConfirmModal from "../../components/staff/CheckinConfirmModal";
+import StaffBookingTable from "../../components/staff/StaffBookingTable";
 import { getAllBookingsApi } from "../../services/bookingService";
 import { staffCheckInBooking } from "../../services/staffDashboardService";
 
@@ -130,101 +133,7 @@ export default function StaffCheckinPage() {
   };
 
   // ── Render card ───────────────────────────────────────────────────────────
-  const renderCard = (booking) => {
-    const st         = STATUS_STYLE[booking.status] || { bg: "#f1f5f9", color: "#475569", icon: "bi-question" };
-    const canCheckIn = ["Confirmed", "Awaiting_Payment"].includes(booking.status);
-    const isChecking = checkingId === String(booking.id);
-
-    return (
-      <Col lg={4} md={6} key={String(booking.id)}>
-        <Card
-          className="border-0 shadow-sm h-100"
-          style={{
-            borderRadius: 16,
-            borderLeft: `4px solid ${st.color}`,
-            transition: "box-shadow 0.2s",
-          }}
-        >
-          <Card.Body className="p-4">
-            {/* Header */}
-            <div className="d-flex justify-content-between align-items-start mb-3">
-              <div>
-                <div className="fw-bold fs-6" style={{ color: "#0f172a" }}>
-                  {booking.bookingCode}
-                </div>
-                <div className="fw-semibold" style={{ color: "#475569", fontSize: "0.88rem" }}>
-                  {booking.customerName || "Không xác định"}
-                </div>
-              </div>
-              <span
-                className="rounded-pill px-3 py-1 fw-bold d-flex align-items-center gap-1"
-                style={{ background: st.bg, color: st.color, fontSize: "0.75rem", whiteSpace: "nowrap" }}
-              >
-                <i className={`bi ${st.icon}`} />
-                {STATUS_LABEL[booking.status] || booking.status}
-              </span>
-            </div>
-
-            {/* Info rows */}
-            <div
-              className="rounded-3 px-3 py-2 mb-3"
-              style={{ background: "#f8fafc", fontSize: "0.84rem" }}
-            >
-              <div className="d-flex justify-content-between py-1 border-bottom">
-                <span style={{ color: "#64748b" }}>🪑 Bàn</span>
-                <strong style={{ color: "#0f172a" }}>{booking.spaceName || "--"}</strong>
-              </div>
-              <div className="d-flex justify-content-between py-1 border-bottom">
-                <span style={{ color: "#64748b" }}>📅 Ngày</span>
-                <strong style={{ color: "#0f172a" }}>{fmtDate(booking.startTime)}</strong>
-              </div>
-              <div className="d-flex justify-content-between py-1 border-bottom">
-                <span style={{ color: "#64748b" }}>⏰ Giờ</span>
-                <strong style={{ color: "#0f172a" }}>
-                  {fmt(booking.startTime)} – {fmt(booking.endTime)}
-                </strong>
-              </div>
-              <div className="d-flex justify-content-between py-1 border-bottom">
-                <span style={{ color: "#64748b" }}>📞 SĐT</span>
-                <strong style={{ color: "#0f172a" }}>{booking.customerPhone || "--"}</strong>
-              </div>
-              <div className="d-flex justify-content-between py-1">
-                <span style={{ color: "#64748b" }}>💰 Đặt cọc</span>
-                <strong style={{ color: "#15803d" }}>{fmtCur(booking.depositAmount)}</strong>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="d-flex gap-2">
-              <Button
-                className="fw-bold rounded-3 flex-grow-1"
-                style={{
-                  background: canCheckIn ? "#6366f1" : "#e2e8f0",
-                  border: "none",
-                  color: canCheckIn ? "#fff" : "#94a3b8",
-                  fontSize: "0.88rem",
-                }}
-                disabled={!canCheckIn || isChecking}
-                onClick={() => setPendingBooking(booking)}
-              >
-                <i className="bi bi-person-check-fill me-1" />
-                {isChecking ? "Đang xử lý..." : "Check-in"}
-              </Button>
-              <Button
-                variant="outline-secondary"
-                className="fw-semibold rounded-3 flex-grow-1"
-                style={{ fontSize: "0.88rem" }}
-                onClick={() => setDetailBooking(booking)}
-              >
-                <i className="bi bi-eye me-1" />
-                Chi tiết
-              </Button>
-            </div>
-          </Card.Body>
-        </Card>
-      </Col>
-    );
-  };
+  const renderCard = (booking) => booking;
 
   // ── JSX ───────────────────────────────────────────────────────────────────
   return (
@@ -302,16 +211,9 @@ export default function StaffCheckinPage() {
       </Row>
 
       {/* Search + Date filter */}
-      <Row className="g-3 mb-4 align-items-center">
+      <FilterBar>
         <Col md={4}>
-          <div className="staff-search-wrap">
-            <i className="bi bi-search" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tìm mã booking, tên khách, SĐT..."
-            />
-          </div>
+          <SearchInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm mã booking, tên khách, SĐT..." />
         </Col>
         <Col md={3}>
           <Form.Control
@@ -344,20 +246,17 @@ export default function StaffCheckinPage() {
             </Button>
           </Col>
         )}
-      </Row>
+      </FilterBar>
 
       {/* Content */}
       {loading ? (
-        <div className="text-center py-5">
-          <Spinner animation="border" style={{ color: "#6366f1" }} />
-          <p className="mt-2 text-muted fw-semibold small">Đang tải dữ liệu...</p>
-        </div>
+        <LoadingSpinner text="Đang tải dữ liệu..." color="#6366f1" />
       ) : filtered.length === 0 ? (
-        <div className="text-center py-5 text-muted">
-          <div style={{ fontSize: 52 }}>📋</div>
-          <p className="fw-semibold mt-2">
-            {bookings.length === 0 ? "Không có booking nào trong ngày này" : "Không có booking phù hợp bộ lọc"}
-          </p>
+        <div>
+          <EmptyState
+            icon="📋"
+            title={bookings.length === 0 ? "Không có booking nào trong ngày này" : "Không có booking phù hợp bộ lọc"}
+          />
           {bookings.length > 0 && (
             <Button
               variant="outline-secondary"
@@ -374,146 +273,43 @@ export default function StaffCheckinPage() {
           <div className="mb-3 text-secondary fw-semibold small">
             Hiển thị {filtered.length} booking
           </div>
-          <Row className="g-3">{filtered.map(renderCard)}</Row>
+          <StaffBookingTable
+            data={filtered.map(renderCard)}
+            statusStyle={STATUS_STYLE}
+            statusLabel={STATUS_LABEL}
+            fmtDate={fmtDate}
+            fmtTime={fmt}
+            fmtCur={fmtCur}
+            checkingId={checkingId}
+            onCheckin={(booking) => setPendingBooking(booking)}
+            onViewDetail={(booking) => setDetailBooking(booking)}
+          />
         </>
       )}
 
-      {/* ── Modal xác nhận Check-in ── */}
-      <Modal
+      <CheckinConfirmModal
         show={!!pendingBooking}
-        onHide={() => setPendingBooking(null)}
-        centered
-        size="sm"
-      >
-        <Modal.Header closeButton className="border-0 pb-0">
-          <Modal.Title className="fw-bold fs-6">
-            ✅ Xác nhận Check-in
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body className="px-4 pb-2">
-          {pendingBooking && (
-            <>
-              <p className="text-muted small mb-3">
-                Xác nhận khách hàng đã đến và check-in vào bàn?
-              </p>
-              <div className="rounded-3 p-3 mb-2" style={{ background: "#f8fafc", fontSize: "0.85rem" }}>
-                <div className="d-flex justify-content-between mb-1">
-                  <span style={{ color: "#64748b" }}>Mã booking</span>
-                  <strong>{pendingBooking.bookingCode}</strong>
-                </div>
-                <div className="d-flex justify-content-between mb-1">
-                  <span style={{ color: "#64748b" }}>Khách hàng</span>
-                  <strong>{pendingBooking.customerName || "--"}</strong>
-                </div>
-                <div className="d-flex justify-content-between mb-1">
-                  <span style={{ color: "#64748b" }}>Bàn</span>
-                  <strong>{pendingBooking.spaceName || "--"}</strong>
-                </div>
-                <div className="d-flex justify-content-between">
-                  <span style={{ color: "#64748b" }}>Giờ</span>
-                  <strong>{fmt(pendingBooking.startTime)} – {fmt(pendingBooking.endTime)}</strong>
-                </div>
-              </div>
-            </>
-          )}
-        </Modal.Body>
-        <Modal.Footer className="border-0 px-4 pb-4 gap-2">
-          <Button
-            variant="outline-secondary"
-            className="fw-semibold rounded-3 flex-grow-1"
-            onClick={() => setPendingBooking(null)}
-            disabled={!!checkingId}
-          >
-            Hủy
-          </Button>
-          <Button
-            className="fw-bold rounded-3 flex-grow-1"
-            style={{ background: "#6366f1", border: "none" }}
-            onClick={handleConfirmCheckIn}
-            disabled={!!checkingId}
-          >
-            {checkingId ? (
-              <><Spinner size="sm" className="me-1" />Đang xử lý...</>
-            ) : (
-              <><i className="bi bi-person-check-fill me-1" />Xác nhận</>
-            )}
-          </Button>
-        </Modal.Footer>
-      </Modal>
+        booking={pendingBooking}
+        onClose={() => setPendingBooking(null)}
+        onConfirm={handleConfirmCheckIn}
+        loading={!!checkingId}
+        fmtTime={fmt}
+      />
 
-      {/* ── Modal Chi tiết booking ── */}
-      <Modal
+      <BookingDetailModal
         show={!!detailBooking}
-        onHide={() => setDetailBooking(null)}
-        centered
-      >
-        <Modal.Header closeButton className="border-0">
-          <Modal.Title className="fw-bold fs-6">
-            📋 Chi tiết Booking
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body className="px-4 pb-2">
-          {detailBooking && (
-            <>
-              {/* Status badge */}
-              <div className="mb-4 text-center">
-                {(() => {
-                  const st = STATUS_STYLE[detailBooking.status] || { bg: "#f1f5f9", color: "#475569", icon: "bi-question" };
-                  return (
-                    <span
-                      className="rounded-pill px-4 py-2 fw-bold d-inline-flex align-items-center gap-2"
-                      style={{ background: st.bg, color: st.color, fontSize: "0.9rem" }}
-                    >
-                      <i className={`bi ${st.icon}`} />
-                      {STATUS_LABEL[detailBooking.status] || detailBooking.status}
-                    </span>
-                  );
-                })()}
-              </div>
-
-              <div className="rounded-3 p-3" style={{ background: "#f8fafc", fontSize: "0.87rem" }}>
-                {[
-                  ["📌 Mã booking",   detailBooking.bookingCode],
-                  ["👤 Khách hàng",   detailBooking.customerName || "Không xác định"],
-                  ["📞 Điện thoại",   detailBooking.customerPhone || "--"],
-                  ["🪑 Bàn",          detailBooking.spaceName || "--"],
-                  ["📅 Ngày",         fmtDate(detailBooking.startTime)],
-                  ["⏰ Giờ bắt đầu",  fmt(detailBooking.startTime)],
-                  ["⏰ Giờ kết thúc", fmt(detailBooking.endTime)],
-                  ["💰 Đặt cọc",      fmtCur(detailBooking.depositAmount)],
-                ].map(([label, value]) => (
-                  <div key={label} className="d-flex justify-content-between py-2 border-bottom">
-                    <span style={{ color: "#64748b" }}>{label}</span>
-                    <strong style={{ color: "#0f172a" }}>{value}</strong>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </Modal.Body>
-        <Modal.Footer className="border-0 px-4 pb-4">
-          {detailBooking && ["Confirmed", "Awaiting_Payment"].includes(detailBooking.status) && (
-            <Button
-              className="fw-bold rounded-3 flex-grow-1"
-              style={{ background: "#6366f1", border: "none" }}
-              onClick={() => {
-                setPendingBooking(detailBooking);
-                setDetailBooking(null);
-              }}
-            >
-              <i className="bi bi-person-check-fill me-1" />
-              Check-in ngay
-            </Button>
-          )}
-          <Button
-            variant="outline-secondary"
-            className="fw-semibold rounded-3 flex-grow-1"
-            onClick={() => setDetailBooking(null)}
-          >
-            Đóng
-          </Button>
-        </Modal.Footer>
-      </Modal>
+        booking={detailBooking}
+        onClose={() => setDetailBooking(null)}
+        onCheckinNow={() => {
+          setPendingBooking(detailBooking);
+          setDetailBooking(null);
+        }}
+        statusStyle={STATUS_STYLE}
+        statusLabel={STATUS_LABEL}
+        fmtDate={fmtDate}
+        fmtTime={fmt}
+        fmtCur={fmtCur}
+      />
     </AdminLayout>
   );
 }

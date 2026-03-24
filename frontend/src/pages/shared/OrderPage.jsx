@@ -73,6 +73,19 @@ const getCategoryVisuals = (categoryName) => {
   return { icon: "bi-tag", color: "rgba(108, 117, 125, 0.1)" }; // Xám
 };
 
+function normalizeMenuStatus(item) {
+  const availability = String(item?.availabilityStatus || "").trim().toUpperCase();
+  const stock = Number(item?.stockQuantity || 0);
+
+  if (["OUT_OF_STOCK", "UNAVAILABLE", "OUTOFSTOCK"].includes(availability)) {
+    return "OUT_OF_STOCK";
+  }
+  if (["IN_STOCK", "AVAILABLE"].includes(availability)) {
+    return stock > 0 ? "AVAILABLE" : "OUT_OF_STOCK";
+  }
+  return stock > 0 ? "AVAILABLE" : "OUT_OF_STOCK";
+}
+
 export default function MenuPage() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
@@ -109,13 +122,7 @@ export default function MenuPage() {
 
         const normalizedItems = items
           .filter((item) => {
-            const availability = String(
-              item?.availabilityStatus || "In_Stock",
-            ).toLowerCase();
-            const hasStockValue =
-              item?.stockQuantity !== undefined && item?.stockQuantity !== null;
-            const inStock = !hasStockValue || Number(item.stockQuantity) > 0;
-            return availability === "in_stock" && inStock;
+            return normalizeMenuStatus(item) === "AVAILABLE";
           })
           .map((item, index) => {
             const rawCatId =

@@ -5,15 +5,19 @@ import {
   Card,
   Col,
   Form,
-  Modal,
   Row,
-  Table,
   Alert,
   Spinner,
 } from "react-bootstrap";
 import { useAuth } from "../../hooks/useAuth";
 import { apiClient as api } from "../../services/api";
 import AdminLayout from "../../components/admin/AdminLayout";
+import AdminSpaceTable from "../../components/admin/AdminSpaceTable";
+import SpaceFormModal from "../../components/admin/SpaceFormModal";
+import SummaryCard from "../../components/admin/SummaryCard";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
+import EmptyState from "../../components/common/EmptyState";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
 
 export function meta() {
   return [
@@ -203,70 +207,16 @@ export default function TableManagementPage() {
         {/* Statistics Cards */}
         <Row className="mb-4 g-3">
           <Col md={3}>
-            <Card className="border-0 shadow-sm h-100">
-              <Card.Body>
-                <div className="d-flex justify-content-between align-items-center">
-                  <div>
-                    <p className="text-muted small mb-1">Tổng số bàn</p>
-                    <h3 className="fw-bold mb-0">{tables.length}</h3>
-                  </div>
-                  <div className="bg-primary bg-opacity-10 rounded-circle p-3">
-                    <i className="bi bi-grid-3x3 fs-4 text-primary"></i>
-                  </div>
-                </div>
-              </Card.Body>
-            </Card>
+            <SummaryCard label="Tổng số bàn" value={tables.length} icon="bi-grid-3x3" color="primary" />
           </Col>
           <Col md={3}>
-            <Card className="border-0 shadow-sm h-100">
-              <Card.Body>
-                <div className="d-flex justify-content-between align-items-center">
-                  <div>
-                    <p className="text-muted small mb-1">Có sẵn</p>
-                    <h3 className="fw-bold mb-0 text-success">
-                      {tables.filter((t) => t.status === "Available").length}
-                    </h3>
-                  </div>
-                  <div className="bg-success bg-opacity-10 rounded-circle p-3">
-                    <i className="bi bi-check-circle fs-4 text-success"></i>
-                  </div>
-                </div>
-              </Card.Body>
-            </Card>
+            <SummaryCard label="Có sẵn" value={tables.filter((t) => t.status === "Available").length} icon="bi-check-circle" color="success" />
           </Col>
           <Col md={3}>
-            <Card className="border-0 shadow-sm h-100">
-              <Card.Body>
-                <div className="d-flex justify-content-between align-items-center">
-                  <div>
-                    <p className="text-muted small mb-1">Đang sử dụng</p>
-                    <h3 className="fw-bold mb-0 text-warning">
-                      {tables.filter((t) => t.status === "Occupied").length}
-                    </h3>
-                  </div>
-                  <div className="bg-warning bg-opacity-10 rounded-circle p-3">
-                    <i className="bi bi-person-workspace fs-4 text-warning"></i>
-                  </div>
-                </div>
-              </Card.Body>
-            </Card>
+            <SummaryCard label="Đang sử dụng" value={tables.filter((t) => t.status === "Occupied").length} icon="bi-person-workspace" color="warning" />
           </Col>
           <Col md={3}>
-            <Card className="border-0 shadow-sm h-100">
-              <Card.Body>
-                <div className="d-flex justify-content-between align-items-center">
-                  <div>
-                    <p className="text-muted small mb-1">Bảo trì</p>
-                    <h3 className="fw-bold mb-0 text-danger">
-                      {tables.filter((t) => t.status === "Maintenance").length}
-                    </h3>
-                  </div>
-                  <div className="bg-danger bg-opacity-10 rounded-circle p-3">
-                    <i className="bi bi-tools fs-4 text-danger"></i>
-                  </div>
-                </div>
-              </Card.Body>
-            </Card>
+            <SummaryCard label="Bảo trì" value={tables.filter((t) => t.status === "Maintenance").length} icon="bi-tools" color="danger" />
           </Col>
         </Row>
 
@@ -274,405 +224,63 @@ export default function TableManagementPage() {
         <Card className="shadow-sm border-0 rounded-3">
           <Card.Body className="p-0">
             {loading ? (
-              <div className="text-center py-5">
-                <Spinner animation="border" variant="primary" />
-                <p className="text-muted mt-3 mb-0">Đang tải...</p>
-              </div>
+              <LoadingSpinner text="Đang tải..." color="#0d6efd" />
             ) : tables.length === 0 ? (
-              <div className="text-center py-5">
-                <i
-                  className="bi bi-inbox text-muted"
-                  style={{ fontSize: "3rem" }}
-                ></i>
-                <p className="text-muted mt-3 mb-2">Chưa có bàn nào.</p>
-                <Button variant="primary" onClick={openAdd}>
-                  Thêm bàn đầu tiên
-                </Button>
+              <div className="text-center py-4">
+                <EmptyState icon="🪑" title="Chưa có bàn nào." />
+                <Button variant="primary" onClick={openAdd}>Thêm bàn đầu tiên</Button>
               </div>
             ) : (
-              <Table responsive hover className="mb-0">
-                <thead className="table-light">
-                  <tr>
-                    <th className="px-4 py-3">Tên bàn</th>
-                    <th className="px-4 py-3">Sức chứa</th>
-                    <th className="px-4 py-3">Giá/giờ</th>
-                    <th className="px-4 py-3">Vị trí</th>
-                    <th className="px-4 py-3">Trạng thái</th>
-                    <th className="px-4 py-3 text-center">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tables.map((table) => {
-                    const statusInfo = getStatusInfo(table.status);
-                    return (
-                      <tr key={table._id}>
-                        <td className="px-4 py-3 fw-medium">{table.name}</td>
-                        <td className="px-4 py-3">{table.capacity} người</td>
-                        <td className="px-4 py-3 fw-bold text-primary">
-                          {formatPrice(table.pricePerHour)}/h
-                        </td>
-                        <td className="px-4 py-3 text-muted">
-                          {table.location || "—"}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge bg={statusInfo.bg}>{statusInfo.label}</Badge>
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <Button
-                            variant="outline-info"
-                            size="sm"
-                            className="me-2"
-                            onClick={() => openEdit(table)}
-                          >
-                            <i className="bi bi-pencil-square me-1"></i>
-                            Sửa
-                          </Button>
-                          <Button
-                            variant="outline-danger"
-                            size="sm"
-                            onClick={() => openDelete(table)}
-                          >
-                            <i className="bi bi-trash me-1"></i>
-                            Xoá
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </Table>
+              <AdminSpaceTable
+                data={tables}
+                getStatusInfo={getStatusInfo}
+                formatPrice={formatPrice}
+                onEdit={openEdit}
+                onDelete={openDelete}
+              />
             )}
           </Card.Body>
         </Card>
 
-        {/* Add Modal */}
-        <Modal
+        <SpaceFormModal
           show={showAddModal}
           onHide={() => setShowAddModal(false)}
-          size="lg"
-          centered
-        >
-          <Form onSubmit={submitAdd}>
-            <Modal.Header closeButton>
-              <Modal.Title>
-                <i className="bi bi-plus-circle me-2 text-success"></i>
-                Thêm bàn mới
-              </Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-              <Row className="g-3">
-                <Col md={6}>
-                  <Form.Group>
-                    <Form.Label>Tên bàn *</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
-                      }
-                      required
-                    />
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group>
-                    <Form.Label>Sức chứa *</Form.Label>
-                    <Form.Control
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={formData.capacity}
-                      isInvalid={!!capacityError}
-                      onKeyDown={(e) => {
-                        if (['-', 'e', 'E', '+', '.'].includes(e.key)) {
-                          e.preventDefault();
-                          setCapacityError("Sức chứa phải là số nguyên dương");
-                        }
-                      }}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '') {
-                          setFormData({ ...formData, capacity: value });
-                          setCapacityError("");
-                        } else if (Number(value) >= 1 && Number.isInteger(Number(value))) {
-                          setFormData({ ...formData, capacity: value });
-                          setCapacityError("");
-                        } else {
-                          setCapacityError("Sức chứa phải là số nguyên dương (≥ 1)");
-                        }
-                      }}
-                      required
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {capacityError}
-                    </Form.Control.Feedback>
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group>
-                    <Form.Label>Giá/giờ *</Form.Label>
-                    <Form.Control
-                      type="number"
-                      min="0"
-                      step="1000"
-                      value={formData.pricePerHour}
-                      isInvalid={!!priceError}
-                      onKeyDown={(e) => {
-                        if (['-', 'e', 'E', '+'].includes(e.key)) {
-                          e.preventDefault();
-                          setPriceError("Giá không được âm");
-                        }
-                      }}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '') {
-                          setFormData({ ...formData, pricePerHour: value });
-                          setPriceError("");
-                        } else if (Number(value) >= 0) {
-                          setFormData({ ...formData, pricePerHour: value });
-                          setPriceError("");
-                        } else {
-                          setPriceError("Giá phải là số không âm (≥ 0)");
-                        }
-                      }}
-                      required
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {priceError}
-                    </Form.Control.Feedback>
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group>
-                    <Form.Label>Vị trí</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={formData.location}
-                      onChange={(e) =>
-                        setFormData({ ...formData, location: e.target.value })
-                      }
-                    />
-                  </Form.Group>
-                </Col>
-                <Col md={12}>
-                  <Form.Group>
-                    <Form.Label>Mô tả</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={3}
-                      value={formData.description}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          description: e.target.value,
-                        })
-                      }
-                    />
-                  </Form.Group>
-                </Col>
-              </Row>
-            </Modal.Body>
-            <Modal.Footer>
-              <Button
-                variant="secondary"
-                onClick={() => setShowAddModal(false)}
-              >
-                Huỷ
-              </Button>
-              <Button variant="success" type="submit">
-                <i className="bi bi-check-lg me-1"></i>
-                Thêm
-              </Button>
-            </Modal.Footer>
-          </Form>
-        </Modal>
+          onSubmit={submitAdd}
+          title="Thêm bàn mới"
+          submitText="Thêm"
+          formData={formData}
+          setFormData={setFormData}
+          capacityError={capacityError}
+          setCapacityError={setCapacityError}
+          priceError={priceError}
+          setPriceError={setPriceError}
+          mode="add"
+        />
 
-        {/* Edit Modal */}
-        <Modal
+        <SpaceFormModal
           show={showEditModal}
           onHide={() => setShowEditModal(false)}
-          size="lg"
-          centered
-        >
-          <Form onSubmit={submitEdit}>
-            <Modal.Header closeButton>
-              <Modal.Title>
-                <i className="bi bi-pencil-square me-2 text-info"></i>
-                Chỉnh sửa bàn
-              </Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-              <Row className="g-3">
-                <Col md={6}>
-                  <Form.Group>
-                    <Form.Label>Tên bàn *</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
-                      }
-                      required
-                    />
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group>
-                    <Form.Label>Sức chứa *</Form.Label>
-                    <Form.Control
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={formData.capacity}
-                      isInvalid={!!capacityError}
-                      onKeyDown={(e) => {
-                        if (['-', 'e', 'E', '+', '.'].includes(e.key)) {
-                          e.preventDefault();
-                          setCapacityError("Sức chứa phải là số nguyên dương");
-                        }
-                      }}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '') {
-                          setFormData({ ...formData, capacity: value });
-                          setCapacityError("");
-                        } else if (Number(value) >= 1 && Number.isInteger(Number(value))) {
-                          setFormData({ ...formData, capacity: value });
-                          setCapacityError("");
-                        } else {
-                          setCapacityError("Sức chứa phải là số nguyên dương (≥ 1)");
-                        }
-                      }}
-                      required
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {capacityError}
-                    </Form.Control.Feedback>
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group>
-                    <Form.Label>Giá/giờ *</Form.Label>
-                    <Form.Control
-                      type="number"
-                      min="0"
-                      step="1000"
-                      value={formData.pricePerHour}
-                      isInvalid={!!priceError}
-                      onKeyDown={(e) => {
-                        if (['-', 'e', 'E', '+'].includes(e.key)) {
-                          e.preventDefault();
-                          setPriceError("Giá không được âm");
-                        }
-                      }}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '') {
-                          setFormData({ ...formData, pricePerHour: value });
-                          setPriceError("");
-                        } else if (Number(value) >= 0) {
-                          setFormData({ ...formData, pricePerHour: value });
-                          setPriceError("");
-                        } else {
-                          setPriceError("Giá phải là số không âm (≥ 0)");
-                        }
-                      }}
-                      required
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {priceError}
-                    </Form.Control.Feedback>
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group>
-                    <Form.Label>Vị trí</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={formData.location}
-                      onChange={(e) =>
-                        setFormData({ ...formData, location: e.target.value })
-                      }
-                    />
-                  </Form.Group>
-                </Col>
-                <Col md={12}>
-                  <Form.Group>
-                    <Form.Label>Trạng thái</Form.Label>
-                    <Form.Select
-                      value={formData.status}
-                      onChange={(e) =>
-                        setFormData({ ...formData, status: e.target.value })
-                      }
-                    >
-                      <option value="Available">Có sẵn</option>
-                      <option value="Occupied">Đang sử dụng</option>
-                      <option value="Maintenance">Bảo trì</option>
-                      <option value="Reserved">Đã đặt</option>
-                    </Form.Select>
-                  </Form.Group>
-                </Col>
-                <Col md={12}>
-                  <Form.Group>
-                    <Form.Label>Mô tả</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={3}
-                      value={formData.description}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          description: e.target.value,
-                        })
-                      }
-                    />
-                  </Form.Group>
-                </Col>
-              </Row>
-            </Modal.Body>
-            <Modal.Footer>
-              <Button
-                variant="secondary"
-                onClick={() => setShowEditModal(false)}
-              >
-                Huỷ
-              </Button>
-              <Button variant="info" type="submit">
-                <i className="bi bi-check-lg me-1"></i>
-                Lưu
-              </Button>
-            </Modal.Footer>
-          </Form>
-        </Modal>
+          onSubmit={submitEdit}
+          title="Chỉnh sửa bàn"
+          submitText="Lưu"
+          formData={formData}
+          setFormData={setFormData}
+          capacityError={capacityError}
+          setCapacityError={setCapacityError}
+          priceError={priceError}
+          setPriceError={setPriceError}
+          mode="edit"
+        />
 
-        {/* Delete Modal */}
-        <Modal
+        <ConfirmDialog
           show={showDeleteModal}
-          onHide={() => setShowDeleteModal(false)}
-          centered
-        >
-          <Modal.Header closeButton>
-            <Modal.Title>
-              <i className="bi bi-exclamation-triangle text-danger me-2"></i>
-              Xác nhận xoá
-            </Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            Bạn chắc chắn muốn xoá bàn <strong>"{deletingTable?.name}"</strong>?
-          </Modal.Body>
-          <Modal.Footer>
-            <Button
-              variant="secondary"
-              onClick={() => setShowDeleteModal(false)}
-            >
-              Huỷ
-            </Button>
-            <Button variant="danger" onClick={submitDelete}>
-              <i className="bi bi-trash me-1"></i>
-              Xoá
-            </Button>
-          </Modal.Footer>
-        </Modal>
+          onCancel={() => setShowDeleteModal(false)}
+          onConfirm={submitDelete}
+          title="Xác nhận xoá"
+          message={`Bạn chắc chắn muốn xoá bàn "${deletingTable?.name || ""}"?`}
+          confirmText="Xoá"
+          cancelText="Huỷ"
+        />
       </div>
     </AdminLayout>
   );

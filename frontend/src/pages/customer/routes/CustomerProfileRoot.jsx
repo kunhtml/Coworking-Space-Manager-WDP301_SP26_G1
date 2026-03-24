@@ -1,5 +1,5 @@
 import CustomerProfilePage from "./CustomerProfilePage";
 
-export default function LegacyCustomerProfilePage() {
+export default function CustomerProfileRoot() {
   return <CustomerProfilePage />;
 }
