@@ -118,6 +118,11 @@ export default function AdminSidebar({ user, onLogout }) {
           badge: 5,
         },
         {
+          path: "/staff-dashboard/counter-pos",
+          icon: "bi-calculator",
+          label: "POS tại quầy",
+        },
+        {
           path: "/staff-dashboard/create-service",
           icon: "bi-plus-circle",
           label: "Tạo đơn dịch vụ",
