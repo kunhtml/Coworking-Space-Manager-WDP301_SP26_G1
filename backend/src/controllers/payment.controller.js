@@ -4,6 +4,8 @@ import User from "../models/user.js";
 import Table from "../models/table.js";
 import OrderItem from "../models/order_item.js";
 import MenuItem from "../models/menu_item.js";
+import Invoice from "../models/invoice.js";
+import Payment from "../models/payment.js";
 import {
   buildPaymentPageData,
   buildOrderPaymentPageData,
@@ -14,6 +16,16 @@ import {
   syncPayOSPaymentRecord,
   createPayOSClient,
 } from "../services/payos.service.js";
+import {
+  ORDER_STATUS,
+  normalizeOrderStatus,
+  normalizePaymentMethod,
+  PAYMENT_METHOD,
+  PAYMENT_METHOD_VALUES,
+} from "../constants/domain.js";
+
+const resolveFrontendOrigin = (req) =>
+  req.get("origin") || process.env.FRONTEND_URL || "http://localhost:5173";
 
 export const getPaymentData = async (req, res) => {
   try {
@@ -211,7 +223,7 @@ export const createPayment = async (req, res) => {
       });
     }
     const user = await User.findById(req.user.id).lean();
-    const origin = `${req.protocol}://${req.get("host")}`;
+    const origin = resolveFrontendOrigin(req);
 
     if (!isPayOSConfigured()) {
       return res.status(400).json({ message: "PayOS chưa được cấu hình." });
@@ -225,6 +237,9 @@ export const createPayment = async (req, res) => {
     res.json({ success: true, ...result });
   } catch (err) {
     console.error("createPayment error:", err);
+    if (String(err.message || "").includes("Lỗi kết nối với PayOS")) {
+      return res.status(400).json({ message: err.message });
+    }
     res.status(500).json({ message: err.message || "Lỗi tạo thanh toán." });
   }
 };
@@ -254,7 +269,7 @@ export const createOrderPayment = async (req, res) => {
     }
 
     const user = await User.findById(req.user.id).lean();
-    const origin = `${req.protocol}://${req.get("host")}`;
+    const origin = resolveFrontendOrigin(req);
 
     if (!isPayOSConfigured()) {
       return res.status(400).json({ message: "PayOS chưa được cấu hình." });
@@ -264,10 +279,15 @@ export const createOrderPayment = async (req, res) => {
       order,
       buyer: user,
       origin,
+      returnPath: `/payment/order/${order._id}`,
+      cancelPath: "/customer-dashboard/orders",
     });
     res.json({ success: true, ...result });
   } catch (err) {
     console.error("createOrderPayment error:", err);
+    if (String(err.message || "").includes("Lỗi kết nối với PayOS")) {
+      return res.status(400).json({ message: err.message });
+    }
     res.status(500).json({ message: err.message || "Lỗi tạo thanh toán." });
   }
 };
@@ -297,6 +317,131 @@ export const cancelPayment = async (req, res) => {
   } catch (err) {
     console.error("cancelPayment error:", err);
     res.status(500).json({ message: err.message || "Lỗi hủy thanh toán." });
+  }
+};
+
+// POST /api/staff/payment/counter  — process counter payment for order/booking
+
+export const processCounterPayment = async (req, res) => {
+  try {
+    const { orderId, bookingId, method } = req.body;
+    const paymentMethod = normalizePaymentMethod(method || PAYMENT_METHOD.CASH);
+
+    if (!PAYMENT_METHOD_VALUES.includes(paymentMethod)) {
+      return res.status(400).json({ message: "Phương thức thanh toán chỉ hỗ trợ CASH hoặc QR_PAYOS." });
+    }
+
+    let order = null;
+    if (orderId) {
+      order = await Order.findById(orderId);
+    } else if (bookingId) {
+      order = await Order.findOne({ bookingId }).sort({ createdAt: -1 });
+    } else {
+      return res.status(400).json({ message: "Vui lòng cung cấp orderId hoặc bookingId." });
+    }
+
+    if (!order) {
+      return res.status(404).json({ message: "Không tìm thấy đơn hàng." });
+    }
+
+    const booking =
+      order.bookingId || bookingId
+        ? await Booking.findById(order.bookingId || bookingId).lean()
+        : null;
+
+    const invoice =
+      (await Invoice.findOne({ orderIds: order._id })) ||
+      (order.bookingId ? await Invoice.findOne({ bookingId: order.bookingId }) : null);
+
+    if (!invoice) {
+      return res.status(404).json({ message: "Không tìm thấy hóa đơn của đơn hàng." });
+    }
+
+    const amountToPay = Math.max(
+      0,
+      Math.round(
+        Number(invoice.remainingAmount ?? invoice.totalAmount ?? order.totalAmount ?? 0),
+      ),
+    );
+
+    if (paymentMethod === PAYMENT_METHOD.QR_PAYOS) {
+      if (!isPayOSConfigured()) {
+        return res.status(400).json({ message: "PayOS chưa được cấu hình." });
+      }
+
+      const buyer =
+        booking?.guestInfo?.name || booking?.guestInfo?.phone
+          ? {
+              fullName: booking?.guestInfo?.name || "Khách lẻ",
+              phone: booking?.guestInfo?.phone || "",
+              email: booking?.guestInfo?.email || undefined,
+            }
+          : order.userId
+            ? await User.findById(order.userId).lean()
+            : null;
+      const origin = resolveFrontendOrigin(req);
+      const qrPayment = await createOrReuseOrderPayOSPayment({
+        order,
+        buyer,
+        origin,
+        returnPath: "/staff-dashboard/orders?payment=success",
+        cancelPath: "/staff-dashboard/orders?payment=cancelled",
+      });
+
+      return res.json({
+        message: "Đã tạo QR PayOS cho đơn tại quầy.",
+        orderId: order._id,
+        invoiceId: invoice._id,
+        method: paymentMethod,
+        payment: qrPayment.payment || null,
+        checkoutUrl: qrPayment.payment?.payos?.checkoutUrl || null,
+        qrCode: qrPayment.payment?.payos?.qrCode || null,
+      });
+    }
+
+    const payment = await Payment.create({
+      invoiceId: invoice._id,
+      bookingId: order.bookingId || bookingId || null,
+      paymentMethod,
+      transactionId: `COUNTER_${paymentMethod}_${Date.now()}`,
+      amount: amountToPay,
+      type: "Payment",
+      paymentStatus: "Success",
+      paidAt: new Date(),
+    });
+
+    const currentStatus = normalizeOrderStatus(order.status);
+    if (currentStatus === ORDER_STATUS.PENDING) {
+      order.status = ORDER_STATUS.CONFIRMED;
+    }
+    await order.save();
+
+    invoice.remainingAmount = 0;
+    invoice.status = "Paid";
+    await invoice.save();
+
+    if (
+      booking &&
+      ["Pending", "Awaiting_Payment"].includes(String(booking.status || ""))
+    ) {
+      await Booking.findByIdAndUpdate(booking._id, { status: "Confirmed" });
+    }
+
+    return res.json({
+      message: "Thanh toán tại quầy thành công.",
+      orderId: order._id,
+      invoiceId: invoice._id,
+      paymentId: payment._id,
+      method: paymentMethod,
+      amount: amountToPay,
+      orderStatus: normalizeOrderStatus(order.status),
+    });
+  } catch (err) {
+    console.error("processCounterPayment error:", err);
+    if (String(err.message || "").includes("Lỗi kết nối với PayOS")) {
+      return res.status(400).json({ message: err.message });
+    }
+    return res.status(500).json({ message: "Lỗi xử lý thanh toán tại quầy." });
   }
 };
 

@@ -385,13 +385,14 @@ export default function PaymentPage() {
   // Start 5-minute cancel countdown when QR becomes visible
   useEffect(() => {
     if (
+      isOrderPayment ||
       !data?.payment?.qrCodeDataUrl ||
       data?.payment?.paymentStatus !== "Pending"
     )
       return;
     if (timeLeft !== null) return; // already started
     setTimeLeft(5 * 60);
-  }, [data, timeLeft]);
+  }, [data, isOrderPayment, timeLeft]);
 
   useEffect(() => {
     if (timeLeft === null || timeLeft <= 0) return;
@@ -401,6 +402,7 @@ export default function PaymentPage() {
 
   // When timer hits 0 — auto cancel
   useEffect(() => {
+    if (isOrderPayment) return;
     if (timeLeft !== 0) return;
     (async () => {
       try {
@@ -410,7 +412,7 @@ export default function PaymentPage() {
       }
       setCancelled(true);
     })();
-  }, [timeLeft, bookingId]);
+  }, [timeLeft, bookingId, isOrderPayment]);
 
   // Backend maps PayOS PAID -> "Success"
   // Only consider paid if payment status is Success AND remaining amount is 0

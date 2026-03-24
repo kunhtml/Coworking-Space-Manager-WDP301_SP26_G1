@@ -1,8 +1,20 @@
-const BASE_URL = "http://localhost:5000/api";
+const BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 const authHeader = () => {
   const token = localStorage.getItem("token");
   return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
+const parseResponse = async (res) => {
+  const text = await res.text();
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
 };
 
 export const apiClient = {
@@ -11,8 +23,9 @@ export const apiClient = {
       cache: "no-store",
       headers: { ...authHeader() },
     });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+    const data = await parseResponse(res);
+    if (!res.ok) throw new Error(data?.message || data || "Loi server");
+    return data;
   },
   post: async (path, body) => {
     const res = await fetch(`${BASE_URL}${path}`, {
@@ -20,8 +33,8 @@ export const apiClient = {
       headers: { "Content-Type": "application/json", ...authHeader() },
       body: JSON.stringify(body),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Lỗi server");
+    const data = await parseResponse(res);
+    if (!res.ok) throw new Error(data?.message || "Loi server");
     return data;
   },
   put: async (path, body) => {
@@ -30,8 +43,8 @@ export const apiClient = {
       headers: { "Content-Type": "application/json", ...authHeader() },
       body: JSON.stringify(body),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Lỗi server");
+    const data = await parseResponse(res);
+    if (!res.ok) throw new Error(data?.message || "Loi server");
     return data;
   },
   patch: async (path, body) => {
@@ -40,8 +53,8 @@ export const apiClient = {
       headers: { "Content-Type": "application/json", ...authHeader() },
       body: JSON.stringify(body || {}),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Lỗi server");
+    const data = await parseResponse(res);
+    if (!res.ok) throw new Error(data?.message || "Loi server");
     return data;
   },
   delete: async (path) => {
@@ -49,8 +62,8 @@ export const apiClient = {
       method: "DELETE",
       headers: { ...authHeader() },
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Lỗi server");
+    const data = await parseResponse(res);
+    if (!res.ok) throw new Error(data?.message || "Loi server");
     return data;
   },
 };
@@ -75,15 +88,18 @@ export const updateProfileApi = (data) => apiClient.put("/auth/profile", data);
 export const changePasswordApi = (data) =>
   apiClient.put("/auth/password", data);
 
+export const sendOtpApi = (purpose) =>
+  apiClient.post("/auth/send-otp", { purpose });
+
+export const verifyOtpApi = (purpose, otp) =>
+  apiClient.post("/auth/verify-otp", { purpose, otp });
+
 export const getMyBookingsApi = () => apiClient.get("/bookings/my");
 
-// Lấy danh sách toàn bộ menu từ Backend
 export const getMenuItemsApi = () => apiClient.get("/menu/items");
 
-// Lấy danh sách toàn bộ danh mục (Category) từ Backend
 export const getCategoriesApi = () => apiClient.get("/menu/categories");
 
-// Staff - Lấy danh sách bàn theo trạng thái (dùng cho Sơ đồ chỗ ngồi)
 export const getTablesApi = ({ status, search } = {}) => {
   const params = new URLSearchParams();
   if (status && status !== "all") params.append("status", status);
@@ -92,7 +108,6 @@ export const getTablesApi = ({ status, search } = {}) => {
   return apiClient.get(`/staff/dashboard/tables${qs ? "?" + qs : ""}`);
 };
 
-// Staff - Cập nhật trạng thái bàn
 export const updateTableStatusApi = (tableId, status) =>
   apiClient.patch(`/staff/dashboard/tables/${tableId}/status`, { status });
 
@@ -118,5 +133,7 @@ export const getDailyTableUsageApi = ({ year, month } = {}) => {
   params.append("_v", "2");
   params.append("_t", Date.now().toString());
   const qs = params.toString();
-  return apiClient.get(`/reports/analytics/daily-table-usage${qs ? `?${qs}` : ""}`);
+  return apiClient.get(
+    `/reports/analytics/daily-table-usage${qs ? `?${qs}` : ""}`,
+  );
 };

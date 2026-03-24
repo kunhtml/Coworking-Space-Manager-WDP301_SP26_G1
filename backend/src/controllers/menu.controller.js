@@ -1,14 +1,53 @@
 import MenuItem from "../models/menu_item.js";
 import Category from "../models/category.js";
+import jwt from "jsonwebtoken";
+import {
+  MENU_AVAILABILITY,
+  normalizeMenuAvailability,
+} from "../constants/domain.js";
+
+const normalizeRole = (role) => String(role || "").trim().toLowerCase();
+
+const getRequesterRole = (req) => {
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith("Bearer ")) return null;
+  if (!process.env.JWT_SECRET) return null;
+
+  try {
+    const token = auth.split(" ")[1];
+    const user = jwt.verify(token, process.env.JWT_SECRET);
+    return normalizeRole(user?.role);
+  } catch {
+    return null;
+  }
+};
+
+const canUseAdminMenuView = (req) => {
+  const role = getRequesterRole(req);
+  if (!role) return false;
+
+  const requestedAdminScope = req.query.admin === "true" || req.query.scope === "all";
+  if (!requestedAdminScope) return false;
+
+  return role === "staff" || role === "admin";
+};
+
+const toNormalizedMenuItem = (item) => {
+  const normalizedAvailability = normalizeMenuAvailability(
+    item?.availabilityStatus,
+    item?.stockQuantity,
+  );
+  return { ...item, availabilityStatus: normalizedAvailability };
+};
 
 export const getMenuItems = async (req, res) => {
   try {
-    const isAdmin = req.query.admin === "true";
+    const isAdmin = canUseAdminMenuView(req);
 
     if (isAdmin) {
       // Admin: lấy tất cả món không lọc
       const items = await MenuItem.find().populate("categoryId", "name isActive").lean();
-      return res.json(items);
+      return res.json(items.map(toNormalizedMenuItem));
     }
 
     // Public (khách hàng): chỉ lấy món của danh mục đang hiển thị
@@ -17,7 +56,6 @@ export const getMenuItems = async (req, res) => {
     const activeCatIds = activeCategories.map((c) => c._id);
 
     const items = await MenuItem.find({
-      availabilityStatus: { $ne: "Unavailable" },
       $or: [
         { categoryId: { $in: activeCatIds } },
         { categoryId: null },
@@ -26,7 +64,11 @@ export const getMenuItems = async (req, res) => {
       .populate("categoryId", "name isActive")
       .lean();
 
-    return res.json(items);
+    const publicItems = items
+      .map(toNormalizedMenuItem)
+      .filter((item) => item.availabilityStatus === MENU_AVAILABILITY.AVAILABLE);
+
+    return res.json(publicItems);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Lỗi khi tải danh sách menu." });
@@ -69,12 +111,7 @@ export const createMenuItem = async (req, res) => {
     }
 
     const qty = Number(stockQuantity) || 0;
-    let resolvedStatus = availabilityStatus || "Available";
-    if (resolvedStatus !== "Unavailable" && qty === 0) {
-      resolvedStatus = "OutOfStock";
-    } else if (resolvedStatus === "OutOfStock" && qty > 0) {
-      resolvedStatus = "Available";
-    }
+    const resolvedStatus = normalizeMenuAvailability(availabilityStatus, qty);
 
     const newItem = await MenuItem.create({
       name: name.trim(),
@@ -116,12 +153,7 @@ export const updateMenuItem = async (req, res) => {
     }
 
     const qty = Number(stockQuantity) || 0;
-    let resolvedStatus = availabilityStatus || "Available";
-    if (resolvedStatus !== "Unavailable" && qty === 0) {
-      resolvedStatus = "OutOfStock";
-    } else if (resolvedStatus === "OutOfStock" && qty > 0) {
-      resolvedStatus = "Available";
-    }
+    const resolvedStatus = normalizeMenuAvailability(availabilityStatus, qty);
 
     const updated = await MenuItem.findByIdAndUpdate(
       req.params.id,

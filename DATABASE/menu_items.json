@@ -10,7 +10,7 @@
     "description": "Cà phê pha phin truyền thống đậm đà, kết hợp sữa đặc",
     "price": 35000,
     "stockQuantity": 50,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-01T08:00:00.000Z"
     },
@@ -27,7 +27,7 @@
     "description": "Nhiều sữa, ít cà phê, thêm lớp bọt béo ngậy",
     "price": 40000,
     "stockQuantity": 40,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-02T08:15:00.000Z"
     },
@@ -44,7 +44,7 @@
     "description": "Cà phê nguyên chất chiết xuất bằng máy chuẩn Ý",
     "price": 45000,
     "stockQuantity": 100,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-03T07:20:00.000Z"
     },
@@ -61,7 +61,7 @@
     "description": "Cà phê ủ lạnh 24h, hương vị mượt mà, ít chua",
     "price": 55000,
     "stockQuantity": 20,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-04T09:00:00.000Z"
     },
@@ -78,7 +78,7 @@
     "description": "Bánh mì nóng giòn ăn kèm chả lụa và pate gia truyền",
     "price": 30000,
     "stockQuantity": 15,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-01T08:00:00.000Z"
     },
@@ -95,7 +95,7 @@
     "description": "Bánh sừng bò ngập ngụa bơ Pháp nướng giòn rụm",
     "price": 35000,
     "stockQuantity": 30,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-05T08:30:00.000Z"
     },
@@ -112,7 +112,7 @@
     "description": "Bánh phô mai Mascarpone hương cà phê và rượu Rhum nhẹ",
     "price": 45000,
     "stockQuantity": 12,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-06T10:00:00.000Z"
     },
@@ -129,7 +129,7 @@
     "description": "Trà đen thanh mát kết hợp đào miếng chua ngọt và hương sả",
     "price": 50000,
     "stockQuantity": 50,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-07T08:45:00.000Z"
     },
@@ -146,7 +146,7 @@
     "description": "Trà oolong đậm vị, topping hạt sen bùi bùi và kem macchiato",
     "price": 55000,
     "stockQuantity": 35,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-08T09:15:00.000Z"
     },
@@ -163,7 +163,7 @@
     "description": "Bột trà xanh Nhật Bản hòa quyện cùng sữa tươi thanh trùng",
     "price": 55000,
     "stockQuantity": 25,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-09T08:00:00.000Z"
     },
@@ -180,7 +180,7 @@
     "description": "Trà xanh lài hương hoa hồng thanh nhã cùng trái vải mọng nước",
     "price": 50000,
     "stockQuantity": 0,
-    "availabilityStatus": "Out_Of_Stock",
+    "availabilityStatus": "OUT_OF_STOCK",
     "createdAt": {
       "$date": "2026-01-10T11:00:00.000Z"
     },
@@ -197,7 +197,7 @@
     "description": "Bánh Oreo xay nhuyễn cùng sữa tươi và kem whip",
     "price": 60000,
     "stockQuantity": 30,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-11T13:00:00.000Z"
     },
@@ -214,7 +214,7 @@
     "description": "Cà phê đá xay thơm lừng phủ sốt Caramel ngọt ngào",
     "price": 65000,
     "stockQuantity": 20,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-12T14:30:00.000Z"
     },
@@ -231,7 +231,7 @@
     "description": "Trà xanh đá xay mát lạnh, không quá ngọt",
     "price": 60000,
     "stockQuantity": 40,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-13T15:00:00.000Z"
     },
@@ -248,7 +248,7 @@
     "description": "Sự kết hợp độc đáo giữa vị đắng của cà phê, vị béo của kem sữa và chút mặn mà của muối",
     "price": 35000,
     "stockQuantity": 60,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-17T08:00:00.000Z"
     },
@@ -265,7 +265,7 @@
     "description": "Espresso nồng nàn cùng bọt sữa đánh nóng bồng bềnh, rắc thêm bột cacao",
     "price": 45000,
     "stockQuantity": 40,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-17T08:30:00.000Z"
     },
@@ -282,7 +282,7 @@
     "description": "Cà phê đậm vị Việt Nam phủ lớp kem trứng đánh bông mềm mịn, thơm lừng",
     "price": 45000,
     "stockQuantity": 30,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-18T09:00:00.000Z"
     },
@@ -299,7 +299,7 @@
     "description": "Sự hòa quyện tuyệt vời giữa Espresso, sữa nóng và sốt sô-cô-la ngọt ngào",
     "price": 50000,
     "stockQuantity": 25,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-18T10:00:00.000Z"
     },
@@ -316,7 +316,7 @@
     "description": "Sữa bốc khói cùng Espresso, phủ lớp xốt caramel nghệ thuật",
     "price": 50000,
     "stockQuantity": 25,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-19T07:30:00.000Z"
     },
@@ -333,7 +333,7 @@
     "description": "Bánh muffin nướng mềm xốp, thơm mùi cacao với những hạt sô-cô-la chip giòn",
     "price": 30000,
     "stockQuantity": 20,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-19T08:00:00.000Z"
     },
@@ -350,7 +350,7 @@
     "description": "Bánh chuối nướng truyền thống ngọt thanh, thoang thoảng hương quế và mật ong",
     "price": 25000,
     "stockQuantity": 30,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-20T09:00:00.000Z"
     },
@@ -367,7 +367,7 @@
     "description": "Set 3 chiếc bánh Macaron Pháp vỏ giòn tan, nhân kem bơ trái cây tươi",
     "price": 45000,
     "stockQuantity": 15,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-20T10:30:00.000Z"
     },
@@ -384,7 +384,7 @@
     "description": "Phần ăn nhẹ hạt Macca sấy nứt vỏ, béo ngậy và giàu dinh dưỡng",
     "price": 50000,
     "stockQuantity": 40,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-21T08:15:00.000Z"
     },
@@ -401,7 +401,7 @@
     "description": "Bánh phô mai nướng béo ngậy, phủ mứt chanh dây chua thanh giải ngấy",
     "price": 45000,
     "stockQuantity": 18,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-21T11:00:00.000Z"
     },
@@ -418,7 +418,7 @@
     "description": "Trà đen thanh mát kết hợp tép bưởi hồng tươi và mật ong ngọt dịu",
     "price": 50000,
     "stockQuantity": 45,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-22T08:00:00.000Z"
     },
@@ -435,7 +435,7 @@
     "description": "Trà sữa vị truyền thống đậm đà lá trà, ăn kèm trân châu đen dai giòn",
     "price": 40000,
     "stockQuantity": 80,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-22T09:30:00.000Z"
     },
@@ -452,7 +452,7 @@
     "description": "Nước ép dứa tươi 100% giải nhiệt, giàu vitamin C",
     "price": 45000,
     "stockQuantity": 30,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-23T08:45:00.000Z"
     },
@@ -469,7 +469,7 @@
     "description": "Trà xanh hương lài trong vắt phủ lớp váng sữa phô mai mặn béo",
     "price": 45000,
     "stockQuantity": 50,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-23T10:00:00.000Z"
     },
@@ -486,7 +486,7 @@
     "description": "Trà trái cây dập đá viên, kết hợp nước cốt dưa hấu và lá bạc hà the mát",
     "price": 50000,
     "stockQuantity": 35,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-24T14:00:00.000Z"
     },
@@ -503,7 +503,7 @@
     "description": "Sữa chua lên men tự nhiên xay nhuyễn cùng đá và mứt việt quất chua ngọt",
     "price": 55000,
     "stockQuantity": 40,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-24T15:00:00.000Z"
     },
@@ -520,7 +520,7 @@
     "description": "Chanh tươi xay cùng đá bào nhuyễn mịn, phủ lớp kem sữa dừa béo thơm",
     "price": 45000,
     "stockQuantity": 50,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-25T11:00:00.000Z"
     },
@@ -537,7 +537,7 @@
     "description": "Vị the mát của xốt bạc hà xay cùng sô-cô-la chip và kem tươi",
     "price": 60000,
     "stockQuantity": 30,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-25T13:30:00.000Z"
     },
@@ -554,7 +554,7 @@
     "description": "Xoài chín mọng xay cùng đá lạnh, lót cốt dừa béo ngậy bên dưới",
     "price": 55000,
     "stockQuantity": 45,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-26T14:15:00.000Z"
     },
@@ -571,7 +571,7 @@
     "description": "Sinh tố bơ sáp dẻo mịn kết hợp cùng một shot Espresso đắng nhẹ",
     "price": 60000,
     "stockQuantity": 20,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-01-26T16:00:00.000Z"
     },
@@ -588,7 +588,7 @@
     "description": "Nước suối tinh khiết chai nhỏ",
     "price": 15000,
     "stockQuantity": 120,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-02-05T09:30:00.000Z"
     },
@@ -605,7 +605,7 @@
     "description": "Soda mát lạnh với chanh muối",
     "price": 30000,
     "stockQuantity": 40,
-    "availabilityStatus": "In_Stock",
+    "availabilityStatus": "AVAILABLE",
     "createdAt": {
       "$date": "2026-02-05T10:00:00.000Z"
     },
@@ -622,7 +622,7 @@
     "description": "2 cà phê + 2 trà + 2 bánh ngọt",
     "price": 220000,
     "stockQuantity": 0,
-    "availabilityStatus": "Out_Of_Stock",
+    "availabilityStatus": "OUT_OF_STOCK",
     "createdAt": {
       "$date": "2026-02-10T10:00:00.000Z"
     },

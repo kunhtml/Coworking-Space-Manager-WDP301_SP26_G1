@@ -3,7 +3,7 @@
     "_id": { "$oid": "65e7a0000000000000000001" },
     "userId": { "$oid": "65e6b0000000000000000003" },
     "bookingId": { "$oid": "65e6f0000000000000000001" },
-    "status": "Served",
+    "status": "SERVED",
     "totalAmount": 100000,
     "createdAt": { "$date": "2026-03-05T13:30:00.000Z" },
     "__v": 0
@@ -12,7 +12,7 @@
     "_id": { "$oid": "65e7a0000000000000000002" },
     "userId": { "$oid": "65e6b0000000000000000007" },
     "bookingId": { "$oid": "65e6f0000000000000000009" },
-    "status": "Served",
+    "status": "SERVED",
     "totalAmount": 170000,
     "createdAt": { "$date": "2026-03-22T08:45:00.000Z" },
     "__v": 0
@@ -21,7 +21,7 @@
     "_id": { "$oid": "65e7a0000000000000000003" },
     "userId": { "$oid": "65e6b0000000000000000009" },
     "bookingId": { "$oid": "65e6f0000000000000000010" },
-    "status": "Preparing",
+    "status": "PREPARING",
     "totalAmount": 120000,
     "createdAt": { "$date": "2026-03-21T13:30:00.000Z" },
     "__v": 0
@@ -30,7 +30,7 @@
     "_id": { "$oid": "65e7a0000000000000000004" },
     "userId": { "$oid": "65e6b000000000000000000a" },
     "bookingId": { "$oid": "65e6f0000000000000000013" },
-    "status": "New",
+    "status": "PENDING",
     "totalAmount": 85000,
     "createdAt": { "$date": "2026-03-24T01:30:00.000Z" },
     "__v": 0
@@ -39,7 +39,7 @@
     "_id": { "$oid": "65e7a0000000000000000005" },
     "userId": { "$oid": "65e6b000000000000000000b" },
     "bookingId": { "$oid": "65e6f0000000000000000014" },
-    "status": "Cancelled",
+    "status": "CANCELLED",
     "totalAmount": 0,
     "createdAt": { "$date": "2026-03-24T07:10:00.000Z" },
     "__v": 0
@@ -48,7 +48,7 @@
     "_id": { "$oid": "65e7a0000000000000000006" },
     "userId": { "$oid": "65e6b0000000000000000003" },
     "bookingId": { "$oid": "65e6f000000000000000001c" },
-    "status": "Served",
+    "status": "SERVED",
     "totalAmount": 80000,
     "createdAt": { "$date": "2025-01-10T03:10:00.000Z" },
     "__v": 0
@@ -57,7 +57,7 @@
     "_id": { "$oid": "65e7a0000000000000000007" },
     "userId": { "$oid": "65e6b0000000000000000007" },
     "bookingId": { "$oid": "65e6f000000000000000001d" },
-    "status": "Served",
+    "status": "SERVED",
     "totalAmount": 130000,
     "createdAt": { "$date": "2025-02-14T05:10:00.000Z" },
     "__v": 0
@@ -66,7 +66,7 @@
     "_id": { "$oid": "65e7a0000000000000000008" },
     "userId": { "$oid": "65e6b0000000000000000006" },
     "bookingId": { "$oid": "65e6f000000000000000001e" },
-    "status": "Served",
+    "status": "SERVED",
     "totalAmount": 90000,
     "createdAt": { "$date": "2025-03-03T10:10:00.000Z" },
     "__v": 0
@@ -75,7 +75,7 @@
     "_id": { "$oid": "65e7a0000000000000000009" },
     "userId": { "$oid": "65e6b0000000000000000009" },
     "bookingId": { "$oid": "65e6f000000000000000001f" },
-    "status": "Served",
+    "status": "SERVED",
     "totalAmount": 140000,
     "createdAt": { "$date": "2025-04-21T06:10:00.000Z" },
     "__v": 0
@@ -84,7 +84,7 @@
     "_id": { "$oid": "65e7a000000000000000000a" },
     "userId": { "$oid": "65e6b000000000000000000a" },
     "bookingId": { "$oid": "65e6f0000000000000000020" },
-    "status": "Served",
+    "status": "SERVED",
     "totalAmount": 120000,
     "createdAt": { "$date": "2025-05-08T11:10:00.000Z" },
     "__v": 0
@@ -93,7 +93,7 @@
     "_id": { "$oid": "65e7a000000000000000000b" },
     "userId": { "$oid": "65e6b0000000000000000003" },
     "bookingId": { "$oid": "65e6f0000000000000000021" },
-    "status": "Served",
+    "status": "SERVED",
     "totalAmount": 160000,
     "createdAt": { "$date": "2025-06-18T06:10:00.000Z" },
     "__v": 0
@@ -102,7 +102,7 @@
     "_id": { "$oid": "65e7a000000000000000000c" },
     "userId": { "$oid": "65e6b0000000000000000007" },
     "bookingId": { "$oid": "65e6f0000000000000000022" },
-    "status": "Cancelled",
+    "status": "CANCELLED",
     "totalAmount": 0,
     "createdAt": { "$date": "2025-07-07T12:10:00.000Z" },
     "__v": 0
@@ -111,7 +111,7 @@
     "_id": { "$oid": "65e7a000000000000000000d" },
     "userId": { "$oid": "65e6b0000000000000000006" },
     "bookingId": { "$oid": "65e6f0000000000000000023" },
-    "status": "Served",
+    "status": "SERVED",
     "totalAmount": 110000,
     "createdAt": { "$date": "2025-08-15T03:10:00.000Z" },
     "__v": 0
@@ -120,7 +120,7 @@
     "_id": { "$oid": "65e7a000000000000000000e" },
     "userId": { "$oid": "65e6b0000000000000000009" },
     "bookingId": { "$oid": "65e6f0000000000000000024" },
-    "status": "Served",
+    "status": "SERVED",
     "totalAmount": 150000,
     "createdAt": { "$date": "2025-09-20T07:10:00.000Z" },
     "__v": 0
@@ -129,7 +129,7 @@
     "_id": { "$oid": "65e7a000000000000000000f" },
     "userId": { "$oid": "65e6b000000000000000000a" },
     "bookingId": { "$oid": "65e6f0000000000000000025" },
-    "status": "Preparing",
+    "status": "PREPARING",
     "totalAmount": 125000,
     "createdAt": { "$date": "2025-10-09T09:10:00.000Z" },
     "__v": 0
@@ -138,7 +138,7 @@
     "_id": { "$oid": "65e7a0000000000000000010" },
     "userId": { "$oid": "65e6b0000000000000000003" },
     "bookingId": { "$oid": "65e6f0000000000000000026" },
-    "status": "Served",
+    "status": "SERVED",
     "totalAmount": 170000,
     "createdAt": { "$date": "2025-11-26T06:10:00.000Z" },
     "__v": 0
@@ -147,7 +147,7 @@
     "_id": { "$oid": "65e7a0000000000000000011" },
     "userId": { "$oid": "65e6b0000000000000000007" },
     "bookingId": { "$oid": "65e6f0000000000000000027" },
-    "status": "Served",
+    "status": "SERVED",
     "totalAmount": 130000,
     "createdAt": { "$date": "2025-12-30T10:10:00.000Z" },
     "__v": 0
@@ -156,7 +156,7 @@
     "_id": { "$oid": "65e7a0000000000000000012" },
     "userId": { "$oid": "65e6b0000000000000000006" },
     "bookingId": { "$oid": "65e6f0000000000000000028" },
-    "status": "Served",
+    "status": "SERVED",
     "totalAmount": 85000,
     "createdAt": { "$date": "2026-01-06T05:10:00.000Z" },
     "__v": 0
@@ -165,7 +165,7 @@
     "_id": { "$oid": "65e7a0000000000000000013" },
     "userId": { "$oid": "65e6b0000000000000000009" },
     "bookingId": { "$oid": "65e6f0000000000000000029" },
-    "status": "Served",
+    "status": "SERVED",
     "totalAmount": 115000,
     "createdAt": { "$date": "2026-02-14T04:10:00.000Z" },
     "__v": 0
@@ -174,7 +174,7 @@
     "_id": { "$oid": "65e7a0000000000000000014" },
     "userId": { "$oid": "65e6b000000000000000000a" },
     "bookingId": { "$oid": "65e6f000000000000000002a" },
-    "status": "Served",
+    "status": "SERVED",
     "totalAmount": 145000,
     "createdAt": { "$date": "2026-03-05T04:10:00.000Z" },
     "__v": 0
@@ -183,7 +183,7 @@
     "_id": { "$oid": "65e7a0000000000000000015" },
     "userId": { "$oid": "65e6b0000000000000000003" },
     "bookingId": { "$oid": "65e6f000000000000000002b" },
-    "status": "Preparing",
+    "status": "PREPARING",
     "totalAmount": 180000,
     "createdAt": { "$date": "2026-03-23T05:10:00.000Z" },
     "__v": 0
