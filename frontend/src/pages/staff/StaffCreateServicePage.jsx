@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Badge, Button, Card, Col, Form, Row, Spinner } from "react-bootstrap";
+import { Alert, Col, Form, Row, Spinner } from "react-bootstrap";
 import AdminLayout from "../../components/admin/AdminLayout";
+import ServiceForm from "../../components/staff/ServiceForm";
+import StaffServiceTable from "../../components/staff/StaffServiceTable";
 import { apiClient } from "../../services/api";
 import { createCounterOrder, getStaffTables } from "../../services/staffDashboardService";
 
@@ -9,9 +11,9 @@ function fmtPrice(value) {
 }
 
 function isServiceAvailable(item) {
-  const availability = String(item?.availabilityStatus || "Available");
+  const availability = String(item?.availabilityStatus || "AVAILABLE").toUpperCase();
   const stock = Number(item?.stockQuantity || 0);
-  if (availability === "Unavailable" || availability === "OutOfStock") return false;
+  if (["OUT_OF_STOCK", "UNAVAILABLE", "OUTOFSTOCK"].includes(availability)) return false;
   return stock > 0;
 }
 
@@ -189,109 +191,25 @@ export default function StaffCreateServicePage() {
               <Spinner animation="border" />
             </div>
           ) : (
-            <Row className="g-3">
-              {filteredServices.map((service) => {
-                const available = isServiceAvailable(service);
-                return (
-                  <Col lg={4} md={6} key={String(service._id)}>
-                    <Card
-                      className="border-0 shadow-sm staff-service-card h-100"
-                      onClick={() => addToCart(service)}
-                      style={{ cursor: available ? "pointer" : "not-allowed", opacity: available ? 1 : 0.65 }}
-                    >
-                      <div className="staff-service-thumb">
-                        <i className="bi bi-cup-hot"></i>
-                      </div>
-                      <Card.Body>
-                        <div className="d-flex justify-content-between align-items-start mb-1">
-                          <h6 className="fw-bold mb-0">{service.name}</h6>
-                          <Badge className="staff-price-badge">{fmtPrice(service.price)}</Badge>
-                        </div>
-                        <small className="text-secondary fw-semibold">{service.description || "Không có mô tả"}</small>
-                        {!available && (
-                          <div className="mt-2">
-                            <Badge className="bg-danger-subtle text-danger border-0">Hết hàng</Badge>
-                          </div>
-                        )}
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                );
-              })}
-            </Row>
+            <StaffServiceTable
+              data={filteredServices}
+              isServiceAvailable={isServiceAvailable}
+              addToCart={addToCart}
+              fmtPrice={fmtPrice}
+            />
           )}
         </Col>
 
         <Col xl={3}>
-          <Card className="border-0 shadow-sm staff-panel-card h-100">
-            <Card.Header className="bg-white border-bottom d-flex justify-content-between align-items-center">
-              <h5 className="mb-0 fw-bold">
-                <i className="bi bi-cart3 me-2 text-primary"></i>
-                Đơn dịch vụ
-              </h5>
-              <small className="text-secondary fw-semibold">{cart.length} món</small>
-            </Card.Header>
-            <Card.Body>
-              {cart.length === 0 ? (
-                <div className="d-flex align-items-center justify-content-center text-center h-100">
-                  <div className="text-secondary fw-semibold">
-                    <i className="bi bi-cup-hot" style={{ fontSize: "48px" }}></i>
-                    <div className="mt-2">Chưa có dịch vụ</div>
-                    <div>Chọn dịch vụ từ danh sách bên trái</div>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  {cart.map((item) => (
-                    <div key={String(item.menuItemId)} className="border rounded-3 p-2 mb-2">
-                      <div className="d-flex justify-content-between align-items-center mb-1">
-                        <strong>{item.name}</strong>
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-outline-danger"
-                          onClick={() => removeCartItem(item.menuItemId)}
-                        >
-                          <i className="bi bi-x-lg"></i>
-                        </button>
-                      </div>
-                      <div className="d-flex align-items-center gap-2 mb-2">
-                        <Form.Control
-                          type="number"
-                          min={1}
-                          value={item.quantity}
-                          onChange={(e) =>
-                            updateCartItem(item.menuItemId, {
-                              quantity: Number(e.target.value || 0),
-                            })
-                          }
-                        />
-                        <small className="text-secondary">x {fmtPrice(item.price)}</small>
-                      </div>
-                      <Form.Control
-                        size="sm"
-                        placeholder="Ghi chú"
-                        value={item.note || ""}
-                        onChange={(e) => updateCartItem(item.menuItemId, { note: e.target.value })}
-                      />
-                    </div>
-                  ))}
-
-                  <div className="d-flex justify-content-between fw-bold mt-3 mb-2">
-                    <span>Tổng cộng</span>
-                    <span>{fmtPrice(totalAmount)}</span>
-                  </div>
-
-                  <Button
-                    className="staff-primary-btn w-100"
-                    disabled={creatingOrder}
-                    onClick={submitCreateServiceOrder}
-                  >
-                    {creatingOrder ? "Đang tạo đơn..." : "Tạo đơn dịch vụ"}
-                  </Button>
-                </div>
-              )}
-            </Card.Body>
-          </Card>
+          <ServiceForm
+            cart={cart}
+            updateCartItem={updateCartItem}
+            removeCartItem={removeCartItem}
+            totalAmount={totalAmount}
+            fmtPrice={fmtPrice}
+            creatingOrder={creatingOrder}
+            onSubmit={submitCreateServiceOrder}
+          />
         </Col>
       </Row>
     </AdminLayout>

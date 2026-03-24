@@ -9,7 +9,10 @@ export const BOOKING_STATUS_MAP = {
 };
 
 export const ORDER_STATUS_MAP = {
-  Pending: { label: "Chờ xác nhận", bg: "warning", textClass: "text-dark" },
-  Confirmed: { label: "Đã xác nhận", bg: "success", textClass: "text-white" },
-  Cancelled: { label: "Đã hủy", bg: "danger", textClass: "text-white" },
+  PENDING: { label: "Chờ xử lý", bg: "warning", textClass: "text-dark" },
+  CONFIRMED: { label: "Đã xác nhận", bg: "primary", textClass: "text-white" },
+  PREPARING: { label: "Đang chuẩn bị", bg: "info", textClass: "text-dark" },
+  SERVED: { label: "Đã phục vụ", bg: "success", textClass: "text-white" },
+  COMPLETED: { label: "Hoàn tất", bg: "secondary", textClass: "text-white" },
+  CANCELLED: { label: "Đã hủy", bg: "danger", textClass: "text-white" },
 };

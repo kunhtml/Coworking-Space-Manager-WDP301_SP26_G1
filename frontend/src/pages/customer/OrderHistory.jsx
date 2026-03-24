@@ -1,18 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  Accordion,
-  Alert,
-  Badge,
-  Button,
-  Card,
-  Col,
-  Container,
-  Form,
-  Modal,
-  Row,
-  Spinner,
-} from "react-bootstrap";
-import { Link, useNavigate } from "react-router";
+import { Alert, Col, Container, Row } from "react-bootstrap";
+import { useNavigate } from "react-router";
 import { useAuth } from "../../hooks/useAuth";
 import { getBookings, updateBookingApi } from "../../services/bookingService";
 import {
@@ -22,8 +10,12 @@ import {
 } from "../../services/orderService";
 import { apiClient } from "../../services/api";
 import GuestCustomerNavbar from "../../components/common/GuestCustomerNavbar";
-import StatusPill from "../../components/common/StatusPill";
-import ListPagination from "../../components/common/ListPagination";
+import InvoicePreviewModal from "../../components/customer/InvoicePreviewModal";
+import BookingHistoryPanel from "../../components/customer/cards/BookingHistoryPanel";
+import HistoryStatsCards from "../../components/customer/cards/HistoryStatsCards";
+import OrderHistoryPanel from "../../components/customer/cards/OrderHistoryPanel";
+import EditBookingModal from "../../components/customer/modals/EditBookingModal";
+import EditOrderModal from "../../components/customer/modals/EditOrderModal";
 import {
   BOOKING_STATUS_MAP,
   ORDER_STATUS_MAP,
@@ -93,7 +85,15 @@ export default function Dashboard() {
 
   const canEditBooking = (status) =>
     !["Confirmed", "Cancelled"].includes(status);
-  const canEditOrder = (status) => !["Confirmed", "Cancelled"].includes(status);
+  const normalizeOrderStatus = (rawStatus) => {
+    const status = String(rawStatus || "").trim().toUpperCase();
+    if (!status) return "PENDING";
+    if (status === "NEW") return "PENDING";
+    if (status === "PAID") return "COMPLETED";
+    if (status === "CANCELED") return "CANCELLED";
+    return status;
+  };
+  const canEditOrder = (status) => !["CONFIRMED", "CANCELLED", "COMPLETED"].includes(normalizeOrderStatus(status));
 
   const loadData = async () => {
     setLoading(true);
@@ -105,7 +105,10 @@ export default function Dashboard() {
         apiClient.get("/menu/items"),
       ]);
       setBookings(bookingRows || []);
-      setOrders(orderRows || []);
+      const normalizedOrders = Array.isArray(orderRows)
+        ? orderRows.map((order) => ({ ...order, status: normalizeOrderStatus(order?.status) }))
+        : [];
+      setOrders(normalizedOrders);
       setMenuItems(Array.isArray(menuRows) ? menuRows : []);
       if (bookingRows?.length && !activeBookingKey) {
         setActiveBookingKey(String(bookingRows[0].id));
@@ -366,36 +369,12 @@ export default function Dashboard() {
             </Col>
           </Row>
 
-          <Row className="g-4 mb-4">
-            <Col md={4}>
-              <Card className="border-0 shadow-sm rounded-4 h-100">
-                <Card.Body className="p-4">
-                  <h6 className="text-muted mb-1">Tổng booking</h6>
-                  <h3 className="fw-bold mb-0">{loading ? "-" : total}</h3>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col md={4}>
-              <Card className="border-0 shadow-sm rounded-4 h-100">
-                <Card.Body className="p-4">
-                  <h6 className="text-muted mb-1">Chờ thanh toán</h6>
-                  <h3 className="fw-bold mb-0">
-                    {loading ? "-" : pendingCount}
-                  </h3>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col md={4}>
-              <Card className="border-0 shadow-sm rounded-4 h-100">
-                <Card.Body className="p-4">
-                  <h6 className="text-muted mb-1">Đã hoàn thành</h6>
-                  <h3 className="fw-bold mb-0">
-                    {loading ? "-" : completedCount}
-                  </h3>
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
+          <HistoryStatsCards
+            loading={loading}
+            total={total}
+            pendingCount={pendingCount}
+            completedCount={completedCount}
+          />
 
           {error && (
             <Alert variant="danger" className="mb-4">
@@ -404,757 +383,179 @@ export default function Dashboard() {
             </Alert>
           )}
 
-          <Card className="shadow-sm border-0 rounded-4 overflow-hidden mb-4">
-            <Card.Header className="bg-white border-bottom py-3 px-4">
-              <h5 className="fw-bold mb-0 text-dark">Booking</h5>
-            </Card.Header>
-            <Card.Body className="p-4">
-              <Row className="g-3 mb-3">
-                <Col md={5}>
-                  <Form.Control
-                    placeholder="Tìm theo mã booking..."
-                    value={bookingSearch}
-                    onChange={(e) => setBookingSearch(e.target.value)}
-                  />
-                </Col>
-                <Col md={3}>
-                  <Form.Control
-                    type="date"
-                    value={bookingDateFilter}
-                    onChange={(e) => setBookingDateFilter(e.target.value)}
-                  />
-                </Col>
-                <Col md={3}>
-                  <Form.Select
-                    value={bookingStatusFilter}
-                    onChange={(e) => setBookingStatusFilter(e.target.value)}
-                  >
-                    <option value="all">Tất cả trạng thái</option>
-                    {Object.entries(BOOKING_STATUS_MAP).map(([value, cfg]) => (
-                      <option key={value} value={value}>
-                        {cfg.label}
-                      </option>
-                    ))}
-                  </Form.Select>
-                </Col>
-                <Col md={1}>
-                  <Button
-                    variant="outline-secondary"
-                    className="w-100"
-                    onClick={() => {
-                      setBookingSearch("");
-                      setBookingDateFilter("");
-                      setBookingStatusFilter("all");
-                    }}
-                  >
-                    <i className="bi bi-arrow-counterclockwise"></i>
-                  </Button>
-                </Col>
-              </Row>
+          <BookingHistoryPanel
+            loading={loading}
+            bookingSearch={bookingSearch}
+            setBookingSearch={setBookingSearch}
+            bookingDateFilter={bookingDateFilter}
+            setBookingDateFilter={setBookingDateFilter}
+            bookingStatusFilter={bookingStatusFilter}
+            setBookingStatusFilter={setBookingStatusFilter}
+            BOOKING_STATUS_MAP={BOOKING_STATUS_MAP}
+            filteredBookings={filteredBookings}
+            pagedBookings={pagedBookings}
+            activeBookingKey={activeBookingKey}
+            setActiveBookingKey={setActiveBookingKey}
+            formatDateTime={formatDateTime}
+            orderCountByBooking={orderCountByBooking}
+            fmt={fmt}
+            canEditBooking={canEditBooking}
+            openBookingEditor={openBookingEditor}
+            setInvoiceBooking={setInvoiceBooking}
+            setShowBookingInvoiceModal={setShowBookingInvoiceModal}
+            openCreateOrder={openCreateOrder}
+            navigate={navigate}
+            bookingPage={bookingPage}
+            bookingTotalPages={bookingTotalPages}
+            setBookingPage={setBookingPage}
+          />
 
-              {loading ? (
-                <div className="text-center py-5">
-                  <Spinner animation="border" variant="primary" />
-                </div>
-              ) : filteredBookings.length === 0 ? (
-                <div className="text-center py-5">
-                  <p className="text-muted mb-3">
-                    Không tìm thấy booking phù hợp bộ lọc.
-                  </p>
-                  <Button
-                    as={Link}
-                    to="/order-table"
-                    variant="primary"
-                    className="rounded-pill px-4"
-                  >
-                    Đặt chỗ ngay
-                  </Button>
-                </div>
-              ) : (
-                <Accordion
-                  activeKey={activeBookingKey}
-                  onSelect={(k) => setActiveBookingKey(k)}
-                >
-                  {pagedBookings.map((booking) => {
-                    const bKey = String(booking.id);
-                    return (
-                      <Accordion.Item
-                        eventKey={bKey}
-                        key={bKey}
-                        className="mb-3 border rounded-3 overflow-hidden"
-                      >
-                        <Accordion.Header>
-                          <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center w-100 me-3 gap-2">
-                            <div>
-                              <div className="fw-bold text-dark">
-                                {booking.bookingCode} - {booking.spaceName}
-                              </div>
-                              <small className="text-muted">
-                                {formatDateTime(booking.startTime)}
-                              </small>
-                            </div>
-                            <div className="d-flex align-items-center gap-2">
-                              <StatusPill
-                                status={booking.status}
-                                map={BOOKING_STATUS_MAP}
-                              />
-                              <Badge bg="dark" pill>
-                                Orders: {orderCountByBooking.get(bKey) || 0}
-                              </Badge>
-                            </div>
-                          </div>
-                        </Accordion.Header>
-                        <Accordion.Body className="bg-light">
-                          <Row className="g-3 mb-3">
-                            <Col md={6}>
-                              <div className="small text-muted">Không gian</div>
-                              <div className="fw-semibold">
-                                {booking.spaceName}
-                              </div>
-                            </Col>
-                            <Col md={6}>
-                              <div className="small text-muted">Mã booking</div>
-                              <div className="fw-semibold">
-                                {booking.bookingCode}
-                              </div>
-                            </Col>
-                            <Col md={6}>
-                              <div className="small text-muted">Bắt đầu</div>
-                              <div className="fw-semibold">
-                                {formatDateTime(booking.startTime)}
-                              </div>
-                            </Col>
-                            <Col md={6}>
-                              <div className="small text-muted">Kết thúc</div>
-                              <div className="fw-semibold">
-                                {formatDateTime(booking.endTime)}
-                              </div>
-                            </Col>
-                            <Col md={6}>
-                              <div className="small text-muted">
-                                Giá trị booking
-                              </div>
-                              <div className="fw-semibold">
-                                {fmt(booking.depositAmount)}d
-                              </div>
-                            </Col>
-                            <Col md={6}>
-                              <div className="small text-muted">Trạng thái</div>
-                              <div>
-                                <StatusPill
-                                  status={booking.status}
-                                  map={BOOKING_STATUS_MAP}
-                                />
-                              </div>
-                            </Col>
-                          </Row>
-
-                          <div className="d-flex flex-wrap gap-2">
-                            {canEditBooking(booking.status) && (
-                              <Button
-                                size="sm"
-                                variant="outline-primary"
-                                onClick={() => openBookingEditor(booking)}
-                              >
-                                <i className="bi bi-pencil-square me-1"></i>Edit
-                                booking
-                              </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="outline-secondary"
-                              onClick={() => {
-                                setInvoiceBooking(booking);
-                                setShowBookingInvoiceModal(true);
-                              }}
-                            >
-                              <i className="bi bi-receipt me-1"></i>Hóa đơn
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="primary"
-                              onClick={() => openCreateOrder(booking.id)}
-                              disabled={booking.status === "Cancelled"}
-                            >
-                              <i className="bi bi-receipt me-1"></i>Tạo order
-                            </Button>
-                            {["Pending", "Awaiting_Payment"].includes(
-                              booking.status,
-                            ) && (
-                              <Button
-                                size="sm"
-                                variant="success"
-                                onClick={() =>
-                                  navigate(`/payment/${booking.id}`)
-                                }
-                              >
-                                <i className="bi bi-credit-card me-1"></i>Thanh
-                                toán booking
-                              </Button>
-                            )}
-                          </div>
-                        </Accordion.Body>
-                      </Accordion.Item>
-                    );
-                  })}
-                </Accordion>
-              )}
-
-              {!loading && filteredBookings.length > 0 && (
-                <ListPagination
-                  page={bookingPage}
-                  totalPages={bookingTotalPages}
-                  onChange={setBookingPage}
-                />
-              )}
-            </Card.Body>
-          </Card>
-
-          <Card className="shadow-sm border-0 rounded-4 overflow-hidden">
-            <Card.Header className="bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
-              <h5 className="fw-bold mb-0 text-dark">Order History</h5>
-            </Card.Header>
-            <Card.Body className="p-4">
-              <Row className="g-3 mb-3">
-                <Col md={5}>
-                  <Form.Control
-                    placeholder="Tìm theo mã order..."
-                    value={orderSearch}
-                    onChange={(e) => setOrderSearch(e.target.value)}
-                  />
-                </Col>
-                <Col md={3}>
-                  <Form.Control
-                    type="date"
-                    value={orderDateFilter}
-                    onChange={(e) => setOrderDateFilter(e.target.value)}
-                  />
-                </Col>
-                <Col md={3}>
-                  <Form.Select
-                    value={orderStatusFilter}
-                    onChange={(e) => setOrderStatusFilter(e.target.value)}
-                  >
-                    <option value="all">Tất cả trạng thái</option>
-                    {Object.entries(ORDER_STATUS_MAP).map(([value, cfg]) => (
-                      <option key={value} value={value}>
-                        {cfg.label}
-                      </option>
-                    ))}
-                  </Form.Select>
-                </Col>
-                <Col md={1}>
-                  <Button
-                    variant="outline-secondary"
-                    className="w-100"
-                    onClick={() => {
-                      setOrderSearch("");
-                      setOrderDateFilter("");
-                      setOrderStatusFilter("all");
-                    }}
-                  >
-                    <i className="bi bi-arrow-counterclockwise"></i>
-                  </Button>
-                </Col>
-              </Row>
-
-              {loading ? (
-                <div className="text-center py-5">
-                  <Spinner animation="border" variant="primary" />
-                </div>
-              ) : filteredOrders.length === 0 ? (
-                <Alert variant="secondary" className="mb-0">
-                  Không tìm thấy order phù hợp bộ lọc.
-                </Alert>
-              ) : (
-                <Accordion
-                  activeKey={activeOrderKey}
-                  onSelect={(k) => setActiveOrderKey(k)}
-                >
-                  {pagedOrders.map((order) => {
-                    const oKey = String(order.id);
-                    const relatedBooking = bookingMap.get(
-                      String(order.bookingId),
-                    );
-                    return (
-                      <Accordion.Item
-                        eventKey={oKey}
-                        key={oKey}
-                        className="mb-3 border rounded-3 overflow-hidden"
-                      >
-                        <Accordion.Header>
-                          <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center w-100 me-3 gap-2">
-                            <div>
-                              <div className="fw-bold text-dark">
-                                Order #
-                                {String(order.id).slice(-6).toUpperCase()}
-                              </div>
-                              <small className="text-muted">
-                                Booking:{" "}
-                                {relatedBooking?.bookingCode ||
-                                  String(order.bookingId || "--")
-                                    .slice(-6)
-                                    .toUpperCase()}
-                              </small>
-                            </div>
-                            <div className="d-flex align-items-center gap-2">
-                              <StatusPill
-                                status={order.status}
-                                map={ORDER_STATUS_MAP}
-                              />
-                              <Badge bg="info" text="dark" pill>
-                                {fmt(order.totalAmount)}d
-                              </Badge>
-                            </div>
-                          </div>
-                        </Accordion.Header>
-                        <Accordion.Body className="bg-light">
-                          <Row className="g-3 mb-3">
-                            <Col md={6}>
-                              <div className="small text-muted">Mã order</div>
-                              <div className="fw-semibold">
-                                #{String(order.id).slice(-6).toUpperCase()}
-                              </div>
-                            </Col>
-                            <Col md={6}>
-                              <div className="small text-muted">
-                                Thời gian tạo
-                              </div>
-                              <div className="fw-semibold">
-                                {formatDateTime(order.createdAt)}
-                              </div>
-                            </Col>
-                            <Col md={6}>
-                              <div className="small text-muted">
-                                Booking liên quan
-                              </div>
-                              <div className="fw-semibold">
-                                {relatedBooking?.bookingCode || "--"}
-                              </div>
-                            </Col>
-                            <Col md={6}>
-                              <div className="small text-muted">Không gian</div>
-                              <div className="fw-semibold">
-                                {relatedBooking?.spaceName || "--"}
-                              </div>
-                            </Col>
-                          </Row>
-
-                          <div className="table-responsive mb-3">
-                            <table className="table table-sm align-middle mb-0">
-                              <thead>
-                                <tr>
-                                  <th>Món</th>
-                                  <th>SL</th>
-                                  <th>Đơn giá</th>
-                                  <th>Ghi chú</th>
-                                  <th className="text-end">Thành tiền</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {(order.items || []).map((item) => (
-                                  <tr key={item.id}>
-                                    <td>{item.menuName}</td>
-                                    <td>{item.quantity}</td>
-                                    <td>{fmt(item.priceAtOrder)}d</td>
-                                    <td>{item.note || "-"}</td>
-                                    <td className="text-end fw-semibold">
-                                      {fmt(item.lineTotal)}d
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-
-                          {canEditOrder(order.status) && (
-                            <Button
-                              size="sm"
-                              variant="outline-primary"
-                              onClick={() => openEditOrder(order)}
-                            >
-                              <i className="bi bi-pencil-square me-1"></i>Edit
-                              order
-                            </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="outline-secondary"
-                            onClick={() => {
-                              setInvoiceOrder({ order, relatedBooking });
-                              setShowInvoiceModal(true);
-                            }}
-                          >
-                            <i className="bi bi-receipt me-1"></i>Hóa đơn
-                          </Button>
-                        </Accordion.Body>
-                      </Accordion.Item>
-                    );
-                  })}
-                </Accordion>
-              )}
-
-              {!loading && filteredOrders.length > 0 && (
-                <ListPagination
-                  page={orderPage}
-                  totalPages={orderTotalPages}
-                  onChange={setOrderPage}
-                />
-              )}
-            </Card.Body>
-          </Card>
+          <OrderHistoryPanel
+            loading={loading}
+            orderSearch={orderSearch}
+            setOrderSearch={setOrderSearch}
+            orderDateFilter={orderDateFilter}
+            setOrderDateFilter={setOrderDateFilter}
+            orderStatusFilter={orderStatusFilter}
+            setOrderStatusFilter={setOrderStatusFilter}
+            ORDER_STATUS_MAP={ORDER_STATUS_MAP}
+            filteredOrders={filteredOrders}
+            pagedOrders={pagedOrders}
+            activeOrderKey={activeOrderKey}
+            setActiveOrderKey={setActiveOrderKey}
+            bookingMap={bookingMap}
+            formatDateTime={formatDateTime}
+            fmt={fmt}
+            canEditOrder={canEditOrder}
+            openEditOrder={openEditOrder}
+            setInvoiceOrder={setInvoiceOrder}
+            setShowInvoiceModal={setShowInvoiceModal}
+            orderPage={orderPage}
+            orderTotalPages={orderTotalPages}
+            setOrderPage={setOrderPage}
+          />
         </Container>
       </main>
 
-      <Modal
+      <EditBookingModal
         show={showBookingModal}
         onHide={() => setShowBookingModal(false)}
-        centered
-      >
-        <Form onSubmit={submitBookingUpdate}>
-          <Modal.Header closeButton>
-            <Modal.Title>Chỉnh sửa booking</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <Row className="g-3">
-              <Col md={6}>
-                <Form.Label>Họ tên</Form.Label>
-                <Form.Control
-                  value={bookingForm.guestName}
-                  onChange={(e) =>
-                    setBookingForm((p) => ({ ...p, guestName: e.target.value }))
-                  }
-                  required
-                />
-              </Col>
-              <Col md={6}>
-                <Form.Label>Số điện thoại</Form.Label>
-                <Form.Control
-                  value={bookingForm.guestPhone}
-                  onChange={(e) =>
-                    setBookingForm((p) => ({
-                      ...p,
-                      guestPhone: e.target.value,
-                    }))
-                  }
-                  required
-                />
-              </Col>
-              <Col md={6}>
-                <Form.Label>Ngày</Form.Label>
-                <Form.Control
-                  type="date"
-                  value={bookingForm.arrivalDate}
-                  onChange={(e) =>
-                    setBookingForm((p) => ({
-                      ...p,
-                      arrivalDate: e.target.value,
-                    }))
-                  }
-                  required
-                />
-              </Col>
-              <Col md={6}>
-                <Form.Label>Giờ</Form.Label>
-                <Form.Control
-                  type="time"
-                  value={bookingForm.arrivalTime}
-                  onChange={(e) =>
-                    setBookingForm((p) => ({
-                      ...p,
-                      arrivalTime: e.target.value,
-                    }))
-                  }
-                  required
-                />
-              </Col>
-              <Col md={6}>
-                <Form.Label>Thời lượng (giờ)</Form.Label>
-                <Form.Control
-                  type="number"
-                  min={1}
-                  step={1}
-                  value={bookingForm.duration}
-                  onChange={(e) =>
-                    setBookingForm((p) => ({ ...p, duration: e.target.value }))
-                  }
-                  required
-                />
-              </Col>
-            </Row>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button
-              variant="secondary"
-              onClick={() => setShowBookingModal(false)}
-            >
-              Hủy
-            </Button>
-            <Button type="submit" variant="primary" disabled={savingBooking}>
-              {savingBooking ? "Đang lưu..." : "Lưu booking"}
-            </Button>
-          </Modal.Footer>
-        </Form>
-      </Modal>
+        submitBookingUpdate={submitBookingUpdate}
+        bookingForm={bookingForm}
+        setBookingForm={setBookingForm}
+        savingBooking={savingBooking}
+      />
 
-      <Modal
+      <EditOrderModal
         show={showOrderModal}
         onHide={() => setShowOrderModal(false)}
-        size="lg"
-        centered
-      >
-        <Form onSubmit={submitOrder}>
-          <Modal.Header closeButton>
-            <Modal.Title>
-              {orderMode === "create" ? "Tạo đơn hàng" : "Cập nhật đơn hàng"}
-            </Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <small className="text-muted">
-                Booking:{" "}
-                {targetBookingId
-                  ? String(targetBookingId).slice(-6).toUpperCase()
-                  : "--"}
-              </small>
-              <Button
-                size="sm"
-                variant="outline-primary"
-                onClick={addOrderLine}
-                type="button"
-              >
-                <i className="bi bi-plus-lg me-1"></i>Thêm món
-              </Button>
-            </div>
+        submitOrder={submitOrder}
+        orderMode={orderMode}
+        targetBookingId={targetBookingId}
+        addOrderLine={addOrderLine}
+        orderLines={orderLines}
+        menuItems={menuItems}
+        updateOrderLine={updateOrderLine}
+        removeOrderLine={removeOrderLine}
+        fmt={fmt}
+        savingOrder={savingOrder}
+      />
 
-            <Row className="g-2 fw-semibold text-muted small mb-2 px-1">
-              <Col md={5}>Món</Col>
-              <Col md={2}>Số lượng</Col>
-              <Col md={4}>Ghi chú</Col>
-              <Col md={1}></Col>
-            </Row>
-
-            {orderLines.map((line, idx) => (
-              <Row className="g-2 mb-2" key={`${idx}-${line.menuItemId}`}>
-                <Col md={5}>
-                  <Form.Select
-                    value={line.menuItemId}
-                    onChange={(e) =>
-                      updateOrderLine(idx, "menuItemId", e.target.value)
-                    }
-                    required
-                  >
-                    <option value="">Chọn món...</option>
-                    {menuItems.map((m) => (
-                      <option key={m._id} value={m._id}>
-                        {m.name} - {fmt(m.price)}d
-                      </option>
-                    ))}
-                  </Form.Select>
-                </Col>
-                <Col md={2}>
-                  <Form.Control
-                    type="number"
-                    min={1}
-                    value={line.quantity}
-                    onChange={(e) =>
-                      updateOrderLine(idx, "quantity", e.target.value)
-                    }
-                    required
-                  />
-                </Col>
-                <Col md={4}>
-                  <Form.Control
-                    value={line.note}
-                    onChange={(e) =>
-                      updateOrderLine(idx, "note", e.target.value)
-                    }
-                    placeholder="Ghi chú"
-                  />
-                </Col>
-                <Col md={1} className="d-grid">
-                  <Button
-                    type="button"
-                    variant="outline-danger"
-                    onClick={() => removeOrderLine(idx)}
-                  >
-                    <i className="bi bi-x-lg"></i>
-                  </Button>
-                </Col>
-              </Row>
-            ))}
-          </Modal.Body>
-          <Modal.Footer>
-            <Button
-              variant="secondary"
-              onClick={() => setShowOrderModal(false)}
-            >
-              Hủy
-            </Button>
-            <Button type="submit" variant="primary" disabled={savingOrder}>
-              {savingOrder ? "Đang lưu..." : "Lưu đơn hàng"}
-            </Button>
-          </Modal.Footer>
-        </Form>
-      </Modal>
-
-      <Modal
+      <InvoicePreviewModal
         show={showBookingInvoiceModal}
-        onHide={() => {
+        onClose={() => {
           setShowBookingInvoiceModal(false);
           setInvoiceBooking(null);
         }}
-        centered
-        size="lg"
+        onPrint={() => window.print()}
+        printLabel="In hóa đơn booking"
       >
-        <Modal.Body className="p-4">
-          <div className="border rounded-4 p-4">
-            <h3 className="fw-bold mb-0">Coworking Space</h3>
-            <div className="text-secondary fw-semibold">HÓA ĐƠN BOOKING</div>
-            <hr />
-            <div className="fw-bold mb-2">THÔNG TIN BOOKING</div>
-            <div className="d-flex justify-content-between">
-              <span>Mã booking</span>
-              <strong>{invoiceBooking?.bookingCode || "--"}</strong>
-            </div>
-            <div className="d-flex justify-content-between">
-              <span>Không gian</span>
-              <strong>{invoiceBooking?.spaceName || "--"}</strong>
-            </div>
-            <div className="d-flex justify-content-between">
-              <span>Bắt đầu</span>
-              <strong>{formatDateTime(invoiceBooking?.startTime)}</strong>
-            </div>
-            <div className="d-flex justify-content-between">
-              <span>Kết thúc</span>
-              <strong>{formatDateTime(invoiceBooking?.endTime)}</strong>
-            </div>
-            <div className="d-flex justify-content-between">
-              <span>Trạng thái</span>
-              <strong>
-                {BOOKING_STATUS_MAP[invoiceBooking?.status]?.label ||
-                  invoiceBooking?.status ||
-                  "--"}
-              </strong>
-            </div>
-            <div className="d-flex justify-content-between">
-              <span>Số order liên quan</span>
-              <strong>
-                {orderCountByBooking.get(String(invoiceBooking?.id || "")) || 0}
-              </strong>
-            </div>
+        <h3 className="fw-bold mb-0">Coworking Space</h3>
+        <div className="text-secondary fw-semibold">HÓA ĐƠN BOOKING</div>
+        <hr />
+        <div className="fw-bold mb-2">THÔNG TIN BOOKING</div>
+        <div className="d-flex justify-content-between">
+          <span>Mã booking</span>
+          <strong>{invoiceBooking?.bookingCode || "--"}</strong>
+        </div>
+        <div className="d-flex justify-content-between">
+          <span>Không gian</span>
+          <strong>{invoiceBooking?.spaceName || "--"}</strong>
+        </div>
+        <div className="d-flex justify-content-between">
+          <span>Bắt đầu</span>
+          <strong>{formatDateTime(invoiceBooking?.startTime)}</strong>
+        </div>
+        <div className="d-flex justify-content-between">
+          <span>Kết thúc</span>
+          <strong>{formatDateTime(invoiceBooking?.endTime)}</strong>
+        </div>
+        <div className="d-flex justify-content-between">
+          <span>Trạng thái</span>
+          <strong>
+            {BOOKING_STATUS_MAP[invoiceBooking?.status]?.label ||
+              invoiceBooking?.status ||
+              "--"}
+          </strong>
+        </div>
+        <div className="d-flex justify-content-between">
+          <span>Số order liên quan</span>
+          <strong>{orderCountByBooking.get(String(invoiceBooking?.id || "")) || 0}</strong>
+        </div>
 
-            <hr />
-            <div className="d-flex justify-content-between align-items-center">
-              <h5 className="mb-0 text-secondary">TỔNG BOOKING</h5>
-              <h3 className="text-primary fw-bold mb-0">
-                {fmt(invoiceBooking?.depositAmount)}d
-              </h3>
-            </div>
-          </div>
-        </Modal.Body>
-        <Modal.Footer className="border-0 d-flex gap-2">
-          <Button
-            variant="outline-secondary"
-            className="w-100"
-            onClick={() => {
-              setShowBookingInvoiceModal(false);
-              setInvoiceBooking(null);
-            }}
-          >
-            Đóng
-          </Button>
-          <Button
-            className="w-100"
-            variant="primary"
-            onClick={() => window.print()}
-          >
-            <i className="bi bi-printer me-2"></i>In hóa đơn booking
-          </Button>
-        </Modal.Footer>
-      </Modal>
+        <hr />
+        <div className="d-flex justify-content-between align-items-center">
+          <h5 className="mb-0 text-secondary">TỔNG BOOKING</h5>
+          <h3 className="text-primary fw-bold mb-0">{fmt(invoiceBooking?.depositAmount)}d</h3>
+        </div>
+      </InvoicePreviewModal>
 
-      <Modal
+      <InvoicePreviewModal
         show={showInvoiceModal}
-        onHide={() => {
+        onClose={() => {
           setShowInvoiceModal(false);
           setInvoiceOrder(null);
         }}
-        centered
-        size="lg"
+        onPrint={() => window.print()}
+        printLabel="In hóa đơn"
       >
-        <Modal.Body className="p-4">
-          <div className="border rounded-4 p-4">
-            <h3 className="fw-bold mb-0">Coworking Space</h3>
-            <div className="text-secondary fw-semibold">HÓA ĐƠN ĐIỆN TỬ</div>
-            <hr />
-            <div className="fw-bold mb-2">THÔNG TIN ĐƠN HÀNG</div>
-            <div className="d-flex justify-content-between">
-              <span>Mã đơn</span>
-              <strong>
-                #
-                {String(invoiceOrder?.order?.id || "")
-                  .slice(-6)
-                  .toUpperCase()}
-              </strong>
-            </div>
-            <div className="d-flex justify-content-between">
-              <span>Ngày tạo</span>
-              <strong>{formatDateTime(invoiceOrder?.order?.createdAt)}</strong>
-            </div>
-            <div className="d-flex justify-content-between">
-              <span>Mã booking</span>
-              <strong>
-                {invoiceOrder?.relatedBooking?.bookingCode || "--"}
-              </strong>
-            </div>
-            <div className="d-flex justify-content-between">
-              <span>Không gian</span>
-              <strong>{invoiceOrder?.relatedBooking?.spaceName || "--"}</strong>
-            </div>
+        <h3 className="fw-bold mb-0">Coworking Space</h3>
+        <div className="text-secondary fw-semibold">HÓA ĐƠN ĐIỆN TỬ</div>
+        <hr />
+        <div className="fw-bold mb-2">THÔNG TIN ĐƠN HÀNG</div>
+        <div className="d-flex justify-content-between">
+          <span>Mã đơn</span>
+          <strong>#{String(invoiceOrder?.order?.id || "").slice(-6).toUpperCase()}</strong>
+        </div>
+        <div className="d-flex justify-content-between">
+          <span>Ngày tạo</span>
+          <strong>{formatDateTime(invoiceOrder?.order?.createdAt)}</strong>
+        </div>
+        <div className="d-flex justify-content-between">
+          <span>Mã booking</span>
+          <strong>{invoiceOrder?.relatedBooking?.bookingCode || "--"}</strong>
+        </div>
+        <div className="d-flex justify-content-between">
+          <span>Không gian</span>
+          <strong>{invoiceOrder?.relatedBooking?.spaceName || "--"}</strong>
+        </div>
 
-            <div className="fw-bold mt-3 mb-2">CHI TIẾT MÓN</div>
-            {(invoiceOrder?.order?.items || []).map((item) => (
-              <div
-                key={item.id}
-                className="d-flex justify-content-between border-bottom py-2"
-              >
-                <span>
-                  {item.menuName} x{item.quantity}
-                </span>
-                <strong>{fmt(item.lineTotal)}d</strong>
-              </div>
-            ))}
-
-            <hr />
-            <div className="d-flex justify-content-between align-items-center">
-              <h5 className="mb-0 text-secondary">TỔNG CỘNG</h5>
-              <h3 className="text-primary fw-bold mb-0">
-                {fmt(invoiceOrder?.order?.totalAmount)}d
-              </h3>
-            </div>
+        <div className="fw-bold mt-3 mb-2">CHI TIẾT MÓN</div>
+        {(invoiceOrder?.order?.items || []).map((item) => (
+          <div key={item.id} className="d-flex justify-content-between border-bottom py-2">
+            <span>
+              {item.menuName} x{item.quantity}
+            </span>
+            <strong>{fmt(item.lineTotal)}d</strong>
           </div>
-        </Modal.Body>
-        <Modal.Footer className="border-0 d-flex gap-2">
-          <Button
-            variant="outline-secondary"
-            className="w-100"
-            onClick={() => {
-              setShowInvoiceModal(false);
-              setInvoiceOrder(null);
-            }}
-          >
-            Đóng
-          </Button>
-          <Button
-            className="w-100"
-            variant="primary"
-            onClick={() => window.print()}
-          >
-            <i className="bi bi-printer me-2"></i>In hóa đơn
-          </Button>
-        </Modal.Footer>
-      </Modal>
+        ))}
+
+        <hr />
+        <div className="d-flex justify-content-between align-items-center">
+          <h5 className="mb-0 text-secondary">TỔNG CỘNG</h5>
+          <h3 className="text-primary fw-bold mb-0">{fmt(invoiceOrder?.order?.totalAmount)}d</h3>
+        </div>
+      </InvoicePreviewModal>
     </div>
   );
 }

@@ -1,16 +1,18 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import {
-  Badge,
-  Card,
   Col,
   Form,
   Row,
-  Modal,
   Button,
-  Spinner,
   Alert,
 } from "react-bootstrap";
 import AdminLayout from "../../components/admin/AdminLayout";
+import EmptyState from "../../components/common/EmptyState";
+import FilterBar from "../../components/common/FilterBar";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import SearchInput from "../../components/common/SearchInput";
+import SeatStatusModal from "../../components/staff/SeatStatusModal";
+import SeatZoneSection from "../../components/staff/SeatZoneSection";
 import {
   getStaffTables,
   updateStaffTableStatus,
@@ -342,16 +344,9 @@ export default function StaffSeatMapPage() {
       </Row>
 
       {/* ── Filters ── */}
-      <Row className="g-3 mb-4 align-items-center">
+      <FilterBar>
         <Col md={4}>
-          <div className="staff-search-wrap">
-            <i className="bi bi-search" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tìm tên bàn, loại bàn..."
-            />
-          </div>
+          <SearchInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm tên bàn, loại bàn..." />
         </Col>
         <Col md={3}>
           <Form.Select
@@ -391,20 +386,17 @@ export default function StaffSeatMapPage() {
             </div>
           ))}
         </Col>
-      </Row>
+      </FilterBar>
 
       {/* ── Loading / Empty ── */}
       {loading ? (
-        <div className="text-center py-5">
-          <Spinner animation="border" style={{ color: "#6366f1" }} />
-          <p className="mt-2 text-muted small fw-semibold">Đang tải dữ liệu...</p>
-        </div>
+        <LoadingSpinner text="Đang tải dữ liệu..." color="#6366f1" />
       ) : displayed.length === 0 ? (
-        <div className="text-center py-5 text-muted">
-          <div style={{ fontSize: 52 }}>🪑</div>
-          <p className="fw-semibold mt-2">
-            {tables.length === 0 ? "Chưa có dữ liệu bàn" : "Không tìm thấy bàn phù hợp"}
-          </p>
+        <div>
+          <EmptyState
+            icon="🪑"
+            title={tables.length === 0 ? "Chưa có dữ liệu bàn" : "Không tìm thấy bàn phù hợp"}
+          />
           {tables.length > 0 && (
             <Button
               variant="outline-secondary"
@@ -419,249 +411,39 @@ export default function StaffSeatMapPage() {
       ) : (
         // ── Grouped by tableType ──
         zoneNames.map((zone) => (
-          <div key={zone} className="mb-5">
-            {/* Zone header */}
-            <div className="d-flex align-items-center gap-3 mb-3">
-              <h5 className="fw-bold text-secondary mb-0">{zone}</h5>
-              <span
-                className="rounded-pill px-3 py-1 small fw-bold"
-                style={{ background: "#f1f5f9", color: "#475569" }}
-              >
-                {groupedMap[zone].length} bàn
-              </span>
-              <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
-            </div>
-
-            <Row className="g-3">
-              {groupedMap[zone].map((table) => {
-                const cfg     = getCfg(table.status);
-                const isHover = hoveredId === (table.id || table._id);
-                const iconName = getSeatIcon(table.tableType);
-
-                return (
-                  <Col xl={2} lg={3} md={4} sm={6} key={String(table.id || table._id)}>
-                    <Card
-                      className="border-2 staff-seat-card"
-                      style={{
-                        cursor: "pointer",
-                        transform: isHover ? "translateY(-6px)" : "translateY(0)",
-                        boxShadow: isHover
-                          ? `0 12px 28px ${cfg.glowColor}, 0 2px 8px rgba(0,0,0,0.06)`
-                          : "0 2px 8px rgba(0,0,0,0.04)",
-                        transition: "all 0.22s cubic-bezier(.4,0,.2,1)",
-                        borderColor: cfg.borderColor,
-                        background: isHover ? cfg.iconBg : "#fff",
-                        borderWidth: "2px",
-                        borderStyle: "solid",
-                      }}
-                      onClick={() => handleOpenModal(table)}
-                      onMouseEnter={() => setHoveredId(table.id || table._id)}
-                      onMouseLeave={() => setHoveredId(null)}
-                    >
-                      <Card.Body className="text-center px-2 py-3">
-                        {/* Icon vòng tròn */}
-                        <div
-                          className="staff-seat-icon mx-auto mb-3"
-                          style={{
-                            background: isHover ? cfg.badgeBg : "#f1f5f9",
-                            color: isHover ? cfg.badgeColor : "#64748b",
-                            transition: "all 0.22s",
-                          }}
-                        >
-                          <i className={`bi ${iconName}`} />
-                        </div>
-
-                        {/* Tên bàn */}
-                        <h5
-                          className="fw-bold mb-1 text-truncate"
-                          style={{ fontSize: "0.95rem", lineHeight: 1.3 }}
-                          title={table.name}
-                        >
-                          {table.name}
-                        </h5>
-
-                        {/* Loại */}
-                        <div
-                          className="text-secondary fw-semibold mb-1"
-                          style={{ fontSize: "0.76rem" }}
-                        >
-                          {table.tableType || "Chỗ ngồi"}
-                        </div>
-
-                        {/* Capacity + Price */}
-                        <div className="fw-semibold mb-2" style={{ fontSize: "0.76rem", color: "#64748b" }}>
-                          {table.capacity ? `${table.capacity} chỗ` : ""}
-                          {table.capacity && table.pricePerHour ? " · " : ""}
-                          {table.pricePerHour
-                            ? `${Number(table.pricePerHour).toLocaleString("vi-VN")}đ/h`
-                            : ""}
-                        </div>
-
-                        {/* Badge trạng thái */}
-                        <span
-                          className="rounded-pill px-3 py-1 fw-bold d-inline-block mb-2"
-                          style={{
-                            background: cfg.badgeBg,
-                            color: cfg.badgeColor,
-                            fontSize: "0.73rem",
-                            letterSpacing: "0.02em",
-                          }}
-                        >
-                          {cfg.emoji} {cfg.label}
-                        </span>
-
-                        {/* Booking đang hoạt động nếu có */}
-                        {table.activeBooking && (
-                          <div
-                            className="mt-1 rounded-3 px-2 py-1"
-                            style={{ background: "#fef9c3", fontSize: "0.7rem" }}
-                          >
-                            <span className="fw-bold" style={{ color: "#92400e" }}>
-                              📋 {table.activeBooking.bookingCode}
-                            </span>
-                            <div style={{ color: "#78350f" }}>
-                              {formatTime(table.activeBooking.startTime)} –{" "}
-                              {formatTime(table.activeBooking.endTime)}
-                            </div>
-                            {table.activeBooking.status && (
-                              <Badge
-                                bg=""
-                                className="rounded-pill mt-1"
-                                style={{
-                                  background: "#fde68a",
-                                  color: "#92400e",
-                                  fontSize: "0.63rem",
-                                }}
-                              >
-                                {BOOKING_STATUS_LABEL[table.activeBooking.status] ||
-                                  table.activeBooking.status}
-                              </Badge>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Hint */}
-                        <div
-                          className="mt-2 small fw-semibold"
-                          style={{
-                            color: isHover ? cfg.badgeColor : "#94a3b8",
-                            transition: "color 0.2s",
-                            fontSize: "0.7rem",
-                          }}
-                        >
-                          <i className="bi bi-pencil me-1" />
-                          {isHover ? "Cập nhật ngay" : "Click để cập nhật"}
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                );
-              })}
-            </Row>
-          </div>
+          <SeatZoneSection
+            key={zone}
+            zone={zone}
+            tables={groupedMap[zone]}
+            getCfg={getCfg}
+            hoveredId={hoveredId}
+            setHoveredId={setHoveredId}
+            onOpen={handleOpenModal}
+            getSeatIcon={getSeatIcon}
+            formatTime={formatTime}
+            bookingStatusLabel={BOOKING_STATUS_LABEL}
+          />
         ))
       )}
 
-      {/* ── Modal cập nhật trạng thái ── */}
-      <Modal show={showModal} onHide={() => { setShowModal(false); setError(""); }} centered size="sm">
-        <Modal.Header closeButton className="border-0 pb-1">
-          <Modal.Title className="fw-bold fs-6">
-            ✏️ Cập nhật —{" "}
-            <span style={{ color: "#6366f1" }}>{selected?.name}</span>
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body className="pt-1 pb-3 px-3">
-          {/* Thông tin booking đang hoạt động */}
-          {selected?.activeBooking && (
-            <div
-              className="rounded-3 p-2 mb-3 small"
-              style={{ background: "#fefce8", border: "1px solid #fde68a" }}
-            >
-              <div className="fw-bold mb-1" style={{ color: "#92400e" }}>
-                📋 Booking đang hoạt động
-              </div>
-              <div style={{ color: "#78350f" }}>
-                <strong>{selected.activeBooking.bookingCode}</strong> ·{" "}
-                {formatTime(selected.activeBooking.startTime)} –{" "}
-                {formatTime(selected.activeBooking.endTime)}
-              </div>
-              <div style={{ color: "#78350f" }}>
-                Trạng thái:{" "}
-                {BOOKING_STATUS_LABEL[selected.activeBooking.status] ||
-                  selected.activeBooking.status}
-              </div>
-            </div>
-          )}
-
-          <p className="text-muted small mb-3">Chọn trạng thái mới:</p>
-          {error && (
-            <Alert variant="danger" className="py-1 px-2 small mb-2">
-              {error}
-            </Alert>
-          )}
-          <div className="d-flex flex-column gap-2">
-            {ALL_STATUSES.map((s) => {
-              const cfg      = getCfg(s);
-              const isActive = newStatus === s;
-              return (
-                <div
-                  key={s}
-                  onClick={() => setNewStatus(s)}
-                  className="rounded-3 px-3 py-2 d-flex align-items-center gap-3"
-                  style={{
-                    background: isActive ? cfg.badgeBg : "#f8fafc",
-                    border: `2px solid ${isActive ? cfg.borderColor : "#e2e8f0"}`,
-                    cursor: "pointer",
-                    transition: "all 0.15s",
-                    transform: isActive ? "scale(1.01)" : "scale(1)",
-                  }}
-                >
-                  <span style={{ fontSize: 18 }}>{cfg.emoji}</span>
-                  <span
-                    className="fw-semibold"
-                    style={{ color: isActive ? cfg.badgeColor : "#475569", fontSize: "0.9rem" }}
-                  >
-                    {cfg.label}
-                  </span>
-                  {isActive && (
-                    <i
-                      className="bi bi-check-circle-fill ms-auto"
-                      style={{ color: cfg.badgeColor }}
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </Modal.Body>
-        <Modal.Footer className="border-0 pt-0 px-3 pb-3">
-          <Button
-            variant="outline-secondary"
-            className="fw-semibold rounded-3 flex-grow-1"
-            onClick={() => { setShowModal(false); setError(""); }}
-            disabled={updating}
-          >
-            Hủy
-          </Button>
-          <Button
-            className="fw-bold rounded-3 flex-grow-1"
-            style={{
-              background:
-                newStatus && newStatus !== selected?.status ? "#6366f1" : "#94a3b8",
-              border: "none",
-              color: "#fff",
-            }}
-            onClick={handleUpdateStatus}
-            disabled={updating || newStatus === selected?.status}
-          >
-            {updating ? (
-              <><Spinner size="sm" className="me-1" /> Đang lưu...</>
-            ) : (
-              "💾 Lưu thay đổi"
-            )}
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <SeatStatusModal
+        show={showModal}
+        onClose={() => {
+          setShowModal(false);
+          setError("");
+        }}
+        selected={selected}
+        activeBooking={selected?.activeBooking}
+        error={error}
+        statuses={ALL_STATUSES}
+        getCfg={getCfg}
+        newStatus={newStatus}
+        setNewStatus={setNewStatus}
+        onSave={handleUpdateStatus}
+        updating={updating}
+        formatTime={formatTime}
+        bookingStatusLabel={BOOKING_STATUS_LABEL}
+      />
     </AdminLayout>
   );
 }

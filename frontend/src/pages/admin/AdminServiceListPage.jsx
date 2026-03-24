@@ -5,8 +5,6 @@ import {
   Card,
   Col,
   Form,
-  InputGroup,
-  Modal,
   Row,
   Table,
   Alert,
@@ -16,6 +14,14 @@ import {
 } from "react-bootstrap";
 import { apiClient as api } from "../../services/api";
 import AdminLayout from "../../components/admin/AdminLayout";
+import AdminServiceTable from "../../components/admin/AdminServiceTable";
+import CategoryFormModal from "../../components/admin/CategoryFormModal";
+import ServiceFormModal from "../../components/admin/ServiceFormModal";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
+import EmptyState from "../../components/common/EmptyState";
+import FilterBar from "../../components/common/FilterBar";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import SearchInput from "../../components/common/SearchInput";
 
 export function meta() {
   return [
@@ -26,9 +32,8 @@ export function meta() {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const STATUS_OPTIONS = [
-  { value: "Available",   label: "Còn hàng", bg: "success" },
-  { value: "OutOfStock",  label: "Tạm hết",  bg: "warning" },
-  { value: "Unavailable", label: "Hết hàng", bg: "danger"  },
+  { value: "AVAILABLE",   label: "Còn hàng", bg: "success" },
+  { value: "OUT_OF_STOCK",  label: "Tạm hết",  bg: "warning" },
 ];
 
 const STATUS_MAP = Object.fromEntries(STATUS_OPTIONS.map((s) => [s.value, s]));
@@ -39,10 +44,25 @@ const EMPTY_ITEM_FORM = {
   description: "",
   price: "",
   stockQuantity: "",
-  availabilityStatus: "Available",
+  availabilityStatus: "AVAILABLE",
 };
 
 const EMPTY_CAT_FORM = { name: "", description: "", isActive: true };
+
+function normalizeMenuStatus(item) {
+  const availability = String(item?.availabilityStatus || "").trim().toUpperCase();
+  const stock = Number(item?.stockQuantity || 0);
+
+  if (["OUT_OF_STOCK", "UNAVAILABLE", "OUTOFSTOCK"].includes(availability)) {
+    return "OUT_OF_STOCK";
+  }
+
+  if (["IN_STOCK", "AVAILABLE"].includes(availability)) {
+    return stock > 0 ? "AVAILABLE" : "OUT_OF_STOCK";
+  }
+
+  return stock > 0 ? "AVAILABLE" : "OUT_OF_STOCK";
+}
 
 // ─── Validate helpers ─────────────────────────────────────────────────────────
 const validateItem = (form) => {
@@ -144,19 +164,19 @@ export default function AdminServiceListPage() {
 
   // ─── Filtered items ───────────────────────────────────────────────────────
   const filteredItems = items.filter((item) => {
+    const normalizedStatus = normalizeMenuStatus(item);
     const matchSearch =
       !searchItem ||
       item.name?.toLowerCase().includes(searchItem.toLowerCase()) ||
       item.description?.toLowerCase().includes(searchItem.toLowerCase());
     const matchCat    = !filterCat    || item.categoryId?._id === filterCat;
-    const matchStatus = !filterStatus || item.availabilityStatus === filterStatus;
+    const matchStatus = !filterStatus || normalizedStatus === filterStatus;
     return matchSearch && matchCat && matchStatus;
   });
 
   // ─── Stats ────────────────────────────────────────────────────────────────
-  const statsAvailable   = items.filter((i) => i.availabilityStatus === "Available").length;
-  const statsUnavailable = items.filter((i) => i.availabilityStatus === "Unavailable").length;
-  const statsOutOfStock  = items.filter((i) => i.availabilityStatus === "OutOfStock").length;
+  const statsAvailable = items.filter((i) => normalizeMenuStatus(i) === "AVAILABLE").length;
+  const statsOutOfStock = items.filter((i) => normalizeMenuStatus(i) === "OUT_OF_STOCK").length;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // ITEM CRUD
@@ -183,7 +203,7 @@ export default function AdminServiceListPage() {
       description:        item.description || "",
       price:              item.price ?? "",
       stockQuantity:      item.stockQuantity ?? "",
-      availabilityStatus: item.availabilityStatus || "Available",
+      availabilityStatus: normalizeMenuStatus(item),
     });
     setItemErrors({});
     setError("");
@@ -383,9 +403,8 @@ export default function AdminServiceListPage() {
       <Row className="mb-4 g-3">
         {[
           { label: "Tổng số món",  value: items.length,     icon: "bi-journal-text",         color: "#3b82f6", bg: "#eff6ff" },
-          { label: "Còn hàng",     value: statsAvailable,   icon: "bi-check-circle",         color: "#10b981", bg: "#ecfdf5" },
-          { label: "Tạm hết",      value: statsOutOfStock,  icon: "bi-exclamation-triangle", color: "#f59e0b", bg: "#fef3c7" },
-          { label: "Hết hàng",     value: statsUnavailable, icon: "bi-x-circle",             color: "#ef4444", bg: "#fee2e2" },
+          { label: "Còn hàng", value: statsAvailable, icon: "bi-check-circle", color: "#10b981", bg: "#ecfdf5" },
+          { label: "Hết hàng", value: statsOutOfStock, icon: "bi-x-circle", color: "#ef4444", bg: "#fee2e2" },
           { label: "Danh mục",     value: categories.length,icon: "bi-tags",                 color: "#8b5cf6", bg: "#f5f3ff" },
         ].map((s, i) => (
           <Col key={i} style={{ minWidth: 150 }}>
@@ -428,24 +447,13 @@ export default function AdminServiceListPage() {
             <Tab.Pane eventKey="items">
               {/* Filters */}
               <div className="px-4 py-3 border-bottom bg-light">
-                <Row className="g-2 align-items-center">
+                <FilterBar className="mb-0">
                   <Col md={5}>
-                    <InputGroup>
-                      <InputGroup.Text className="bg-white border-end-0">
-                        <i className="bi bi-search text-muted"></i>
-                      </InputGroup.Text>
-                      <Form.Control
-                        placeholder="Tìm theo tên, mô tả..."
-                        value={searchItem}
-                        onChange={(e) => setSearchItem(e.target.value)}
-                        className="border-start-0 ps-0"
-                      />
-                      {searchItem && (
-                        <Button variant="outline-secondary" onClick={() => setSearchItem("")}>
-                          <i className="bi bi-x"></i>
-                        </Button>
-                      )}
-                    </InputGroup>
+                    <SearchInput
+                      placeholder="Tìm theo tên, mô tả..."
+                      value={searchItem}
+                      onChange={(e) => setSearchItem(e.target.value)}
+                    />
                   </Col>
                   <Col md={3}>
                     <Form.Select value={filterCat} onChange={(e) => setFilterCat(e.target.value)}>
@@ -470,94 +478,26 @@ export default function AdminServiceListPage() {
                       <i className="bi bi-arrow-counterclockwise"></i>
                     </Button>
                   </Col>
-                </Row>
+                </FilterBar>
               </div>
 
               {/* Items Table */}
               {itemsLoading ? (
-                <div className="text-center py-5">
-                  <Spinner animation="border" variant="warning" />
-                  <p className="text-muted mt-3">Đang tải danh sách món...</p>
-                </div>
+                <LoadingSpinner text="Đang tải danh sách món..." color="#f59e0b" />
               ) : filteredItems.length === 0 ? (
-                <div className="text-center py-5">
-                  <i className="bi bi-inbox text-muted" style={{ fontSize: "3rem" }}></i>
-                  <p className="text-muted mt-3 mb-2">
-                    {items.length === 0 ? "Chưa có món nào trong menu." : "Không tìm thấy món phù hợp."}
-                  </p>
-                  <Button variant="warning" className="text-white" onClick={openItemAdd}>
-                    Thêm món đầu tiên
-                  </Button>
+                <div className="text-center py-4">
+                  <EmptyState icon="🍽️" title={items.length === 0 ? "Chưa có món nào trong menu." : "Không tìm thấy món phù hợp."} />
+                  <Button variant="warning" className="text-white" onClick={openItemAdd}>Thêm món đầu tiên</Button>
                 </div>
               ) : (
-                <Table responsive hover className="mb-0 align-middle">
-                  <thead className="table-light">
-                    <tr>
-                      <th className="px-4 py-3">#</th>
-                      <th className="px-4 py-3">Tên món</th>
-                      <th className="px-4 py-3">Danh mục</th>
-                      <th className="px-4 py-3">Giá</th>
-                      <th className="px-4 py-3">Tồn kho</th>
-                      <th className="px-4 py-3">Trạng thái</th>
-                      <th className="px-4 py-3 text-center">Thao tác</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredItems.map((item, idx) => {
-                      const statusInfo = STATUS_MAP[item.availabilityStatus] || { label: item.availabilityStatus, bg: "secondary" };
-                      const stock = item.stockQuantity ?? 0;
-                      const stockColor = stock === 0 ? "#ef4444" : stock < 5 ? "#f59e0b" : "#10b981";
-                      const catObj = categories.find((c) => c._id === (item.categoryId?._id || item.categoryId));
-                      const catHidden = catObj && catObj.isActive === false;
-                      return (
-                        <tr key={item._id}>
-                          <td className="px-4 py-3 text-muted small">{idx + 1}</td>
-                          <td className="px-4 py-3">
-                            <div className="fw-semibold">{item.name}</div>
-                            {item.description && (
-                              <div className="text-muted" style={{ fontSize: 12, maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                {item.description}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-4 py-3">
-                            {item.categoryId ? (
-                              <span>
-                                <Badge bg="light" text="dark" className="border">
-                                  {item.categoryId.name || item.categoryId}
-                                </Badge>
-                                {catHidden && (
-                                  <Badge bg="secondary" className="ms-1" style={{ fontSize: 10 }}>
-                                    Danh mục ẩn
-                                  </Badge>
-                                )}
-                              </span>
-                            ) : (
-                              <span className="text-muted">—</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 fw-semibold text-primary">{fmtPrice(item.price)}</td>
-                          <td className="px-4 py-3">
-                            <span style={{ color: stockColor, fontWeight: 600 }}>{stock}</span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <Badge bg={statusInfo.bg} className="px-2 py-1">{statusInfo.label}</Badge>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <div className="d-flex gap-2 justify-content-center">
-                              <Button variant="outline-primary" size="sm" onClick={() => openItemEdit(item)}>
-                                <i className="bi bi-pencil me-1"></i>Sửa
-                              </Button>
-                              <Button variant="outline-danger" size="sm" onClick={() => openItemDelete(item)}>
-                                <i className="bi bi-trash me-1"></i>Xóa
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </Table>
+                <AdminServiceTable
+                  data={filteredItems}
+                  categories={categories}
+                  statusMap={STATUS_MAP}
+                  fmtPrice={fmtPrice}
+                  onEdit={openItemEdit}
+                  onDelete={openItemDelete}
+                />
               )}
             </Tab.Pane>
 
@@ -637,401 +577,110 @@ export default function AdminServiceListPage() {
         </Card>
       </Tab.Container>
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          ITEM MODALS — JSX inline để tránh lỗi mất focus khi gõ
-      ══════════════════════════════════════════════════════════════════════ */}
+      <ServiceFormModal
+        show={showItemAdd}
+        onHide={() => {
+          setShowItemAdd(false);
+          setError("");
+        }}
+        title="Thêm món mới"
+        onSubmit={submitItemAdd}
+        loading={itemFormLoading}
+        error={error}
+        clearError={() => setError("")}
+        itemForm={itemForm}
+        itemErrors={itemErrors}
+        setItemField={setItemField}
+        categories={categories}
+        statusOptions={STATUS_OPTIONS}
+        submitText="Thêm món"
+      />
 
-      {/* Add Item */}
-      <Modal show={showItemAdd} onHide={() => { setShowItemAdd(false); setError(""); }} size="lg" centered>
-        <Modal.Header closeButton className="border-0 pb-0">
-          <Modal.Title className="fw-bold">
-            <i className="bi bi-plus-circle-fill me-2 text-warning"></i>Thêm món mới
-          </Modal.Title>
-        </Modal.Header>
-        <Form onSubmit={submitItemAdd} noValidate>
-          <Modal.Body className="px-4">
-            {error && <Alert variant="danger" dismissible onClose={() => setError("")} className="py-2">{error}</Alert>}
-            <Row className="g-3">
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label className="fw-semibold">Tên món <span className="text-danger">*</span></Form.Label>
-                  <Form.Control
-                    type="text"
-                    placeholder="Ví dụ: Cà phê sữa đá"
-                    value={itemForm.name}
-                    isInvalid={!!itemErrors.name}
-                    onChange={(e) => setItemField("name", e.target.value)}
-                  />
-                  {itemErrors.name && <Form.Text className="text-danger">{itemErrors.name}</Form.Text>}
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label className="fw-semibold">Danh mục</Form.Label>
-                  <Form.Select value={itemForm.categoryId} onChange={(e) => setItemField("categoryId", e.target.value)}>
-                    <option value="">-- Không có danh mục --</option>
-                    {categories.filter((c) => c.isActive !== false).map((c) => (
-                      <option key={c._id} value={c._id}>{c.name}</option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-              <Col md={12}>
-                <Form.Group>
-                  <Form.Label className="fw-semibold">Mô tả</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={2}
-                    placeholder="Mô tả ngắn về món..."
-                    value={itemForm.description}
-                    onChange={(e) => setItemField("description", e.target.value)}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group>
-                  <Form.Label className="fw-semibold">Giá (VNĐ) <span className="text-danger">*</span></Form.Label>
-                  <InputGroup>
-                    <Form.Control
-                      type="number"
-                      min={0}
-                      placeholder="0"
-                      value={itemForm.price}
-                      isInvalid={!!itemErrors.price}
-                      onChange={(e) => setItemField("price", e.target.value)}
-                    />
-                    <InputGroup.Text>₫</InputGroup.Text>
-                  </InputGroup>
-                  {itemErrors.price && <Form.Text className="text-danger">{itemErrors.price}</Form.Text>}
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group>
-                  <Form.Label className="fw-semibold">Số lượng tồn kho</Form.Label>
-                  <Form.Control
-                    type="number"
-                    min={0}
-                    placeholder="0"
-                    value={itemForm.stockQuantity}
-                    isInvalid={!!itemErrors.stockQuantity}
-                    onChange={(e) => setItemField("stockQuantity", e.target.value)}
-                  />
-                  {itemErrors.stockQuantity && <Form.Text className="text-danger">{itemErrors.stockQuantity}</Form.Text>}
-                  <Form.Text className="text-muted" style={{ fontSize: 11 }}>Nếu = 0 → tự động Tạm hết</Form.Text>
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group>
-                  <Form.Label className="fw-semibold">Trạng thái</Form.Label>
-                  <Form.Select value={itemForm.availabilityStatus} onChange={(e) => setItemField("availabilityStatus", e.target.value)}>
-                    {STATUS_OPTIONS.map((s) => (
-                      <option key={s.value} value={s.value}>{s.label}</option>
-                    ))}
-                  </Form.Select>
-                  <Form.Text className="text-muted" style={{ fontSize: 11 }}>"Hết hàng" = ngừng bán hẳn</Form.Text>
-                </Form.Group>
-              </Col>
-            </Row>
-          </Modal.Body>
-          <Modal.Footer className="border-0 pt-0">
-            <Button variant="outline-secondary" onClick={() => { setShowItemAdd(false); setError(""); }} disabled={itemFormLoading}>Hủy</Button>
-            <Button variant="warning" className="text-white" type="submit" disabled={itemFormLoading}>
-              {itemFormLoading ? <Spinner size="sm" animation="border" className="me-1" /> : <i className="bi bi-check-lg me-1"></i>}
-              Thêm món
-            </Button>
-          </Modal.Footer>
-        </Form>
-      </Modal>
+      <ServiceFormModal
+        show={showItemEdit}
+        onHide={() => {
+          setShowItemEdit(false);
+          setError("");
+        }}
+        title="Chỉnh sửa món"
+        onSubmit={submitItemEdit}
+        loading={itemFormLoading}
+        error={error}
+        clearError={() => setError("")}
+        itemForm={itemForm}
+        itemErrors={itemErrors}
+        setItemField={setItemField}
+        categories={categories}
+        statusOptions={STATUS_OPTIONS}
+        submitText="Lưu thay đổi"
+        includeInactiveCategories={true}
+      />
 
-      {/* Edit Item */}
-      <Modal show={showItemEdit} onHide={() => { setShowItemEdit(false); setError(""); }} size="lg" centered>
-        <Modal.Header closeButton className="border-0 pb-0">
-          <Modal.Title className="fw-bold">
-            <i className="bi bi-pencil-square me-2 text-primary"></i>Chỉnh sửa món
-          </Modal.Title>
-        </Modal.Header>
-        <Form onSubmit={submitItemEdit} noValidate>
-          <Modal.Body className="px-4">
-            {error && <Alert variant="danger" dismissible onClose={() => setError("")} className="py-2">{error}</Alert>}
-            <Row className="g-3">
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label className="fw-semibold">Tên món <span className="text-danger">*</span></Form.Label>
-                  <Form.Control
-                    type="text"
-                    placeholder="Ví dụ: Cà phê sữa đá"
-                    value={itemForm.name}
-                    isInvalid={!!itemErrors.name}
-                    onChange={(e) => setItemField("name", e.target.value)}
-                  />
-                  {itemErrors.name && <Form.Text className="text-danger">{itemErrors.name}</Form.Text>}
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label className="fw-semibold">Danh mục</Form.Label>
-                  <Form.Select value={itemForm.categoryId} onChange={(e) => setItemField("categoryId", e.target.value)}>
-                    <option value="">-- Không có danh mục --</option>
-                    {categories.map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.name}{c.isActive === false ? " (đang ẩn)" : ""}
-                      </option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-              <Col md={12}>
-                <Form.Group>
-                  <Form.Label className="fw-semibold">Mô tả</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={2}
-                    placeholder="Mô tả ngắn về món..."
-                    value={itemForm.description}
-                    onChange={(e) => setItemField("description", e.target.value)}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group>
-                  <Form.Label className="fw-semibold">Giá (VNĐ) <span className="text-danger">*</span></Form.Label>
-                  <InputGroup>
-                    <Form.Control
-                      type="number"
-                      min={0}
-                      placeholder="0"
-                      value={itemForm.price}
-                      isInvalid={!!itemErrors.price}
-                      onChange={(e) => setItemField("price", e.target.value)}
-                    />
-                    <InputGroup.Text>₫</InputGroup.Text>
-                  </InputGroup>
-                  {itemErrors.price && <Form.Text className="text-danger">{itemErrors.price}</Form.Text>}
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group>
-                  <Form.Label className="fw-semibold">Số lượng tồn kho</Form.Label>
-                  <Form.Control
-                    type="number"
-                    min={0}
-                    placeholder="0"
-                    value={itemForm.stockQuantity}
-                    isInvalid={!!itemErrors.stockQuantity}
-                    onChange={(e) => setItemField("stockQuantity", e.target.value)}
-                  />
-                  {itemErrors.stockQuantity && <Form.Text className="text-danger">{itemErrors.stockQuantity}</Form.Text>}
-                  <Form.Text className="text-muted" style={{ fontSize: 11 }}>Nếu = 0 → tự động Tạm hết</Form.Text>
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group>
-                  <Form.Label className="fw-semibold">Trạng thái</Form.Label>
-                  <Form.Select value={itemForm.availabilityStatus} onChange={(e) => setItemField("availabilityStatus", e.target.value)}>
-                    {STATUS_OPTIONS.map((s) => (
-                      <option key={s.value} value={s.value}>{s.label}</option>
-                    ))}
-                  </Form.Select>
-                  <Form.Text className="text-muted" style={{ fontSize: 11 }}>"Hết hàng" = ngừng bán hẳn</Form.Text>
-                </Form.Group>
-              </Col>
-            </Row>
-          </Modal.Body>
-          <Modal.Footer className="border-0 pt-0">
-            <Button variant="outline-secondary" onClick={() => { setShowItemEdit(false); setError(""); }} disabled={itemFormLoading}>Hủy</Button>
-            <Button variant="primary" type="submit" disabled={itemFormLoading}>
-              {itemFormLoading ? <Spinner size="sm" animation="border" className="me-1" /> : <i className="bi bi-check-lg me-1"></i>}
-              Lưu thay đổi
-            </Button>
-          </Modal.Footer>
-        </Form>
-      </Modal>
+      <CategoryFormModal
+        show={showCatAdd}
+        onHide={() => {
+          setShowCatAdd(false);
+          setError("");
+        }}
+        title="Thêm danh mục mới"
+        onSubmit={submitCatAdd}
+        loading={catFormLoading}
+        error={error}
+        clearError={() => setError("")}
+        catForm={catForm}
+        catErrors={catErrors}
+        setCatField={setCatField}
+        submitText="Thêm danh mục"
+        switchId="cat-add-isActive"
+        switchDescription={catForm.isActive ? "Khách hàng sẽ thấy danh mục và các món bên trong" : "Khách hàng sẽ không thấy danh mục này trên menu"}
+      />
 
-      {/* Delete Item */}
-      <Modal show={showItemDelete} onHide={() => { setShowItemDelete(false); setDeletingItem(null); }} centered>
-        <Modal.Header closeButton className="border-0">
-          <Modal.Title className="fw-bold text-danger">
-            <i className="bi bi-exclamation-triangle-fill me-2"></i>Xác nhận xóa món
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body className="px-4">
-          <p className="mb-2">Bạn chắc muốn xóa món <strong>{deletingItem?.name}</strong>?</p>
-          <Alert variant="warning" className="mb-0 py-2">
-            <i className="bi bi-exclamation-circle me-2"></i>
-            Hành động này <strong>không thể hoàn tác</strong>.
-          </Alert>
-        </Modal.Body>
-        <Modal.Footer className="border-0">
-          <Button variant="outline-secondary" onClick={() => { setShowItemDelete(false); setDeletingItem(null); }} disabled={itemFormLoading}>Hủy</Button>
-          <Button variant="danger" onClick={confirmItemDelete} disabled={itemFormLoading}>
-            {itemFormLoading ? <Spinner size="sm" animation="border" className="me-1" /> : <i className="bi bi-trash-fill me-1"></i>}
-            Xóa món
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <CategoryFormModal
+        show={showCatEdit}
+        onHide={() => {
+          setShowCatEdit(false);
+          setError("");
+        }}
+        title="Chỉnh sửa danh mục"
+        onSubmit={submitCatEdit}
+        loading={catFormLoading}
+        error={error}
+        clearError={() => setError("")}
+        catForm={catForm}
+        catErrors={catErrors}
+        setCatField={setCatField}
+        submitText="Lưu thay đổi"
+        switchId="cat-edit-isActive"
+        switchDescription={catForm.isActive ? "Khách hàng sẽ thấy danh mục và các món bên trong" : "Khách hàng sẽ không thấy danh mục này dù món vẫn có trong hệ thống"}
+      />
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          CATEGORY MODALS
-      ══════════════════════════════════════════════════════════════════════ */}
+      <ConfirmDialog
+        show={showItemDelete}
+        onCancel={() => {
+          setShowItemDelete(false);
+          setDeletingItem(null);
+        }}
+        onConfirm={confirmItemDelete}
+        loading={itemFormLoading}
+        title="Xác nhận xóa món"
+        message={`Bạn chắc muốn xóa món ${deletingItem?.name || ""}?`}
+        confirmText="Xóa món"
+        cancelText="Hủy"
+      />
 
-      {/* Add Category */}
-      <Modal show={showCatAdd} onHide={() => { setShowCatAdd(false); setError(""); }} centered>
-        <Modal.Header closeButton className="border-0 pb-0">
-          <Modal.Title className="fw-bold">
-            <i className="bi bi-tags-fill me-2 text-primary"></i>Thêm danh mục mới
-          </Modal.Title>
-        </Modal.Header>
-        <Form onSubmit={submitCatAdd} noValidate>
-          <Modal.Body className="px-4">
-            {error && <Alert variant="danger" dismissible onClose={() => setError("")} className="py-2">{error}</Alert>}
-            <Row className="g-3">
-              <Col md={12}>
-                <Form.Group>
-                  <Form.Label className="fw-semibold">Tên danh mục <span className="text-danger">*</span></Form.Label>
-                  <Form.Control
-                    type="text"
-                    placeholder="Ví dụ: Đồ uống, Đồ ăn nhẹ..."
-                    value={catForm.name}
-                    isInvalid={!!catErrors.name}
-                    onChange={(e) => setCatField("name", e.target.value)}
-                  />
-                  {catErrors.name && <Form.Text className="text-danger">{catErrors.name}</Form.Text>}
-                </Form.Group>
-              </Col>
-              <Col md={12}>
-                <Form.Group>
-                  <Form.Label className="fw-semibold">Mô tả</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={2}
-                    placeholder="Mô tả ngắn về danh mục..."
-                    value={catForm.description}
-                    onChange={(e) => setCatField("description", e.target.value)}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={12}>
-                <Form.Group className="d-flex align-items-center gap-3 mt-1">
-                  <Form.Check
-                    type="switch"
-                    id="cat-add-isActive"
-                    checked={catForm.isActive}
-                    onChange={(e) => setCatField("isActive", e.target.checked)}
-                  />
-                  <div>
-                    <div className="fw-semibold" style={{ fontSize: 14 }}>
-                      {catForm.isActive ? "Đang hiển thị" : "Tạm ẩn"}
-                    </div>
-                    <div className="text-muted" style={{ fontSize: 12 }}>
-                      {catForm.isActive
-                        ? "Khách hàng sẽ thấy danh mục và các món bên trong"
-                        : "Khách hàng sẽ không thấy danh mục này trên menu"}
-                    </div>
-                  </div>
-                </Form.Group>
-              </Col>
-            </Row>
-          </Modal.Body>
-          <Modal.Footer className="border-0 pt-0">
-            <Button variant="outline-secondary" onClick={() => { setShowCatAdd(false); setError(""); }} disabled={catFormLoading}>Hủy</Button>
-            <Button variant="primary" type="submit" disabled={catFormLoading}>
-              {catFormLoading ? <Spinner size="sm" animation="border" className="me-1" /> : <i className="bi bi-check-lg me-1"></i>}
-              Thêm danh mục
-            </Button>
-          </Modal.Footer>
-        </Form>
-      </Modal>
-
-      {/* Edit Category */}
-      <Modal show={showCatEdit} onHide={() => { setShowCatEdit(false); setError(""); }} centered>
-        <Modal.Header closeButton className="border-0 pb-0">
-          <Modal.Title className="fw-bold">
-            <i className="bi bi-pencil-square me-2 text-primary"></i>Chỉnh sửa danh mục
-          </Modal.Title>
-        </Modal.Header>
-        <Form onSubmit={submitCatEdit} noValidate>
-          <Modal.Body className="px-4">
-            {error && <Alert variant="danger" dismissible onClose={() => setError("")} className="py-2">{error}</Alert>}
-            <Row className="g-3">
-              <Col md={12}>
-                <Form.Group>
-                  <Form.Label className="fw-semibold">Tên danh mục <span className="text-danger">*</span></Form.Label>
-                  <Form.Control
-                    type="text"
-                    placeholder="Ví dụ: Đồ uống, Đồ ăn nhẹ..."
-                    value={catForm.name}
-                    isInvalid={!!catErrors.name}
-                    onChange={(e) => setCatField("name", e.target.value)}
-                  />
-                  {catErrors.name && <Form.Text className="text-danger">{catErrors.name}</Form.Text>}
-                </Form.Group>
-              </Col>
-              <Col md={12}>
-                <Form.Group>
-                  <Form.Label className="fw-semibold">Mô tả</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={2}
-                    placeholder="Mô tả ngắn về danh mục..."
-                    value={catForm.description}
-                    onChange={(e) => setCatField("description", e.target.value)}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={12}>
-                <Form.Group className="d-flex align-items-center gap-3 mt-1">
-                  <Form.Check
-                    type="switch"
-                    id="cat-edit-isActive"
-                    checked={catForm.isActive}
-                    onChange={(e) => setCatField("isActive", e.target.checked)}
-                  />
-                  <div>
-                    <div className="fw-semibold" style={{ fontSize: 14 }}>
-                      {catForm.isActive ? "Đang hiển thị" : "Tạm ẩn"}
-                    </div>
-                    <div className="text-muted" style={{ fontSize: 12 }}>
-                      {catForm.isActive
-                        ? "Khách hàng sẽ thấy danh mục và các món bên trong"
-                        : "Khách hàng sẽ không thấy danh mục này dù món vẫn có trong hệ thống"}
-                    </div>
-                  </div>
-                </Form.Group>
-              </Col>
-            </Row>
-          </Modal.Body>
-          <Modal.Footer className="border-0 pt-0">
-            <Button variant="outline-secondary" onClick={() => { setShowCatEdit(false); setError(""); }} disabled={catFormLoading}>Hủy</Button>
-            <Button variant="primary" type="submit" disabled={catFormLoading}>
-              {catFormLoading ? <Spinner size="sm" animation="border" className="me-1" /> : <i className="bi bi-check-lg me-1"></i>}
-              Lưu thay đổi
-            </Button>
-          </Modal.Footer>
-        </Form>
-      </Modal>
-
-      {/* Delete Category */}
-      <Modal show={showCatDelete} onHide={() => { setShowCatDelete(false); setDeletingCat(null); }} centered>
-        <Modal.Header closeButton className="border-0">
-          <Modal.Title className="fw-bold text-danger">
-            <i className="bi bi-exclamation-triangle-fill me-2"></i>Xóa danh mục
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body className="px-4">
-          <p className="mb-2">Bạn chắc muốn xóa danh mục <strong>{deletingCat?.name}</strong>?</p>
-          <Alert variant="warning" className="mb-0 py-2">
-            <i className="bi bi-exclamation-circle me-2"></i>
-            Chỉ có thể xóa danh mục <strong>không chứa món nào</strong>.
-          </Alert>
-        </Modal.Body>
-        <Modal.Footer className="border-0">
-          <Button variant="outline-secondary" onClick={() => { setShowCatDelete(false); setDeletingCat(null); }} disabled={catFormLoading}>Hủy</Button>
-          <Button variant="danger" onClick={confirmCatDelete} disabled={catFormLoading}>
-            {catFormLoading ? <Spinner size="sm" animation="border" className="me-1" /> : <i className="bi bi-trash-fill me-1"></i>}
-            Xóa danh mục
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <ConfirmDialog
+        show={showCatDelete}
+        onCancel={() => {
+          setShowCatDelete(false);
+          setDeletingCat(null);
+        }}
+        onConfirm={confirmCatDelete}
+        loading={catFormLoading}
+        title="Xóa danh mục"
+        message={`Bạn chắc muốn xóa danh mục ${deletingCat?.name || ""}? Chỉ có thể xóa danh mục không chứa món nào.`}
+        confirmText="Xóa danh mục"
+        cancelText="Hủy"
+      />
     </AdminLayout>
   );
 }

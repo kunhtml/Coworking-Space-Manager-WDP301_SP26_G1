@@ -1,17 +1,9 @@
 import { useState, useEffect } from "react";
-import {
-  Badge,
-  Button,
-  Card,
-  Col,
-  Container,
-  Form,
-  Row,
-  Alert,
-  Spinner
-} from "react-bootstrap";
+import { Alert, Container } from "react-bootstrap";
 import { useAuth } from "../../../hooks/useAuth";
 import GuestCustomerNavbar from "../../../components/common/GuestCustomerNavbar";
+import ProfileHeroCard from "../../../components/customer/cards/ProfileHeroCard";
+import ProfileEditFormCard from "../../../components/customer/forms/ProfileEditFormCard";
 
 export default function CustomerProfilePage() {
   const { user } = useAuth();
@@ -108,88 +100,18 @@ export default function CustomerProfilePage() {
             </Alert>
           )}
 
-          {/* Card Header: Avatar & Tên (Hiển thị) */}
-          <Card className="border-0 shadow-sm overflow-hidden mb-4">
-            <div
-              style={{
-                height: "100px",
-                background: "linear-gradient(90deg, #6366f1 0%, #7c3aed 100%)",
-              }}
-            ></div>
-            <Card.Body style={{ marginTop: "-42px" }}>
-              <div
-                className="rounded-circle bg-white border d-flex align-items-center justify-content-center fw-bold text-primary shadow-sm"
-                style={{ width: "84px", height: "84px", fontSize: "40px" }}
-              >
-                {initials}
-              </div>
-              <h3 className="fw-bold mt-3 mb-1">{user?.fullName || "Khách hàng"}</h3>
-              <p className="text-secondary fw-semibold mb-3">
-                {user?.email || "Chưa có email"}
-              </p>
-            </Card.Body>
-          </Card>
+          <ProfileHeroCard
+            initials={initials}
+            fullName={user?.fullName}
+            email={user?.email}
+          />
 
-          {/* Card Form: Chỉnh sửa thông tin cá nhân */}
-          <Card className="border-0 shadow-sm mb-4">
-            <Card.Header className="bg-white border-bottom py-3">
-              <h5 className="fw-bold mb-0">
-                <i className="bi bi-pencil-fill text-primary me-2"></i>
-                Chỉnh sửa thông tin
-              </h5>
-            </Card.Header>
-            <Card.Body>
-              <Form onSubmit={handleUpdateProfile}>
-                <Row className="g-3">
-                  <Col md={12}>
-                    <Form.Label className="fw-semibold">Họ và tên</Form.Label>
-                    <Form.Control
-                      name="fullName"
-                      value={profileData.fullName}
-                      onChange={handleInputChange}
-                      placeholder="Nhập họ và tên"
-                      required
-                    />
-                  </Col>
-                  <Col md={6}>
-                    <Form.Label className="fw-semibold">Email</Form.Label>
-                    <Form.Control
-                      type="email"
-                      name="email"
-                      value={profileData.email}
-                      onChange={handleInputChange}
-                      placeholder="Nhập email"
-                      required
-                    />
-                  </Col>
-                  <Col md={6}>
-                    <Form.Label className="fw-semibold">Số điện thoại</Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="phone"
-                      value={profileData.phone}
-                      onChange={handleInputChange}
-                      placeholder="Nhập số điện thoại"
-                    />
-                  </Col>
-                </Row>
-                <div className="d-flex justify-content-end gap-2 mt-4">
-                  <Button 
-                    type="submit" 
-                    className="staff-secondary-btn px-4" 
-                    style={{ backgroundColor: "#6366f1", border: "none", color: "#fff" }}
-                    disabled={loadingProfile}
-                  >
-                    {loadingProfile ? (
-                      <Spinner animation="border" size="sm" />
-                    ) : (
-                      <><i className="bi bi-floppy me-2"></i>Lưu thông tin</>
-                    )}
-                  </Button>
-                </div>
-              </Form>
-            </Card.Body>
-          </Card>
+          <ProfileEditFormCard
+            profileData={profileData}
+            handleInputChange={handleInputChange}
+            handleUpdateProfile={handleUpdateProfile}
+            loadingProfile={loadingProfile}
+          />
 
         </Container>
       </main>

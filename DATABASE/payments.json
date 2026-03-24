@@ -2,7 +2,7 @@
   {
     "_id": { "$oid": "65e7d0000000000000000001" },
     "invoiceId": { "$oid": "65e7c0000000000000000001" },
-    "paymentMethod": "MoMo",
+    "paymentMethod": "QR_PAYOS",
     "transactionId": "MOMO_TRANS_999888777",
     "amount": 150000,
     "type": "Deposit",
@@ -13,7 +13,7 @@
   {
     "_id": { "$oid": "65e7d0000000000000000002" },
     "invoiceId": { "$oid": "65e7c0000000000000000002" },
-    "paymentMethod": "Banking",
+    "paymentMethod": "QR_PAYOS",
     "transactionId": "VCB_TRANS_202603220901",
     "amount": 300000,
     "type": "Deposit",
@@ -24,7 +24,7 @@
   {
     "_id": { "$oid": "65e7d0000000000000000003" },
     "invoiceId": { "$oid": "65e7c0000000000000000002" },
-    "paymentMethod": "Cash",
+    "paymentMethod": "CASH",
     "transactionId": "CASH_202603221130",
     "amount": 120000,
     "type": "Payment",
@@ -35,7 +35,7 @@
   {
     "_id": { "$oid": "65e7d0000000000000000004" },
     "invoiceId": { "$oid": "65e7c0000000000000000003" },
-    "paymentMethod": "MoMo",
+    "paymentMethod": "QR_PAYOS",
     "transactionId": "MOMO_TRANS_202603211620",
     "amount": 780000,
     "type": "Payment",
@@ -46,7 +46,7 @@
   {
     "_id": { "$oid": "65e7d0000000000000000005" },
     "invoiceId": { "$oid": "65e7c0000000000000000004" },
-    "paymentMethod": "Banking",
+    "paymentMethod": "QR_PAYOS",
     "transactionId": "VCB_TRANS_202603240205",
     "amount": 85000,
     "type": "Deposit",
@@ -57,7 +57,7 @@
   {
     "_id": { "$oid": "65e7d0000000000000000006" },
     "invoiceId": { "$oid": "65e7c0000000000000000004" },
-    "paymentMethod": "Card",
+    "paymentMethod": "QR_PAYOS",
     "transactionId": "VISA_DECLINED_202603240315",
     "amount": 200000,
     "type": "Payment",
@@ -68,7 +68,7 @@
   {
     "_id": { "$oid": "65e7d0000000000000000007" },
     "invoiceId": { "$oid": "65e7c0000000000000000005" },
-    "paymentMethod": "Cash",
+    "paymentMethod": "CASH",
     "transactionId": "CASH_REFUND_202603240730",
     "amount": 85000,
     "type": "Refund",
@@ -79,7 +79,7 @@
   {
     "_id": { "$oid": "65e7d0000000000000000008" },
     "invoiceId": { "$oid": "65e7c0000000000000000101" },
-    "paymentMethod": "Banking",
+    "paymentMethod": "QR_PAYOS",
     "transactionId": "VCB_TRANS_202501051015",
     "amount": 520000,
     "type": "Payment",
@@ -90,7 +90,7 @@
   {
     "_id": { "$oid": "65e7d0000000000000000009" },
     "invoiceId": { "$oid": "65e7c0000000000000000102" },
-    "paymentMethod": "MoMo",
+    "paymentMethod": "QR_PAYOS",
     "transactionId": "MOMO_TRANS_202502121020",
     "amount": 680000,
     "type": "Payment",
@@ -101,7 +101,7 @@
   {
     "_id": { "$oid": "65e7d000000000000000000a" },
     "invoiceId": { "$oid": "65e7c0000000000000000103" },
-    "paymentMethod": "Card",
+    "paymentMethod": "QR_PAYOS",
     "transactionId": "VISA_TRANS_202503031430",
     "amount": 450000,
     "type": "Deposit",
@@ -112,7 +112,7 @@
   {
     "_id": { "$oid": "65e7d000000000000000000b" },
     "invoiceId": { "$oid": "65e7c0000000000000000104" },
-    "paymentMethod": "Cash",
+    "paymentMethod": "CASH",
     "transactionId": "CASH_202504211145",
     "amount": 910000,
     "type": "Payment",
@@ -123,7 +123,7 @@
   {
     "_id": { "$oid": "65e7d000000000000000000c" },
     "invoiceId": { "$oid": "65e7c0000000000000000105" },
-    "paymentMethod": "Banking",
+    "paymentMethod": "QR_PAYOS",
     "transactionId": "VCB_TRANS_202505081600",
     "amount": 760000,
     "type": "Payment",
@@ -134,7 +134,7 @@
   {
     "_id": { "$oid": "65e7d000000000000000000d" },
     "invoiceId": { "$oid": "65e7c0000000000000000106" },
-    "paymentMethod": "MoMo",
+    "paymentMethod": "QR_PAYOS",
     "transactionId": "MOMO_TRANS_202506181210",
     "amount": 835000,
     "type": "Payment",
@@ -145,7 +145,7 @@
   {
     "_id": { "$oid": "65e7d000000000000000000e" },
     "invoiceId": { "$oid": "65e7c0000000000000000107" },
-    "paymentMethod": "Card",
+    "paymentMethod": "QR_PAYOS",
     "transactionId": "VISA_TRANS_202507071710",
     "amount": 690000,
     "type": "Payment",
@@ -156,7 +156,7 @@
   {
     "_id": { "$oid": "65e7d000000000000000000f" },
     "invoiceId": { "$oid": "65e7c0000000000000000108" },
-    "paymentMethod": "Cash",
+    "paymentMethod": "CASH",
     "transactionId": "CASH_202508151015",
     "amount": 540000,
     "type": "Deposit",
@@ -167,7 +167,7 @@
   {
     "_id": { "$oid": "65e7d0000000000000000010" },
     "invoiceId": { "$oid": "65e7c0000000000000000109" },
-    "paymentMethod": "Banking",
+    "paymentMethod": "QR_PAYOS",
     "transactionId": "VCB_TRANS_202509201500",
     "amount": 980000,
     "type": "Payment",
@@ -178,7 +178,7 @@
   {
     "_id": { "$oid": "65e7d0000000000000000011" },
     "invoiceId": { "$oid": "65e7c0000000000000000110" },
-    "paymentMethod": "MoMo",
+    "paymentMethod": "QR_PAYOS",
     "transactionId": "MOMO_TRANS_202510091340",
     "amount": 1120000,
     "type": "Payment",
@@ -189,7 +189,7 @@
   {
     "_id": { "$oid": "65e7d0000000000000000012" },
     "invoiceId": { "$oid": "65e7c0000000000000000111" },
-    "paymentMethod": "Card",
+    "paymentMethod": "QR_PAYOS",
     "transactionId": "VISA_TRANS_202511261105",
     "amount": 730000,
     "type": "Payment",
@@ -200,7 +200,7 @@
   {
     "_id": { "$oid": "65e7d0000000000000000013" },
     "invoiceId": { "$oid": "65e7c0000000000000000112" },
-    "paymentMethod": "Cash",
+    "paymentMethod": "CASH",
     "transactionId": "CASH_202512301830",
     "amount": 1260000,
     "type": "Payment",
@@ -211,7 +211,7 @@
   {
     "_id": { "$oid": "65e7d0000000000000000014" },
     "invoiceId": { "$oid": "65e7c0000000000000000113" },
-    "paymentMethod": "Banking",
+    "paymentMethod": "QR_PAYOS",
     "transactionId": "VCB_TRANS_202601061030",
     "amount": 640000,
     "type": "Deposit",
@@ -222,7 +222,7 @@
   {
     "_id": { "$oid": "65e7d0000000000000000015" },
     "invoiceId": { "$oid": "65e7c0000000000000000114" },
-    "paymentMethod": "MoMo",
+    "paymentMethod": "QR_PAYOS",
     "transactionId": "MOMO_TRANS_202602141555",
     "amount": 870000,
     "type": "Payment",
@@ -233,7 +233,7 @@
   {
     "_id": { "$oid": "65e7d0000000000000000016" },
     "invoiceId": { "$oid": "65e7c0000000000000000115" },
-    "paymentMethod": "Card",
+    "paymentMethod": "QR_PAYOS",
     "transactionId": "VISA_TRANS_202603051025",
     "amount": 950000,
     "type": "Payment",
@@ -244,7 +244,7 @@
   {
     "_id": { "$oid": "65e7d0000000000000000017" },
     "invoiceId": { "$oid": "65e7c0000000000000000116" },
-    "paymentMethod": "Banking",
+    "paymentMethod": "QR_PAYOS",
     "transactionId": "VCB_TRANS_202603230945",
     "amount": 1180000,
     "type": "Payment",
@@ -255,7 +255,7 @@
   {
     "_id": { "$oid": "65e7d0000000000000000018" },
     "invoiceId": { "$oid": "65e7c0000000000000000117" },
-    "paymentMethod": "Card",
+    "paymentMethod": "QR_PAYOS",
     "transactionId": "VISA_FAIL_202602281400",
     "amount": 500000,
     "type": "Payment",

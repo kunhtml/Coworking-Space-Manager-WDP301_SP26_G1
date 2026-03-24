@@ -8,9 +8,9 @@ export default function AdminLayout({ children }) {
   const location = useLocation();
 
   const getDefaultDashboardByRole = (role) => {
-    if (role === "Admin") return "/admin-dashboard";
+    if (role === "Admin") return "/admin-dashboard/users";
     if (role === "Staff") return "/staff-dashboard";
-    return "/customer-dashboard";
+    return "/customer-dashboard/orders";
   };
 
   if (!isAuthenticated || !user) {

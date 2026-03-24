@@ -240,7 +240,7 @@ export const getReportAnalytics = async (req, res) => {
     const availableTables = occupancyByStatusMap.get("Available") || 0;
     const maintenanceTables = occupancyByStatusMap.get("Maintenance") || 0;
     const activeBookings = bookings.filter(
-      (booking) => booking.status === "In_Use",
+      (booking) => ["CheckedIn", "In_Use"].includes(booking.status),
     ).length;
 
     res.json({

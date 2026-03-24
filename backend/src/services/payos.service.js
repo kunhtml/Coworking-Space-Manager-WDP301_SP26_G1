@@ -5,8 +5,9 @@ import Booking from "../models/booking.js";
 import Order from "../models/order.js";
 import Payment from "../models/payment.js";
 import Invoice from "../models/invoice.js";
+import { ORDER_STATUS, PAYMENT_METHOD } from "../constants/domain.js";
 
-const PAYOS_PAYMENT_METHOD = "PayOS";
+const PAYOS_PAYMENT_METHOD = PAYMENT_METHOD.QR_PAYOS;
 const PAYOS_PENDING_STATUSES = new Set(["PENDING", "PROCESSING", "UNDERPAID"]);
 const PAYOS_FAILED_STATUSES = new Set(["CANCELLED", "EXPIRED", "FAILED"]);
 
@@ -347,11 +348,11 @@ export async function syncPayOSPaymentRecord({
       await Order.updateMany(
         {
           _id: { $in: invoice.orderIds },
-          status: "Pending"
+          status: ORDER_STATUS.PENDING,
         },
         {
-          $set: { status: "Confirmed", updatedAt: now }
-        }
+          $set: { status: ORDER_STATUS.CONFIRMED, updatedAt: now },
+        },
       );
     }
   }
@@ -508,7 +509,13 @@ export async function getOrderPaymentSnapshot(orderId) {
   };
 }
 
-export async function createOrReuseOrderPayOSPayment({ order, buyer, origin }) {
+export async function createOrReuseOrderPayOSPayment({
+  order,
+  buyer,
+  origin,
+  returnPath,
+  cancelPath,
+}) {
   const payOS = createPayOSClient();
 
   // Find invoice for this order
@@ -608,12 +615,11 @@ export async function createOrReuseOrderPayOSPayment({ order, buyer, origin }) {
     const amount = remainingAmount;
     const orderCode = createOrderCode();
     const description = createShortDescription(order._id.toString(), orderCode);
-    const cancelUrl = origin
-      ? `${origin}/orders`
-      : `${process.env.FRONTEND_URL || "http://localhost:5173"}/orders`;
-    const returnUrl = origin
-      ? `${origin}/payment/order/${order._id}`
-      : `${process.env.FRONTEND_URL || "http://localhost:5173"}/payment/order/${order._id}`;
+    const frontendOrigin = origin || process.env.FRONTEND_URL || "http://localhost:5173";
+    const normalizedReturnPath = returnPath || `/payment/order/${order._id}`;
+    const normalizedCancelPath = cancelPath || "/customer-dashboard/orders";
+    const returnUrl = `${frontendOrigin}${normalizedReturnPath}`;
+    const cancelUrl = `${frontendOrigin}${normalizedCancelPath}`;
 
     // Tạo link thanh toán PayOS với QR code cho đơn hàng
     const paymentLink = await payOS.paymentRequests.create({

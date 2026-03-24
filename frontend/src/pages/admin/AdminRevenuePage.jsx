@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Alert, Badge, Button, Card, Col, Row, Table } from "react-bootstrap";
 import AdminLayout from "../../components/admin/AdminLayout";
+import RevenueChart from "../../components/admin/RevenueChart";
+import SummaryCard from "../../components/admin/SummaryCard";
 import { getReportAnalyticsApi } from "../../services/api";
 
 export function meta() {
@@ -153,121 +155,70 @@ export default function AdminRevenuePage() {
 
       <Row className="g-3 mb-4">
         <Col xl={3} md={6}>
-          <Card className="border-0 shadow-sm h-100">
-            <Card.Body>
-              <div className="text-secondary small">Tổng doanh thu</div>
-              <h4 className="fw-bold mt-2 mb-0">{loading ? "..." : formatVND(filteredRevenue)}</h4>
-            </Card.Body>
-          </Card>
+          <SummaryCard label="Tổng doanh thu" value={loading ? "..." : formatVND(filteredRevenue)} />
         </Col>
         <Col xl={3} md={6}>
-          <Card className="border-0 shadow-sm h-100">
-            <Card.Body>
-              <div className="text-secondary small">Doanh thu cọc</div>
-              <h4 className="fw-bold mt-2 mb-0">{loading ? "..." : formatVND(summary.depositRevenue)}</h4>
-            </Card.Body>
-          </Card>
+          <SummaryCard label="Doanh thu cọc" value={loading ? "..." : formatVND(summary.depositRevenue)} />
         </Col>
         <Col xl={3} md={6}>
-          <Card className="border-0 shadow-sm h-100">
-            <Card.Body>
-              <div className="text-secondary small">Doanh thu đơn dịch vụ</div>
-              <h4 className="fw-bold mt-2 mb-0">{loading ? "..." : formatVND(summary.totalOrderRevenue)}</h4>
-            </Card.Body>
-          </Card>
+          <SummaryCard label="Doanh thu đơn dịch vụ" value={loading ? "..." : formatVND(summary.totalOrderRevenue)} />
         </Col>
         <Col xl={3} md={6}>
-          <Card className="border-0 shadow-sm h-100">
-            <Card.Body>
-              <div className="text-secondary small">Tổng booking theo {FILTER_LABEL[timeFilter]}</div>
-              <h4 className="fw-bold mt-2 mb-0">{loading ? "..." : Number(filteredBookings || 0).toLocaleString("vi-VN")}</h4>
-              <div className="text-muted small mt-1">{loading ? "" : `${Number(filteredTransactions || 0).toLocaleString("vi-VN")} giao dịch thành công`}</div>
-            </Card.Body>
-          </Card>
+          <SummaryCard
+            label={`Tổng booking theo ${FILTER_LABEL[timeFilter]}`}
+            value={loading ? "..." : Number(filteredBookings || 0).toLocaleString("vi-VN")}
+            subtitle={loading ? "" : `${Number(filteredTransactions || 0).toLocaleString("vi-VN")} giao dịch thành công`}
+          />
         </Col>
       </Row>
 
       <Row className="g-3 mb-3">
         <Col lg={7}>
-          <Card className="border-0 shadow-sm h-100">
-            <Card.Header className="bg-white border-bottom">
-              <h5 className="mb-0 fw-bold">Doanh thu theo kỳ</h5>
-            </Card.Header>
-            <Card.Body className="p-0">
-              <Table responsive className="mb-0 align-middle">
-                <thead>
-                  <tr>
-                    <th>Kỳ</th>
-                    <th>Doanh thu</th>
-                    <th>Số giao dịch</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <tr>
-                      <td colSpan={3} className="text-center text-muted py-4">Đang tải...</td>
-                    </tr>
-                  ) : revenueByPeriod.length === 0 ? (
-                    <tr>
-                      <td colSpan={3} className="text-center text-muted py-4">Không có dữ liệu</td>
-                    </tr>
-                  ) : (
-                    revenueByPeriod.map((item) => (
-                      <tr key={item._id}>
-                        <td className="fw-semibold">{item._id}</td>
-                        <td>{formatVND(item.total)}</td>
-                        <td>{Number(item.count || 0).toLocaleString("vi-VN")}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </Table>
-            </Card.Body>
-          </Card>
+          <RevenueChart
+            title="Doanh thu theo kỳ"
+            columns={[
+              { key: "period", header: "Kỳ" },
+              { key: "total", header: "Doanh thu" },
+              { key: "count", header: "Số giao dịch" },
+            ]}
+            data={revenueByPeriod}
+            loading={loading}
+            emptyText="Không có dữ liệu"
+            renderCell={(col, row) => {
+              if (col.key === "period") return <span className="fw-semibold">{row._id}</span>;
+              if (col.key === "total") return formatVND(row.total);
+              if (col.key === "count") return Number(row.count || 0).toLocaleString("vi-VN");
+              return null;
+            }}
+          />
         </Col>
 
         <Col lg={5}>
-          <Card className="border-0 shadow-sm h-100">
-            <Card.Header className="bg-white border-bottom">
-              <h5 className="mb-0 fw-bold">Thanh toán gần đây</h5>
-            </Card.Header>
-            <Card.Body className="p-0">
-              <Table responsive className="mb-0 align-middle">
-                <thead>
-                  <tr>
-                    <th>Thời gian</th>
-                    <th>Hình thức</th>
-                    <th>Số tiền</th>
-                    <th>Trạng thái</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <tr>
-                      <td colSpan={4} className="text-center text-muted py-4">Đang tải...</td>
-                    </tr>
-                  ) : recentPayments.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="text-center text-muted py-4">Không có dữ liệu</td>
-                    </tr>
-                  ) : (
-                    recentPayments.map((row) => (
-                      <tr key={String(row.id)}>
-                        <td>{formatShortDate(row.paidAt)}</td>
-                        <td>{row.method || "-"}</td>
-                        <td>{formatVND(row.amount)}</td>
-                        <td>
-                          <Badge bg={row.status === "Success" ? "success" : row.status === "Failed" ? "danger" : "secondary"}>
-                            {STATUS_LABEL[row.status] || row.status || "-"}
-                          </Badge>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </Table>
-            </Card.Body>
-          </Card>
+          <RevenueChart
+            title="Thanh toán gần đây"
+            columns={[
+              { key: "paidAt", header: "Thời gian" },
+              { key: "method", header: "Hình thức" },
+              { key: "amount", header: "Số tiền" },
+              { key: "status", header: "Trạng thái" },
+            ]}
+            data={recentPayments}
+            loading={loading}
+            emptyText="Không có dữ liệu"
+            renderCell={(col, row) => {
+              if (col.key === "paidAt") return formatShortDate(row.paidAt);
+              if (col.key === "method") return row.method || "-";
+              if (col.key === "amount") return formatVND(row.amount);
+              if (col.key === "status") {
+                return (
+                  <Badge bg={row.status === "Success" ? "success" : row.status === "Failed" ? "danger" : "secondary"}>
+                    {STATUS_LABEL[row.status] || row.status || "-"}
+                  </Badge>
+                );
+              }
+              return null;
+            }}
+          />
         </Col>
       </Row>
 

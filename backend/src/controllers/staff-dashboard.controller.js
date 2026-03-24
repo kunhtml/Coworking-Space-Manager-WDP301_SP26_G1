@@ -7,7 +7,19 @@ import TableType from "../models/tableType.js";
 import MenuItem from "../models/menu_item.js";
 import User from "../models/user.js";
 import Invoice from "../models/invoice.js";
-import { createCounterOrderPayment } from "../services/payos.service.js";
+import Payment from "../models/payment.js";
+import {
+  createOrReuseOrderPayOSPayment,
+  isPayOSConfigured,
+} from "../services/payos.service.js";
+import {
+  ORDER_STATUS,
+  canTransitionOrderStatus,
+  normalizeOrderStatus,
+  normalizePaymentMethod,
+  PAYMENT_METHOD,
+  PAYMENT_METHOD_VALUES,
+} from "../constants/domain.js";
 
 const STAFF_TABLE_STATUSES = new Set([
   "Available",
@@ -16,9 +28,48 @@ const STAFF_TABLE_STATUSES = new Set([
   "Maintenance",
   "Cleaning",
 ]);
+const COUNTER_BOOKING_BLOCKED_STATUSES = new Set([
+  "Cancelled",
+  "Canceled",
+  "Completed",
+]);
 
 function isValidObjectId(id) {
   return mongoose.Types.ObjectId.isValid(String(id || ""));
+}
+
+function resolveFrontendOrigin(req) {
+  return (
+    req.get("origin") ||
+    process.env.FRONTEND_URL ||
+    "http://localhost:5173"
+  );
+}
+
+async function recalculateInvoice(invoice) {
+  const successPayments = await Payment.find({
+    invoiceId: invoice._id,
+    paymentStatus: "Success",
+  }).lean();
+
+  const totalPaid = successPayments.reduce(
+    (sum, payment) => sum + Math.round(Number(payment.amount || 0)),
+    0,
+  );
+
+  invoice.remainingAmount = Math.max(
+    0,
+    Math.round(Number(invoice.totalAmount || 0) - totalPaid),
+  );
+  invoice.status =
+    invoice.remainingAmount <= 0
+      ? "Paid"
+      : totalPaid > 0
+        ? "Partially_Paid"
+        : "Pending";
+
+  await invoice.save();
+  return invoice;
 }
 
 function normalizeOrderRows(orders, orderItems, menuMap, bookingMap, tableMap, userMap) {
@@ -53,7 +104,7 @@ function normalizeOrderRows(orders, orderItems, menuMap, bookingMap, tableMap, u
       tableName: table?.name || "Khong xac dinh",
       customerName: booking?.guestInfo?.name || user?.fullName || "Khach le",
       customerPhone: booking?.guestInfo?.phone || user?.phone || "",
-      status: o.status || "Pending",
+      status: normalizeOrderStatus(o.status),
       totalAmount: Number(o.totalAmount || 0),
       createdAt: o.createdAt,
       items: itemMap.get(o._id.toString()) || [],
@@ -176,7 +227,7 @@ export const getStaffOrders = async (req, res) => {
     const orderFilter = {};
 
     if (status && status !== "all") {
-      orderFilter.status = status;
+      orderFilter.status = normalizeOrderStatus(status);
     }
 
     if (date) {
@@ -250,57 +301,25 @@ export const createCounterOrder = async (req, res) => {
       customerName,
       customerPhone,
       durationHours,
+      paymentMethod,
     } = req.body;
 
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: "Vui lòng chọn ít nhất 1 món." });
     }
 
-    let booking = null;
-    if (bookingId) {
-      if (!isValidObjectId(bookingId)) {
-        return res.status(400).json({ message: "bookingId không hợp lệ." });
-      }
-      booking = await Booking.findById(bookingId);
-      if (!booking) {
-        return res.status(404).json({ message: "Không tìm thấy booking." });
-      }
-    } else {
-      if (!tableId || !isValidObjectId(tableId)) {
-        return res.status(400).json({ message: "Vui lòng chọn tableId hợp lệ cho counter order." });
-      }
+    const normalizedMethod = paymentMethod
+      ? normalizePaymentMethod(paymentMethod)
+      : null;
 
-      const table = await Table.findById(tableId).lean();
-      if (!table) {
-        return res.status(404).json({ message: "Không tìm thấy bàn." });
-      }
-
-      const start = new Date();
-      const hrs = Math.max(1, Number(durationHours || 2));
-      const end = new Date(start.getTime() + hrs * 3600000);
-      const bookingCode = `WALK-${Date.now().toString().slice(-6)}`;
-
-      // Calculate deposit based on table price and duration
-      const pricePerHour = Number(table.pricePerHour || 0);
-      if (pricePerHour === 0) {
-        return res.status(400).json({ message: "Bàn chưa có giá. Vui lòng cập nhật giá bàn trước." });
-      }
-      const depositAmount = Math.round(pricePerHour * hrs);
-
-      booking = await Booking.create({
-        bookingCode,
-        tableId: table._id,
-        startTime: start,
-        endTime: end,
-        status: "CheckedIn",
-        depositAmount,
-        guestInfo: {
-          name: customerName || "Khách lẻ",
-          phone: customerPhone || "",
-        },
+    if (normalizedMethod && !PAYMENT_METHOD_VALUES.includes(normalizedMethod)) {
+      return res.status(400).json({
+        message: "Phương thức thanh toán chỉ hỗ trợ CASH hoặc QR_PAYOS.",
       });
+    }
 
-      await Table.findByIdAndUpdate(table._id, { status: "Occupied" });
+    if (normalizedMethod === PAYMENT_METHOD.QR_PAYOS && !isPayOSConfigured()) {
+      return res.status(400).json({ message: "PayOS chưa được cấu hình." });
     }
 
     const menuIds = [...new Set(items.map((i) => i.menuItemId).filter(Boolean))];
@@ -330,10 +349,109 @@ export const createCounterOrder = async (req, res) => {
       0,
     );
 
-    const order = await Order.create({
-      userId: booking.userId || req.user.id,
-      bookingId: booking._id,
-      status: "Pending",
+    let booking = null;
+    let table = null;
+    let invoice = null;
+    let order;
+    let payment = null;
+    let paymentResult = null;
+    let bookingAmount = 0;
+
+    if (bookingId) {
+      if (!isValidObjectId(bookingId)) {
+        return res.status(400).json({ message: "bookingId không hợp lệ." });
+      }
+
+      booking = await Booking.findById(bookingId);
+      if (!booking) {
+        return res.status(404).json({ message: "Không tìm thấy booking." });
+      }
+      if (COUNTER_BOOKING_BLOCKED_STATUSES.has(String(booking.status || ""))) {
+        return res.status(400).json({
+          message: "Booking đã hủy hoặc hoàn tất, không thể tạo đơn tại quầy.",
+        });
+      }
+
+      table = booking.tableId ? await Table.findById(booking.tableId).lean() : null;
+      bookingAmount = Math.round(Number(booking.depositAmount || 0));
+      invoice = await Invoice.findOne({ bookingId: booking._id });
+      if (!invoice) {
+        invoice = await Invoice.create({
+          bookingId: booking._id,
+          orderIds: [],
+          totalAmount: bookingAmount,
+          remainingAmount: bookingAmount,
+          status: bookingAmount > 0 ? "Pending" : "Paid",
+        });
+      }
+    } else {
+      if (!tableId || !isValidObjectId(tableId)) {
+        return res.status(400).json({ message: "tableId không hợp lệ." });
+      }
+
+      table = await Table.findById(tableId).lean();
+      if (!table) {
+        return res.status(404).json({ message: "Không tìm thấy bàn." });
+      }
+      if (String(table.status || "") === "Maintenance") {
+        return res.status(400).json({
+          message: "Bàn đang bảo trì, không thể tạo đơn tại quầy.",
+        });
+      }
+
+      const effectiveDuration = Math.max(1, Number(durationHours || 1));
+      const startTime = new Date();
+      const endTime = new Date(
+        startTime.getTime() + effectiveDuration * 3600000,
+      );
+
+      const overlapping = await Booking.find({
+        tableId: table._id,
+        status: { $nin: ["Cancelled", "Canceled", "Completed"] },
+        startTime: { $lt: endTime },
+        endTime: { $gt: startTime },
+      }).lean();
+
+      if (overlapping.length > 0) {
+        return res.status(409).json({
+          message: "Bàn đang có khách hoặc đã được đặt trong khung giờ này.",
+        });
+      }
+
+      const count = await Booking.countDocuments();
+      bookingAmount = Math.round(
+        Number(table.pricePerHour || 0) * effectiveDuration,
+      );
+
+      booking = await Booking.create({
+        bookingCode: `BK-${String(count + 1).padStart(4, "0")}`,
+        userId: null,
+        tableId: table._id,
+        startTime,
+        endTime,
+        status: "CheckedIn",
+        depositAmount: bookingAmount,
+        guestInfo: {
+          name: customerName?.trim() || "Khách lẻ",
+          phone: customerPhone?.trim() || "",
+        },
+      });
+
+      await Table.findByIdAndUpdate(table._id, { status: "Occupied" });
+
+      invoice = await Invoice.create({
+        bookingId: booking._id,
+        orderIds: [],
+        totalAmount: bookingAmount,
+        remainingAmount: bookingAmount,
+        status: bookingAmount > 0 ? "Pending" : "Paid",
+      });
+    }
+
+    order = await Order.create({
+      userId: booking?.userId || null,
+      bookingId: booking?._id || null,
+      status: ORDER_STATUS.PENDING,
       totalAmount,
     });
 
@@ -347,46 +465,107 @@ export const createCounterOrder = async (req, res) => {
       })),
     );
 
-    // Create combined invoice for booking + order
-    const bookingAmount = Math.round(Number(booking.depositAmount || 0));
-    const orderAmount = Math.round(Number(order.totalAmount || 0));
-    const combinedTotal = bookingAmount + orderAmount;
+    invoice.orderIds = [...new Set([...(invoice.orderIds || []), order._id])];
+    invoice.totalAmount = Math.round(Number(invoice.totalAmount || 0) + totalAmount);
+    await recalculateInvoice(invoice);
 
-    const invoice = await Invoice.create({
-      bookingId: booking._id,
-      orderIds: [order._id],
-      totalAmount: combinedTotal,
-      remainingAmount: combinedTotal,
-      status: combinedTotal > 0 ? "Pending" : "Paid",
-    });
+    if (normalizedMethod === PAYMENT_METHOD.CASH) {
+      const amountToPay = Math.max(
+        0,
+        Math.round(
+          Number(
+            invoice.remainingAmount ??
+              invoice.totalAmount ??
+              order.totalAmount ??
+              0,
+          ),
+        ),
+      );
 
-    // Create payment link
-    const origin = req.get("origin") || `http://localhost:${process.env.PORT || 5000}`;
-    const paymentResult = await createCounterOrderPayment({
-      booking,
-      order,
-      invoice,
-      buyer: {
-        name: customerName || "Khách lẻ",
-        phone: customerPhone || "",
-      },
-      origin,
-    });
+      payment = await Payment.create({
+        invoiceId: invoice._id,
+        bookingId: booking?._id || null,
+        paymentMethod: normalizedMethod,
+        transactionId: `COUNTER_${normalizedMethod}_${Date.now()}`,
+        amount: amountToPay,
+        type: "Payment",
+        paymentStatus: "Success",
+        paidAt: new Date(),
+      });
+
+      invoice.remainingAmount = 0;
+      invoice.status = "Paid";
+      await invoice.save();
+
+      order.status = ORDER_STATUS.CONFIRMED;
+      await order.save();
+
+      if (
+        booking &&
+        ["Pending", "Awaiting_Payment", "Confirmed"].includes(
+          String(booking.status || ""),
+        )
+      ) {
+        booking.status = "Confirmed";
+        await booking.save();
+      }
+    }
+
+    if (normalizedMethod === PAYMENT_METHOD.QR_PAYOS) {
+      try {
+        const origin = resolveFrontendOrigin(req);
+      const payosOrderResult = await createOrReuseOrderPayOSPayment({
+        order,
+        buyer: {
+          fullName:
+            booking?.guestInfo?.name ||
+            customerName?.trim() ||
+            "Khách lẻ",
+          phone:
+            booking?.guestInfo?.phone ||
+            customerPhone?.trim() ||
+            "",
+          email: booking?.guestInfo?.email || undefined,
+        },
+        origin,
+        returnPath: "/staff-dashboard/orders?payment=success",
+        cancelPath: "/staff-dashboard/orders?payment=cancelled",
+      });
+
+        paymentResult = {
+        created: !payosOrderResult?.reused,
+        reused: Boolean(payosOrderResult?.reused),
+        payment: payosOrderResult?.payment || null,
+        checkoutUrl: payosOrderResult?.payment?.payos?.checkoutUrl || null,
+        qrCode: payosOrderResult?.payment?.payos?.qrCode || null,
+        };
+      } catch (payosError) {
+        return res.status(502).json({
+          message:
+            payosError?.message ||
+            "KhÃ´ng táº¡o Ä‘Æ°á»£c giao dá»‹ch PayOS cho counter order.",
+        });
+      }
+    }
 
     res.status(201).json({
       message: "Tạo counter order thành công.",
-      bookingId: booking._id,
+      bookingId: booking?._id || null,
+      bookingCode: booking?.bookingCode || null,
       orderId: order._id,
       orderCode: `#${String(order._id).slice(-6).toUpperCase()}`,
       invoiceId: invoice._id,
+      method: normalizedMethod || null,
       payment: paymentResult,
+      paymentRecordId: payment?._id || null,
       bookingAmount,
-      orderAmount,
-      totalAmount: combinedTotal,
+      orderAmount: Math.round(Number(order.totalAmount || 0)),
+      totalAmount: Math.round(Number(invoice.totalAmount || 0)),
+      remainingAmount: Math.round(Number(invoice.remainingAmount || 0)),
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Lỗi server." });
+    res.status(500).json({ message: err.message || "Lỗi server." });
   }
 };
 
@@ -404,7 +583,14 @@ export const updateStaffOrder = async (req, res) => {
 
     let touched = false;
     if (typeof status === "string" && status.trim()) {
-      order.status = status.trim();
+      const nextStatus = normalizeOrderStatus(status);
+      const currentStatus = normalizeOrderStatus(order.status);
+      if (!canTransitionOrderStatus(currentStatus, nextStatus)) {
+        return res.status(400).json({
+          message: `Không thể chuyển trạng thái từ ${currentStatus} sang ${nextStatus}.`,
+        });
+      }
+      order.status = nextStatus;
       touched = true;
     }
 
@@ -442,10 +628,35 @@ export const updateStaffOrder = async (req, res) => {
         })),
       );
 
+      const oldTotalAmount = Number(order.totalAmount || 0);
       order.totalAmount = normalized.reduce(
         (sum, i) => sum + Number(i.quantity) * Number(i.priceAtOrder),
         0,
       );
+
+      const invoice = await Invoice.findOne({ orderIds: order._id });
+      if (invoice) {
+        const totalDiff = Math.round(Number(order.totalAmount || 0) - oldTotalAmount);
+        invoice.totalAmount = Math.round(Number(invoice.totalAmount || 0) + totalDiff);
+
+        const successPayments = await Payment.find({
+          invoiceId: invoice._id,
+          paymentStatus: "Success",
+        }).lean();
+        const totalPaid = successPayments.reduce(
+          (s, p) => s + Math.round(Number(p.amount || 0)),
+          0,
+        );
+        invoice.remainingAmount = Math.max(0, invoice.totalAmount - totalPaid);
+        invoice.status =
+          invoice.remainingAmount <= 0
+            ? "Paid"
+            : totalPaid > 0
+              ? "Partially_Paid"
+              : "Pending";
+        await invoice.save();
+      }
+
       touched = true;
     }
 
@@ -459,7 +670,7 @@ export const updateStaffOrder = async (req, res) => {
       message: "Cập nhật đơn hàng thành công.",
       order: {
         id: order._id,
-        status: order.status,
+        status: normalizeOrderStatus(order.status),
         totalAmount: Number(order.totalAmount || 0),
       },
     });
@@ -473,9 +684,10 @@ async function buildStaffInvoicePayload(orderId) {
   const order = await Order.findById(orderId).lean();
   if (!order) return null;
 
-  const [booking, items] = await Promise.all([
+  const [booking, items, invoice] = await Promise.all([
     order.bookingId ? Booking.findById(order.bookingId).lean() : null,
     OrderItem.find({ orderId: order._id }).lean(),
+    Invoice.findOne({ orderIds: order._id }).lean(),
   ]);
 
   const [table, user] = await Promise.all([
@@ -502,8 +714,12 @@ async function buildStaffInvoicePayload(orderId) {
   });
 
   const subTotal = orderLines.reduce((sum, x) => sum + x.lineTotal, 0);
-  const depositAmount = Number(booking?.depositAmount || 0);
-  const totalAmount = subTotal + depositAmount;
+  const depositAmount =
+    invoice?.bookingId && booking ? Number(booking.depositAmount || 0) : 0;
+  const totalAmount = Number(invoice?.totalAmount ?? subTotal + depositAmount);
+  const remainingAmount = Number(
+    invoice?.remainingAmount ?? Math.max(totalAmount, 0),
+  );
 
   return {
     invoiceCode: `INV-${String(order._id).slice(-6).toUpperCase()}`,
@@ -511,7 +727,7 @@ async function buildStaffInvoicePayload(orderId) {
     order: {
       id: order._id,
       orderCode: `#${String(order._id).slice(-6).toUpperCase()}`,
-      status: order.status || "Pending",
+      status: normalizeOrderStatus(order.status),
       createdAt: order.createdAt,
       totalAmount: Number(order.totalAmount || 0),
     },
@@ -542,6 +758,7 @@ async function buildStaffInvoicePayload(orderId) {
       subTotal,
       depositAmount,
       totalAmount,
+      remainingAmount,
     },
   };
 }
@@ -648,9 +865,17 @@ export const getStaffDashboardStats = async (req, res) => {
       oimMap.set(key, (oimMap.get(key) || 0) + 1);
     }
 
-    const statusCounts = { Pending: 0, Confirmed: 0, Completed: 0, Cancelled: 0 };
+    const statusCounts = {
+      [ORDER_STATUS.PENDING]: 0,
+      [ORDER_STATUS.CONFIRMED]: 0,
+      [ORDER_STATUS.PREPARING]: 0,
+      [ORDER_STATUS.SERVED]: 0,
+      [ORDER_STATUS.COMPLETED]: 0,
+      [ORDER_STATUS.CANCELLED]: 0,
+    };
     for (const o of todayOrders) {
-      if (statusCounts[o.status] !== undefined) statusCounts[o.status]++;
+      const key = normalizeOrderStatus(o.status);
+      if (statusCounts[key] !== undefined) statusCounts[key]++;
     }
 
     const activity = recentOrders.map((o) => {
@@ -662,7 +887,7 @@ export const getStaffDashboardStats = async (req, res) => {
         orderCode:    `#${String(o._id).slice(-6).toUpperCase()}`,
         customerName: bk?.guestInfo?.name || usr?.fullName || "Khách lẻ",
         tableName:    tb?.name || "Walk-in",
-        status:       o.status || "Pending",
+        status:       normalizeOrderStatus(o.status),
         totalAmount:  Number(o.totalAmount || 0),
         itemCount:    oimMap.get(o._id.toString()) || 0,
         createdAt:    o.createdAt,
