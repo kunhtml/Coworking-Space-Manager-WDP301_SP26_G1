@@ -1,17 +1,28 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/user.js";
-import { sendOtpEmail } from "../services/email.service.js";
+import { sendOtpEmail, sendWelcomeEmail } from "../services/email.service.js";
 
 const OTP_TTL_MS = 5 * 60 * 1000;
 const OTP_SESSION_TTL_MS = 10 * 60 * 1000;
-const otpCache = new Map();
-const otpVerifiedCache = new Map();
+const userOtpCache = new Map();
+const userOtpVerifiedCache = new Map();
+const emailOtpCache = new Map();
+const emailOtpVerifiedCache = new Map();
 
 const OTP_PURPOSE = {
   UPDATE_PROFILE: "UPDATE_PROFILE",
   CHANGE_PASSWORD: "CHANGE_PASSWORD",
+  REGISTER: "REGISTER",
+  FORGOT_PASSWORD: "FORGOT_PASSWORD",
 };
+
+const AUTHENTICATED_OTP_PURPOSES = [
+  OTP_PURPOSE.UPDATE_PROFILE,
+  OTP_PURPOSE.CHANGE_PASSWORD,
+];
+
+const PUBLIC_OTP_PURPOSES = [OTP_PURPOSE.REGISTER, OTP_PURPOSE.FORGOT_PASSWORD];
 
 function requireJwtSecret() {
   if (!process.env.JWT_SECRET) {
@@ -23,17 +34,31 @@ function makeOtpKey(userId, purpose) {
   return `${String(userId)}:${String(purpose)}`;
 }
 
+function makeEmailOtpKey(email, purpose) {
+  return `${String(email).trim().toLowerCase()}:${String(purpose)}`;
+}
+
 function generateOtpCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
 function ensureOtpVerified(userId, purpose) {
   const key = makeOtpKey(userId, purpose);
-  const verified = otpVerifiedCache.get(key);
+  const verified = userOtpVerifiedCache.get(key);
   if (!verified || verified.expiresAt < Date.now()) {
     return false;
   }
-  otpVerifiedCache.delete(key);
+  userOtpVerifiedCache.delete(key);
+  return true;
+}
+
+function consumeEmailOtpVerified(email, purpose) {
+  const key = makeEmailOtpKey(email, purpose);
+  const verified = emailOtpVerifiedCache.get(key);
+  if (!verified || verified.expiresAt < Date.now()) {
+    return false;
+  }
+  emailOtpVerifiedCache.delete(key);
   return true;
 }
 
@@ -148,9 +173,16 @@ export const register = async (req, res) => {
         .json({ message: "Mật khẩu phải có ít nhất 6 ký tự." });
     }
 
+    const normalizedEmail = email.toLowerCase().trim();
+    if (!consumeEmailOtpVerified(normalizedEmail, OTP_PURPOSE.REGISTER)) {
+      return res.status(403).json({
+        message: "Vui lòng xác thực OTP email trước khi đăng ký.",
+      });
+    }
+
     // Check if email already exists
     const existingUser = await User.findOne({
-      email: email.toLowerCase().trim(),
+      email: normalizedEmail,
     });
 
     if (existingUser) {
@@ -163,7 +195,7 @@ export const register = async (req, res) => {
     // Create new user
     const newUser = new User({
       fullName: fullName?.trim() || "Người dùng mới",
-      email: email.toLowerCase().trim(),
+      email: normalizedEmail,
       phone: phone?.trim() || null,
       passwordHash: hashedPassword,
       role,
@@ -171,6 +203,11 @@ export const register = async (req, res) => {
     });
 
     await newUser.save();
+
+    await sendWelcomeEmail({
+      to: newUser.email,
+      fullName: newUser.fullName,
+    });
 
     // Generate JWT token
     const token = jwt.sign(
@@ -279,7 +316,11 @@ export const updateProfile = async (req, res) => {
 
 export const changePassword = async (req, res) => {
   try {
-    ensureOtpVerified(req.user.id, OTP_PURPOSE.CHANGE_PASSWORD);
+    if (!ensureOtpVerified(req.user.id, OTP_PURPOSE.CHANGE_PASSWORD)) {
+      return res.status(403).json({
+        message: "Vui lòng xác thực OTP trước khi đổi mật khẩu.",
+      });
+    }
 
     const { currentPassword, newPassword, confirmPassword } = req.body;
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -312,7 +353,7 @@ export const sendOtp = async (req, res) => {
     const { purpose } = req.body;
     const normalizedPurpose = String(purpose || "").trim().toUpperCase();
 
-    if (!Object.values(OTP_PURPOSE).includes(normalizedPurpose)) {
+    if (!AUTHENTICATED_OTP_PURPOSES.includes(normalizedPurpose)) {
       return res.status(400).json({ message: "purpose không hợp lệ." });
     }
 
@@ -324,7 +365,7 @@ export const sendOtp = async (req, res) => {
     const otpCode = generateOtpCode();
     const key = makeOtpKey(req.user.id, normalizedPurpose);
 
-    otpCache.set(key, {
+    userOtpCache.set(key, {
       code: otpCode,
       expiresAt: Date.now() + OTP_TTL_MS,
     });
@@ -351,7 +392,7 @@ export const verifyOtp = async (req, res) => {
     const normalizedPurpose = String(purpose || "").trim().toUpperCase();
     const code = String(otp || "").trim();
 
-    if (!Object.values(OTP_PURPOSE).includes(normalizedPurpose)) {
+    if (!AUTHENTICATED_OTP_PURPOSES.includes(normalizedPurpose)) {
       return res.status(400).json({ message: "purpose không hợp lệ." });
     }
     if (!/^\d{6}$/.test(code)) {
@@ -359,9 +400,9 @@ export const verifyOtp = async (req, res) => {
     }
 
     const key = makeOtpKey(req.user.id, normalizedPurpose);
-    const current = otpCache.get(key);
+    const current = userOtpCache.get(key);
     if (!current || current.expiresAt < Date.now()) {
-      otpCache.delete(key);
+      userOtpCache.delete(key);
       return res.status(400).json({ message: "OTP đã hết hạn hoặc chưa được tạo." });
     }
 
@@ -369,8 +410,8 @@ export const verifyOtp = async (req, res) => {
       return res.status(400).json({ message: "OTP không chính xác." });
     }
 
-    otpCache.delete(key);
-    otpVerifiedCache.set(key, {
+    userOtpCache.delete(key);
+    userOtpVerifiedCache.set(key, {
       expiresAt: Date.now() + OTP_SESSION_TTL_MS,
     });
 
@@ -381,6 +422,184 @@ export const verifyOtp = async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Lỗi xác thực OTP." });
+  }
+};
+
+export const sendRegisterOtp = async (req, res) => {
+  try {
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    if (!email) {
+      return res.status(400).json({ message: "Email là bắt buộc." });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ message: "Email không đúng định dạng." });
+    }
+
+    const existingUser = await User.findOne({ email }).lean();
+    if (existingUser) {
+      return res.status(409).json({ message: "Email này đã được đăng ký." });
+    }
+
+    const otpCode = generateOtpCode();
+    const key = makeEmailOtpKey(email, OTP_PURPOSE.REGISTER);
+    emailOtpCache.set(key, {
+      code: otpCode,
+      expiresAt: Date.now() + OTP_TTL_MS,
+    });
+
+    await sendOtpEmail({
+      to: email,
+      otpCode,
+      purpose: OTP_PURPOSE.REGISTER,
+    });
+
+    return res.json({
+      message: "Đã gửi OTP đăng ký qua email.",
+      expiresInSeconds: Math.floor(OTP_TTL_MS / 1000),
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Lỗi gửi OTP đăng ký." });
+  }
+};
+
+export const verifyRegisterOtp = async (req, res) => {
+  try {
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    const code = String(req.body?.otp || "").trim();
+
+    if (!email || !/^\d{6}$/.test(code)) {
+      return res.status(400).json({ message: "Thông tin OTP không hợp lệ." });
+    }
+
+    const key = makeEmailOtpKey(email, OTP_PURPOSE.REGISTER);
+    const current = emailOtpCache.get(key);
+    if (!current || current.expiresAt < Date.now()) {
+      emailOtpCache.delete(key);
+      return res.status(400).json({ message: "OTP đã hết hạn hoặc chưa được tạo." });
+    }
+    if (current.code !== code) {
+      return res.status(400).json({ message: "OTP không chính xác." });
+    }
+
+    emailOtpCache.delete(key);
+    emailOtpVerifiedCache.set(key, {
+      expiresAt: Date.now() + OTP_SESSION_TTL_MS,
+    });
+
+    return res.json({
+      message: "Xác thực OTP đăng ký thành công.",
+      validForSeconds: Math.floor(OTP_SESSION_TTL_MS / 1000),
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Lỗi xác thực OTP đăng ký." });
+  }
+};
+
+export const sendForgotPasswordOtp = async (req, res) => {
+  try {
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    if (!email) {
+      return res.status(400).json({ message: "Email là bắt buộc." });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ message: "Email không đúng định dạng." });
+    }
+
+    const user = await User.findOne({ email }).lean();
+    if (user) {
+      const otpCode = generateOtpCode();
+      const key = makeEmailOtpKey(email, OTP_PURPOSE.FORGOT_PASSWORD);
+      emailOtpCache.set(key, {
+        code: otpCode,
+        expiresAt: Date.now() + OTP_TTL_MS,
+      });
+
+      await sendOtpEmail({
+        to: email,
+        otpCode,
+        purpose: OTP_PURPOSE.FORGOT_PASSWORD,
+      });
+    }
+
+    return res.json({
+      message: "Nếu email tồn tại, hệ thống đã gửi mã OTP đặt lại mật khẩu.",
+      expiresInSeconds: Math.floor(OTP_TTL_MS / 1000),
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Lỗi gửi OTP quên mật khẩu." });
+  }
+};
+
+export const verifyForgotPasswordOtp = async (req, res) => {
+  try {
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    const code = String(req.body?.otp || "").trim();
+
+    if (!email || !/^\d{6}$/.test(code)) {
+      return res.status(400).json({ message: "Thông tin OTP không hợp lệ." });
+    }
+
+    const key = makeEmailOtpKey(email, OTP_PURPOSE.FORGOT_PASSWORD);
+    const current = emailOtpCache.get(key);
+    if (!current || current.expiresAt < Date.now()) {
+      emailOtpCache.delete(key);
+      return res.status(400).json({ message: "OTP đã hết hạn hoặc chưa được tạo." });
+    }
+    if (current.code !== code) {
+      return res.status(400).json({ message: "OTP không chính xác." });
+    }
+
+    emailOtpCache.delete(key);
+    emailOtpVerifiedCache.set(key, {
+      expiresAt: Date.now() + OTP_SESSION_TTL_MS,
+    });
+
+    return res.json({
+      message: "Xác thực OTP quên mật khẩu thành công.",
+      validForSeconds: Math.floor(OTP_SESSION_TTL_MS / 1000),
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Lỗi xác thực OTP quên mật khẩu." });
+  }
+};
+
+export const resetForgotPassword = async (req, res) => {
+  try {
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    const newPassword = String(req.body?.newPassword || "");
+    const confirmPassword = String(req.body?.confirmPassword || "");
+
+    if (!email || !newPassword || !confirmPassword) {
+      return res.status(400).json({ message: "Vui lòng điền đầy đủ thông tin." });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: "Mật khẩu mới phải có ít nhất 6 ký tự." });
+    }
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ message: "Mật khẩu xác nhận không khớp." });
+    }
+    if (!consumeEmailOtpVerified(email, OTP_PURPOSE.FORGOT_PASSWORD)) {
+      return res.status(403).json({
+        message: "Vui lòng xác thực OTP quên mật khẩu trước khi đặt lại mật khẩu.",
+      });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "Không tìm thấy tài khoản với email này." });
+    }
+
+    user.passwordHash = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    return res.json({ message: "Đặt lại mật khẩu thành công." });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Lỗi đặt lại mật khẩu." });
   }
 };
 
