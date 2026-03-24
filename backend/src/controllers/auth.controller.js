@@ -351,7 +351,9 @@ export const changePassword = async (req, res) => {
 export const sendOtp = async (req, res) => {
   try {
     const { purpose } = req.body;
-    const normalizedPurpose = String(purpose || "").trim().toUpperCase();
+    const normalizedPurpose = String(purpose || "")
+      .trim()
+      .toUpperCase();
 
     if (!AUTHENTICATED_OTP_PURPOSES.includes(normalizedPurpose)) {
       return res.status(400).json({ message: "purpose không hợp lệ." });
@@ -359,7 +361,9 @@ export const sendOtp = async (req, res) => {
 
     const user = await User.findById(req.user.id).lean();
     if (!user?.email) {
-      return res.status(400).json({ message: "Tài khoản chưa có email để gửi OTP." });
+      return res
+        .status(400)
+        .json({ message: "Tài khoản chưa có email để gửi OTP." });
     }
 
     const otpCode = generateOtpCode();
@@ -389,7 +393,9 @@ export const sendOtp = async (req, res) => {
 export const verifyOtp = async (req, res) => {
   try {
     const { purpose, otp } = req.body;
-    const normalizedPurpose = String(purpose || "").trim().toUpperCase();
+    const normalizedPurpose = String(purpose || "")
+      .trim()
+      .toUpperCase();
     const code = String(otp || "").trim();
 
     if (!AUTHENTICATED_OTP_PURPOSES.includes(normalizedPurpose)) {
@@ -403,7 +409,9 @@ export const verifyOtp = async (req, res) => {
     const current = userOtpCache.get(key);
     if (!current || current.expiresAt < Date.now()) {
       userOtpCache.delete(key);
-      return res.status(400).json({ message: "OTP đã hết hạn hoặc chưa được tạo." });
+      return res
+        .status(400)
+        .json({ message: "OTP đã hết hạn hoặc chưa được tạo." });
     }
 
     if (current.code !== code) {
@@ -427,7 +435,9 @@ export const verifyOtp = async (req, res) => {
 
 export const sendRegisterOtp = async (req, res) => {
   try {
-    const email = String(req.body?.email || "").trim().toLowerCase();
+    const email = String(req.body?.email || "")
+      .trim()
+      .toLowerCase();
     if (!email) {
       return res.status(400).json({ message: "Email là bắt buộc." });
     }
@@ -465,7 +475,9 @@ export const sendRegisterOtp = async (req, res) => {
 
 export const verifyRegisterOtp = async (req, res) => {
   try {
-    const email = String(req.body?.email || "").trim().toLowerCase();
+    const email = String(req.body?.email || "")
+      .trim()
+      .toLowerCase();
     const code = String(req.body?.otp || "").trim();
 
     if (!email || !/^\d{6}$/.test(code)) {
@@ -476,7 +488,9 @@ export const verifyRegisterOtp = async (req, res) => {
     const current = emailOtpCache.get(key);
     if (!current || current.expiresAt < Date.now()) {
       emailOtpCache.delete(key);
-      return res.status(400).json({ message: "OTP đã hết hạn hoặc chưa được tạo." });
+      return res
+        .status(400)
+        .json({ message: "OTP đã hết hạn hoặc chưa được tạo." });
     }
     if (current.code !== code) {
       return res.status(400).json({ message: "OTP không chính xác." });
@@ -499,7 +513,9 @@ export const verifyRegisterOtp = async (req, res) => {
 
 export const sendForgotPasswordOtp = async (req, res) => {
   try {
-    const email = String(req.body?.email || "").trim().toLowerCase();
+    const email = String(req.body?.email || "")
+      .trim()
+      .toLowerCase();
     if (!email) {
       return res.status(400).json({ message: "Email là bắt buộc." });
     }
@@ -535,7 +551,9 @@ export const sendForgotPasswordOtp = async (req, res) => {
 
 export const verifyForgotPasswordOtp = async (req, res) => {
   try {
-    const email = String(req.body?.email || "").trim().toLowerCase();
+    const email = String(req.body?.email || "")
+      .trim()
+      .toLowerCase();
     const code = String(req.body?.otp || "").trim();
 
     if (!email || !/^\d{6}$/.test(code)) {
@@ -546,7 +564,9 @@ export const verifyForgotPasswordOtp = async (req, res) => {
     const current = emailOtpCache.get(key);
     if (!current || current.expiresAt < Date.now()) {
       emailOtpCache.delete(key);
-      return res.status(400).json({ message: "OTP đã hết hạn hoặc chưa được tạo." });
+      return res
+        .status(400)
+        .json({ message: "OTP đã hết hạn hoặc chưa được tạo." });
     }
     if (current.code !== code) {
       return res.status(400).json({ message: "OTP không chính xác." });
@@ -569,28 +589,37 @@ export const verifyForgotPasswordOtp = async (req, res) => {
 
 export const resetForgotPassword = async (req, res) => {
   try {
-    const email = String(req.body?.email || "").trim().toLowerCase();
+    const email = String(req.body?.email || "")
+      .trim()
+      .toLowerCase();
     const newPassword = String(req.body?.newPassword || "");
     const confirmPassword = String(req.body?.confirmPassword || "");
 
     if (!email || !newPassword || !confirmPassword) {
-      return res.status(400).json({ message: "Vui lòng điền đầy đủ thông tin." });
+      return res
+        .status(400)
+        .json({ message: "Vui lòng điền đầy đủ thông tin." });
     }
     if (newPassword.length < 6) {
-      return res.status(400).json({ message: "Mật khẩu mới phải có ít nhất 6 ký tự." });
+      return res
+        .status(400)
+        .json({ message: "Mật khẩu mới phải có ít nhất 6 ký tự." });
     }
     if (newPassword !== confirmPassword) {
       return res.status(400).json({ message: "Mật khẩu xác nhận không khớp." });
     }
     if (!consumeEmailOtpVerified(email, OTP_PURPOSE.FORGOT_PASSWORD)) {
       return res.status(403).json({
-        message: "Vui lòng xác thực OTP quên mật khẩu trước khi đặt lại mật khẩu.",
+        message:
+          "Vui lòng xác thực OTP quên mật khẩu trước khi đặt lại mật khẩu.",
       });
     }
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ message: "Không tìm thấy tài khoản với email này." });
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy tài khoản với email này." });
     }
 
     user.passwordHash = await bcrypt.hash(newPassword, 10);

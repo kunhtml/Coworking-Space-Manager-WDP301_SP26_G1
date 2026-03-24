@@ -40,7 +40,9 @@ export const MENU_AVAILABILITY_VALUES = Object.values(MENU_AVAILABILITY);
 // Chuẩn hóa trạng thái đơn hàng đầu vào về chuẩn nội bộ
 // Hỗ trợ map các giá trị cũ/đồng nghĩa như NEW, PAID, CANCELED
 export function normalizeOrderStatus(rawStatus) {
-  const status = String(rawStatus || "").trim().toUpperCase();
+  const status = String(rawStatus || "")
+    .trim()
+    .toUpperCase();
   if (!status) return ORDER_STATUS.PENDING;
 
   if (status === "NEW") return ORDER_STATUS.PENDING;
@@ -63,7 +65,9 @@ export function canTransitionOrderStatus(fromStatus, toStatus) {
 // Chuẩn hóa phương thức thanh toán đầu vào
 // QR/PAYOS sẽ được quy về QR_PAYOS
 export function normalizePaymentMethod(rawMethod) {
-  const method = String(rawMethod || "").trim().toUpperCase();
+  const method = String(rawMethod || "")
+    .trim()
+    .toUpperCase();
   if (!method) return PAYMENT_METHOD.CASH;
   if (method === "QR") return PAYMENT_METHOD.QR_PAYOS;
   if (method === "PAYOS") return PAYMENT_METHOD.QR_PAYOS;
@@ -73,7 +77,9 @@ export function normalizePaymentMethod(rawMethod) {
 // Chuẩn hóa trạng thái còn hàng dựa trên rawStatus và số lượng tồn kho
 // Nếu qty <= 0 thì luôn OUT_OF_STOCK, ngược lại AVAILABLE
 export function normalizeMenuAvailability(rawStatus, stockQuantity = 0) {
-  const status = String(rawStatus || "").trim().toUpperCase();
+  const status = String(rawStatus || "")
+    .trim()
+    .toUpperCase();
   const qty = Number(stockQuantity || 0);
 
   if (status === MENU_AVAILABILITY.OUT_OF_STOCK) {
@@ -86,7 +92,5 @@ export function normalizeMenuAvailability(rawStatus, stockQuantity = 0) {
       : MENU_AVAILABILITY.OUT_OF_STOCK;
   }
 
-  return qty > 0
-    ? MENU_AVAILABILITY.AVAILABLE
-    : MENU_AVAILABILITY.OUT_OF_STOCK;
+  return qty > 0 ? MENU_AVAILABILITY.AVAILABLE : MENU_AVAILABILITY.OUT_OF_STOCK;
 }
