@@ -165,9 +165,8 @@ export const updateMenuItem = async (req, res) => {
         stockQuantity: qty,
         availabilityStatus: resolvedStatus,
       },
-      { new: true },
+      { returnDocument: "after" },
     )
-      .populate("categoryId", "name")
       .lean();
 
 
@@ -245,7 +244,7 @@ export const updateCategory = async (req, res) => {
         description: description?.trim() || "",
         isActive: isActive !== false,
       },
-      { new: true }
+      { returnDocument: "after" }
     ).lean();
 
     if (!updated) return res.status(404).json({ message: "Không tìm thấy danh mục." });

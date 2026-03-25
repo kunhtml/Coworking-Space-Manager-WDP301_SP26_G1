@@ -296,7 +296,7 @@ export const updateProfile = async (req, res) => {
         email: emailLower,
         phone: phone?.trim() || "",
       },
-      { new: true },
+      { returnDocument: "after" },
     ).lean();
     res.json({
       id: updated._id,

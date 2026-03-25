@@ -5,7 +5,7 @@ import Booking from "../models/booking.js";
 import Order from "../models/order.js";
 import Payment from "../models/payment.js";
 import Invoice from "../models/invoice.js";
-import { PAYMENT_METHOD } from "../constants/domain.js";
+import { ORDER_STATUS, PAYMENT_METHOD } from "../constants/domain.js";
 
 const PAYOS_PAYMENT_METHOD = PAYMENT_METHOD.QR_PAYOS;
 const PAYOS_PENDING_STATUSES = new Set(["PENDING", "PROCESSING", "UNDERPAID"]);
@@ -216,21 +216,21 @@ export async function createOrReusePayOSPayment({ booking, buyer, origin }) {
   try {
     // Tạo link thanh toán PayOS với QR code cho khách đặt cọc
     const paymentLink = await payOS.paymentRequests.create({
-      orderCode,      // Mã đơn hàng duy nhất
-      amount,         // Số tiền đặt cọc
-      description,    // Mô tả thanh toán
-      returnUrl,      // URL sau khi thanh toán thành công
-      cancelUrl,      // URL sau khi hủy thanh toán
-      expiredAt: Math.floor(Date.now() / 1000) + 15 * 60,  // Hết hạn sau 15 phút
+      orderCode, // Mã đơn hàng duy nhất
+      amount, // Số tiền đặt cọc
+      description, // Mô tả thanh toán
+      returnUrl, // URL sau khi thanh toán thành công
+      cancelUrl, // URL sau khi hủy thanh toán
+      expiredAt: Math.floor(Date.now() / 1000) + 15 * 60, // Hết hạn sau 15 phút
       buyerName: buyer?.fullName || booking?.guestInfo?.name || "Khách hàng",
       buyerEmail: buyer?.email || booking?.guestInfo?.email,
       buyerPhone: buyer?.phone || booking?.guestInfo?.phone,
       // Danh sách mặt hàng hiển thị trên QR code và trang thanh toán
       items: [
         {
-          name: `Dat coc ${booking.bookingCode || booking._id}`.slice(0, 25),  // Tên mặt hàng (tối đa 25 ký tự)
-          quantity: 1,                                                           // Số lượng
-          price: amount,                                                         // Giá tiền đặt cọc
+          name: `Dat coc ${booking.bookingCode || booking._id}`.slice(0, 25), // Tên mặt hàng (tối đa 25 ký tự)
+          quantity: 1, // Số lượng
+          price: amount, // Giá tiền đặt cọc
         },
       ],
     });
@@ -238,22 +238,22 @@ export async function createOrReusePayOSPayment({ booking, buyer, origin }) {
     const now = new Date();
     // Lưu thông tin thanh toán vào database
     const payment = await Payment.create({
-      invoiceId: invoice._id,           // ID hóa đơn
-      bookingId: booking._id,           // ID booking
-      paymentMethod: PAYOS_PAYMENT_METHOD,  // Phương thức: PayOS
+      invoiceId: invoice._id, // ID hóa đơn
+      bookingId: booking._id, // ID booking
+      paymentMethod: PAYOS_PAYMENT_METHOD, // Phương thức: PayOS
       transactionId: paymentLink.paymentLinkId,
-      amount,                           // Số tiền thanh toán
-      paymentStatus: "Pending",         // Trạng thái: Đang chờ
+      amount, // Số tiền thanh toán
+      paymentStatus: "Pending", // Trạng thái: Đang chờ
       createdAt: now,
       payos: {
         orderCode,
         paymentLinkId: paymentLink.paymentLinkId,
-        checkoutUrl: paymentLink.checkoutUrl,   // Link trang thanh toán
-        qrCode: paymentLink.qrCode,             // Link QR code (khách quét để thanh toán)
+        checkoutUrl: paymentLink.checkoutUrl, // Link trang thanh toán
+        qrCode: paymentLink.qrCode, // Link QR code (khách quét để thanh toán)
         bin: paymentLink.bin,
         accountNumber: paymentLink.accountNumber,
         accountName: paymentLink.accountName,
-        status: paymentLink.status,             // Trạng thái từ PayOS
+        status: paymentLink.status, // Trạng thái từ PayOS
         expiredAt: paymentLink.expiredAt,
         amountPaid: 0,
         amountRemaining: amount,
@@ -349,11 +349,11 @@ export async function syncPayOSPaymentRecord({
       await Order.updateMany(
         {
           _id: { $in: invoice.orderIds },
-          status: "Pending"
+          status: { $in: [ORDER_STATUS.PENDING, "Pending"] },
         },
         {
-          $set: { status: "Confirmed", updatedAt: now }
-        }
+          $set: { status: ORDER_STATUS.CONFIRMED, updatedAt: now },
+        },
       );
     }
   }
@@ -621,21 +621,21 @@ export async function createOrReuseOrderPayOSPayment({ order, buyer, origin }) {
 
     // Tạo link thanh toán PayOS với QR code cho đơn hàng
     const paymentLink = await payOS.paymentRequests.create({
-      orderCode,      // Mã đơn hàng duy nhất
-      amount,         // Tổng tiền đơn hàng
-      description,    // Mô tả thanh toán
-      cancelUrl,      // URL sau khi hủy thanh toán
-      returnUrl,      // URL sau khi thanh toán thành công
-      expiredAt: Math.floor(Date.now() / 1000) + 15 * 60,  // Hết hạn sau 15 phút
+      orderCode, // Mã đơn hàng duy nhất
+      amount, // Tổng tiền đơn hàng
+      description, // Mô tả thanh toán
+      cancelUrl, // URL sau khi hủy thanh toán
+      returnUrl, // URL sau khi thanh toán thành công
+      expiredAt: Math.floor(Date.now() / 1000) + 15 * 60, // Hết hạn sau 15 phút
       buyerName: buyer?.fullName || "Khách hàng",
       buyerEmail: buyer?.email,
       buyerPhone: buyer?.phone,
       // Danh sách mặt hàng hiển thị trên QR code và trang thanh toán
       items: [
         {
-          name: `Don hang ${order._id.toString().slice(-8)}`.slice(0, 25),  // Tên mặt hàng (tối đa 25 ký tự)
-          quantity: 1,                                                       // Số lượng
-          price: amount,                                                     // Tổng giá đơn hàng
+          name: `Don hang ${order._id.toString().slice(-8)}`.slice(0, 25), // Tên mặt hàng (tối đa 25 ký tự)
+          quantity: 1, // Số lượng
+          price: amount, // Tổng giá đơn hàng
         },
       ],
     });
@@ -643,22 +643,22 @@ export async function createOrReuseOrderPayOSPayment({ order, buyer, origin }) {
     const now = new Date();
     // Lưu thông tin thanh toán vào database
     const payment = await Payment.create({
-      invoiceId: invoice._id,           // ID hóa đơn
+      invoiceId: invoice._id, // ID hóa đơn
       // No bookingId - this is order payment (thanh toán đơn hàng, không có bookingId)
-      paymentMethod: PAYOS_PAYMENT_METHOD,  // Phương thức: PayOS
+      paymentMethod: PAYOS_PAYMENT_METHOD, // Phương thức: PayOS
       transactionId: paymentLink.paymentLinkId,
-      amount,                           // Số tiền thanh toán
-      paymentStatus: "Pending",         // Trạng thái: Đang chờ
+      amount, // Số tiền thanh toán
+      paymentStatus: "Pending", // Trạng thái: Đang chờ
       createdAt: now,
       payos: {
         orderCode,
         paymentLinkId: paymentLink.paymentLinkId,
-        checkoutUrl: paymentLink.checkoutUrl,   // Link trang thanh toán
-        qrCode: paymentLink.qrCode,             // Link QR code (khách quét để thanh toán)
+        checkoutUrl: paymentLink.checkoutUrl, // Link trang thanh toán
+        qrCode: paymentLink.qrCode, // Link QR code (khách quét để thanh toán)
         bin: paymentLink.bin,
         accountNumber: paymentLink.accountNumber,
         accountName: paymentLink.accountName,
-        status: paymentLink.status,             // Trạng thái từ PayOS
+        status: paymentLink.status, // Trạng thái từ PayOS
         expiredAt: paymentLink.expiredAt,
         amountPaid: 0,
         amountRemaining: amount,
@@ -728,16 +728,22 @@ export async function buildOrderPaymentPageData(orderId, userId) {
 // Counter Order Payment (Booking + Order Combined)
 // ────────────────────────────────────────────────────────────────────────────────
 
-export async function createCounterOrderPayment({ booking, order, invoice, buyer, origin }) {
+export async function createCounterOrderPayment({
+  booking,
+  order,
+  invoice,
+  buyer,
+  origin,
+}) {
   if (!isPayOSConfigured()) {
-    return { 
+    return {
       alreadyPaid: true,
-      message: "PayOS not configured. Payment link not created."
+      message: "PayOS not configured. Payment link not created.",
     };
   }
 
   const payOS = createPayOSClient();
-  
+
   // Check if already paid
   const payments = await Payment.find({ invoiceId: invoice._id })
     .sort({ createdAt: -1 })
@@ -746,7 +752,7 @@ export async function createCounterOrderPayment({ booking, order, invoice, buyer
   const successPaid = payments
     .filter((p) => p.paymentStatus === "Success")
     .reduce((s, p) => s + Math.round(Number(p.amount || 0)), 0);
-  
+
   const totalAmount = Math.round(Number(invoice.totalAmount || 0));
   const remainingAmount = Math.max(0, totalAmount - successPaid);
 
@@ -773,11 +779,16 @@ export async function createCounterOrderPayment({ booking, order, invoice, buyer
 
   if (activePending) {
     try {
-      const link = await payOS.paymentRequests.get(activePending.payos.orderCode);
+      const link = await payOS.paymentRequests.get(
+        activePending.payos.orderCode,
+      );
       if (PAYOS_PENDING_STATUSES.has(link.status)) {
-        console.log("Reusing counter order payment:", activePending.payos.orderCode);
-        return { 
-          reused: true, 
+        console.log(
+          "Reusing counter order payment:",
+          activePending.payos.orderCode,
+        );
+        return {
+          reused: true,
           payment: activePending,
           checkoutUrl: activePending.payos.checkoutUrl,
           qrCode: activePending.payos.qrCode,
@@ -820,9 +831,10 @@ export async function createCounterOrderPayment({ booking, order, invoice, buyer
   console.log("Creating counter order payment for amount:", remainingAmount);
 
   // Chuẩn bị thông tin thanh toán
-  const orderCode = createOrderCode();  // Tạo mã đơn hàng ngẫu nhiên duy nhất
-  const amount = Math.round(remainingAmount);  // Làm tròn số tiền
-  const description = createShortDescription(  // Tạo mô tả ngắn gọn cho thanh toán
+  const orderCode = createOrderCode(); // Tạo mã đơn hàng ngẫu nhiên duy nhất
+  const amount = Math.round(remainingAmount); // Làm tròn số tiền
+  const description = createShortDescription(
+    // Tạo mô tả ngắn gọn cho thanh toán
     booking.bookingCode,
     `ORD${String(order._id).slice(-6)}`,
   );
@@ -834,17 +846,17 @@ export async function createCounterOrderPayment({ booking, order, invoice, buyer
   try {
     // Tạo link thanh toán PayOS với QR code cho khách hàng
     const paymentLink = await payOS.paymentRequests.create({
-      orderCode,      // Mã đơn hàng duy nhất
-      amount,         // Số tiền cần thanh toán
-      description,    // Mô tả thanh toán
-      returnUrl,      // URL sau khi thanh toán thành công
-      cancelUrl,      // URL sau khi hủy thanh toán
+      orderCode, // Mã đơn hàng duy nhất
+      amount, // Số tiền cần thanh toán
+      description, // Mô tả thanh toán
+      returnUrl, // URL sau khi thanh toán thành công
+      cancelUrl, // URL sau khi hủy thanh toán
       // Danh sách mặt hàng hiển thị trên QR code và trang thanh toán
       items: [
         {
-          name: `Thanh toán đơn ${booking.bookingCode} + Order`,  // Tên mặt hàng hiển thị cho khách
-          quantity: 1,                                            // Số lượng
-          price: amount,                                          // Giá (bằng tổng tiền)
+          name: `Thanh toán đơn ${booking.bookingCode} + Order`, // Tên mặt hàng hiển thị cho khách
+          quantity: 1, // Số lượng
+          price: amount, // Giá (bằng tổng tiền)
         },
       ],
       // Thông tin người mua (hiển thị trên trang thanh toán)
@@ -854,16 +866,16 @@ export async function createCounterOrderPayment({ booking, order, invoice, buyer
 
     // Lưu thông tin thanh toán vào database
     const newPayment = await Payment.create({
-      invoiceId: invoice._id,           // ID hóa đơn
-      userId: booking.userId,           // ID người dùng
-      amount,                           // Số tiền thanh toán
-      paymentMethod: PAYOS_PAYMENT_METHOD,  // Phương thức: PayOS
-      paymentStatus: "Pending",         // Trạng thái: Đang chờ
+      invoiceId: invoice._id, // ID hóa đơn
+      userId: booking.userId, // ID người dùng
+      amount, // Số tiền thanh toán
+      paymentMethod: PAYOS_PAYMENT_METHOD, // Phương thức: PayOS
+      paymentStatus: "Pending", // Trạng thái: Đang chờ
       payos: {
-        orderCode: paymentLink.orderCode,       // Mã đơn từ PayOS
-        checkoutUrl: paymentLink.checkoutUrl,   // Link trang thanh toán
-        qrCode: paymentLink.qrCode,             // Link QR code (khách quét để thanh toán)
-        status: paymentLink.status,             // Trạng thái từ PayOS
+        orderCode: paymentLink.orderCode, // Mã đơn từ PayOS
+        checkoutUrl: paymentLink.checkoutUrl, // Link trang thanh toán
+        qrCode: paymentLink.qrCode, // Link QR code (khách quét để thanh toán)
+        status: paymentLink.status, // Trạng thái từ PayOS
       },
     });
 

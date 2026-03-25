@@ -68,7 +68,7 @@ export const updateTableType = async (req, res) => {
         description: description?.trim() || "",
         capacity: Number(req.body.capacity) || 1,
       },
-      { new: true, runValidators: true },
+      { returnDocument: "after", runValidators: true },
     );
     if (!tableType)
       return res.status(404).json({ message: "Không tìm thấy loại bàn." });

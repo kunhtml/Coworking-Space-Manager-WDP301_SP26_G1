@@ -300,7 +300,7 @@ export const updateTable = async (req, res) => {
         pricePerDay,
         description,
       },
-      { new: true, runValidators: true },
+      { returnDocument: "after", runValidators: true },
     );
     if (!table) return res.status(404).json({ message: "Không tìm thấy bàn." });
     res.json({ message: "Cập nhật bàn thành công!", table });
