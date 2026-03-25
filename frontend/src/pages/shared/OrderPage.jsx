@@ -100,6 +100,7 @@ export default function MenuPage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [myBookings, setMyBookings] = useState([]);
   const [selectedBookingId, setSelectedBookingId] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("QR");
   const [ordering, setOrdering] = useState(false);
   const [orderError, setOrderError] = useState("");
 
@@ -301,12 +302,20 @@ export default function MenuPage() {
       setOrderNote("");
       setShowCartModal(false);
 
-      // Navigate to order payment page (not booking payment)
       const orderId = result?.orderId || result?.data?.orderId;
-      if (orderId) {
-        navigate(`/payment/order/${orderId}`);
+      
+      if (paymentMethod === "QR") {
+        if (orderId) {
+          navigate(`/payment/order/${orderId}`);
+        } else {
+          setOrderError("Đơn hàng đã được tạo nhưng thiếu orderId.");
+        }
       } else {
-        setOrderError("Đơn hàng đã được tạo nhưng thiếu orderId.");
+        setShowSuccess(true);
+        setTimeout(() => {
+          setShowSuccess(false);
+          navigate("/customer-dashboard/orders");
+        }, 3000);
       }
     } catch (err) {
       setOrderError(err.message || "Không thể tạo order.");
@@ -655,11 +664,36 @@ export default function MenuPage() {
 
               <Form.Group className="mb-4">
                 <Form.Label className="fw-semibold">
+                  Phương thức thanh toán
+                </Form.Label>
+                <div>
+                  <Form.Check
+                    type="radio"
+                    id="pay-qr"
+                    label="Thanh toán Online (QR PayOS)"
+                    name="paymentMethod"
+                    className="mb-2"
+                    checked={paymentMethod === "QR"}
+                    onChange={() => setPaymentMethod("QR")}
+                  />
+                  <Form.Check
+                    type="radio"
+                    id="pay-cash"
+                    label="Thanh toán tại quầy (Tiền mặt/Chuyển khoản sau)"
+                    name="paymentMethod"
+                    checked={paymentMethod === "CASH"}
+                    onChange={() => setPaymentMethod("CASH")}
+                  />
+                </div>
+              </Form.Group>
+
+              <Form.Group className="mb-4">
+                <Form.Label className="fw-semibold">
                   Ghi chú đơn hàng
                 </Form.Label>
                 <Form.Control
                   as="textarea"
-                  rows={3}
+                  rows={2}
                   placeholder="Yêu cầu đặc biệt hoặc ghi chú..."
                   value={orderNote}
                   onChange={(e) => setOrderNote(e.target.value)}
