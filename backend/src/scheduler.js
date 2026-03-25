@@ -2,6 +2,7 @@ import Booking from "./models/booking.js";
 import Payment from "./models/payment.js";
 import Invoice from "./models/invoice.js";
 import { isPayOSConfigured, createPayOSClient } from "./services/payos.service.js";
+import { PAYMENT_METHOD } from "./constants/domain.js";
 
 const EXPIRE_MINUTES = 30;
 const INTERVAL_MS = 5 * 60 * 1000; // run every 5 minutes
@@ -25,7 +26,7 @@ async function expireUnpaidBookings() {
         // Cancel pending PayOS payment link
         const pendingPayment = await Payment.findOne({
           invoiceId: invoice._id,
-          paymentMethod: "PayOS",
+          paymentMethod: PAYMENT_METHOD.QR_PAYOS,
           paymentStatus: "Pending",
         });
 
