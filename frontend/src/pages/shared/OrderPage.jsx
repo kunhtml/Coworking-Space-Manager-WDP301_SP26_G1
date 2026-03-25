@@ -113,7 +113,8 @@ export default function MenuPage() {
           apiClient.get("/menu/items"),
         ]);
 
-        const categories = Array.isArray(categoriesRes) ? categoriesRes : [];
+        const categories = (Array.isArray(categoriesRes) ? categoriesRes : [])
+          .filter((c) => c?.isActive !== false);
         const items = Array.isArray(itemsRes) ? itemsRes : [];
 
         const catMap = new Map(
@@ -177,6 +178,16 @@ export default function MenuPage() {
 
     loadBookings();
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (selectedCategory === "all") return;
+    const exists = menuCategories.some(
+      (c) => String(c?._id) === String(selectedCategory),
+    );
+    if (!exists) {
+      setSelectedCategory("all");
+    }
+  }, [menuCategories, selectedCategory]);
 
   const categories = useMemo(() => {
     const base = [

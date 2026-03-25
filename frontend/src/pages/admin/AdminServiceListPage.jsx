@@ -130,7 +130,7 @@ export default function AdminServiceListPage() {
   const loadCategories = useCallback(async () => {
     setCatsLoading(true);
     try {
-      const data = await api.get("/menu/categories");
+      const data = await api.get("/menu/categories?admin=true");
       setCategories(data);
     } catch (err) {
       setError(err.message || "Lỗi khi tải danh mục");
