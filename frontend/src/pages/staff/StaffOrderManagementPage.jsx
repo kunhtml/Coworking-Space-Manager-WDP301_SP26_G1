@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
-  Badge,
   Button,
   Card,
   Col,
@@ -23,22 +22,33 @@ import {
 } from "../../services/staffDashboardService";
 
 // ── Config ────────────────────────────────────────────────────────────────────
-const ORDER_STATUS_OPTIONS = ["Pending", "Confirmed", "Cancelled", "Completed"];
+const ORDER_STATUS_OPTIONS = ["COMPLETED", "CANCELLED"];
 
 const ORDER_STATUS_UI = {
-  Pending:   { label: "Chờ xử lý",   bg: "#fef9c3", color: "#92400e", icon: "bi-hourglass-split" },
-  Confirmed: { label: "Đã xác nhận", bg: "#dbeafe", color: "#1d4ed8", icon: "bi-check-circle"    },
-  Cancelled: { label: "Đã hủy",      bg: "#fee2e2", color: "#b91c1c", icon: "bi-x-circle"        },
-  Completed: { label: "Hoàn thành",  bg: "#dcfce7", color: "#15803d", icon: "bi-trophy"           },
+  WAITING_PAYMENT: { label: "Chờ thanh toán", bg: "#fef9c3", color: "#92400e", icon: "bi-hourglass-split" },
+  PAID:            { label: "Đã thanh toán",  bg: "#dbeafe", color: "#1d4ed8", icon: "bi-cash-coin" },
+  COMPLETED:       { label: "Hoàn thành",     bg: "#dcfce7", color: "#15803d", icon: "bi-trophy" },
+  CANCELLED:       { label: "Đã hủy",         bg: "#fee2e2", color: "#b91c1c", icon: "bi-x-circle" },
 };
 
 const STAT_GROUPS = [
   { key: "all",       label: "Tất cả",      icon: "bi-list-ul",        bg: "#f1f5f9", color: "#475569" },
-  { key: "Pending",   label: "Chờ xử lý",   icon: "bi-hourglass-split",bg: "#fef9c3", color: "#92400e" },
-  { key: "Confirmed", label: "Đã xác nhận", icon: "bi-check-circle",   bg: "#dbeafe", color: "#1d4ed8" },
-  { key: "Completed", label: "Hoàn thành",  icon: "bi-trophy",         bg: "#dcfce7", color: "#15803d" },
-  { key: "Cancelled", label: "Đã hủy",      icon: "bi-x-circle",       bg: "#fee2e2", color: "#b91c1c" },
+  { key: "WAITING_PAYMENT", label: "Chờ thanh toán", icon: "bi-hourglass-split", bg: "#fef9c3", color: "#92400e" },
+  { key: "PAID",            label: "Đã thanh toán",  icon: "bi-cash-coin",      bg: "#dbeafe", color: "#1d4ed8" },
+  { key: "COMPLETED",       label: "Hoàn thành",     icon: "bi-trophy",         bg: "#dcfce7", color: "#15803d" },
+  { key: "CANCELLED",       label: "Đã hủy",         icon: "bi-x-circle",       bg: "#fee2e2", color: "#b91c1c" },
 ];
+
+function getWorkflowStatus(order) {
+  const raw = String(order?.staffStatus || order?.status || "")
+    .trim()
+    .toUpperCase();
+  if (raw === "CANCELED") return "CANCELLED";
+  if (["WAITING_PAYMENT", "PAID", "COMPLETED", "CANCELLED"].includes(raw)) {
+    return raw;
+  }
+  return "WAITING_PAYMENT";
+}
 
 function fmtCur(v) {
   return `${new Intl.NumberFormat("vi-VN").format(Number(v || 0))}đ`;
@@ -80,7 +90,7 @@ export default function StaffOrderManagementPage() {
   // Edit order modal
   const [showEditModal, setShowEditModal]   = useState(false);
   const [editingOrder, setEditingOrder]     = useState(null);
-  const [editingStatus, setEditingStatus]   = useState("Pending");
+  const [editingStatus, setEditingStatus]   = useState("COMPLETED");
   const [editingItems, setEditingItems]     = useState([createEmptyLine()]);
   const [updating, setUpdating]             = useState(false);
 
@@ -96,7 +106,7 @@ export default function StaffOrderManagementPage() {
     setError("");
     try {
       const [orderRows, tableRows, menuRows] = await Promise.all([
-        getStaffOrders({ status: statusFilter === "all" ? "" : statusFilter, search, date: dateFilter }),
+        getStaffOrders({ search, date: dateFilter }),
         getStaffTables({}),
         apiClient.get("/menu/items"),
       ]);
@@ -113,22 +123,30 @@ export default function StaffOrderManagementPage() {
   useEffect(() => {
     const t = setTimeout(loadPageData, 250);
     return () => clearTimeout(t);
-  }, [statusFilter, search, dateFilter]);
+  }, [search, dateFilter]);
 
   // ── Stats ────────────────────────────────────────────────────────────────────
   const statCounts = useMemo(() => {
     const c = { all: orders.length };
     STAT_GROUPS.forEach((g) => {
-      if (g.key !== "all") c[g.key] = orders.filter((o) => o.status === g.key).length;
+      if (g.key !== "all") {
+        c[g.key] = orders.filter((o) => getWorkflowStatus(o) === g.key).length;
+      }
     });
     return c;
   }, [orders]);
 
   // ── Table filter (client-side) ───────────────────────────────────────────────
   const displayOrders = useMemo(() => {
-    if (tableFilter === "all") return orders;
-    return orders.filter((o) => String(o.tableId || "") === tableFilter);
-  }, [orders, tableFilter]);
+    let rows = orders;
+    if (statusFilter !== "all") {
+      rows = rows.filter((o) => getWorkflowStatus(o) === statusFilter);
+    }
+    if (tableFilter !== "all") {
+      rows = rows.filter((o) => String(o.tableId || "") === tableFilter);
+    }
+    return rows;
+  }, [orders, statusFilter, tableFilter]);
 
   // ── Create counter order ─────────────────────────────────────────────────────
   const onChangeCreateItem = (i, k, v) =>
@@ -192,7 +210,9 @@ export default function StaffOrderManagementPage() {
   // ── Edit order ───────────────────────────────────────────────────────────────
   const openEditOrder = (order) => {
     setEditingOrder(order);
-    setEditingStatus(order.status || "Pending");
+    setEditingStatus(
+      getWorkflowStatus(order) === "CANCELLED" ? "CANCELLED" : "COMPLETED",
+    );
     setEditingItems(
       (order.items || []).length
         ? order.items.map((it) => ({ menuItemId: String(it.menuItemId || ""), quantity: Number(it.quantity || 1), note: it.note || "" }))
@@ -235,7 +255,7 @@ export default function StaffOrderManagementPage() {
     setError("");
     try {
       await updateStaffOrder(order.id, {
-        status: "Completed",
+        status: "COMPLETED",
         items: (order.items || []).map((it) => ({
           menuItemId: String(it.menuItemId || ""),
           quantity: Number(it.quantity || 1),
@@ -410,7 +430,14 @@ export default function StaffOrderManagementPage() {
               </thead>
               <tbody>
                 {displayOrders.map((order) => {
-                  const stUi = ORDER_STATUS_UI[order.status] || { label: order.status, bg: "#f1f5f9", color: "#475569", icon: "bi-question" };
+                  const workflowStatus = getWorkflowStatus(order);
+                  const stUi = ORDER_STATUS_UI[workflowStatus] || {
+                    label: workflowStatus,
+                    bg: "#f1f5f9",
+                    color: "#475569",
+                    icon: "bi-question",
+                  };
+                  const canComplete = workflowStatus === "PAID";
                   return (
                     <tr key={String(order.id)}>
                       <td>
@@ -460,7 +487,7 @@ export default function StaffOrderManagementPage() {
                           >
                             <i className="bi bi-pencil-square" />
                           </button>
-                          {!["Completed", "Cancelled"].includes(order.status) && (
+                          {canComplete && (
                             <button
                               className="staff-icon-btn"
                               type="button"

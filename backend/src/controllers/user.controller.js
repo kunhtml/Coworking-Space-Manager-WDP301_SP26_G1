@@ -138,7 +138,7 @@ export const deleteUser = async (req, res) => {
     const user = await User.findByIdAndUpdate(
       userId,
       { membershipStatus: "Inactive" },
-      { new: true },
+      { returnDocument: "after" },
     ).select("-passwordHash");
 
     if (!user) {

@@ -8,6 +8,7 @@ import MenuItem from "../models/menu_item.js";
 import User from "../models/user.js";
 import Invoice from "../models/invoice.js";
 import { createCounterOrderPayment } from "../services/payos.service.js";
+import { ORDER_STATUS, normalizeOrderStatus } from "../constants/domain.js";
 
 const STAFF_TABLE_STATUSES = new Set([
   "Available",
@@ -15,6 +16,14 @@ const STAFF_TABLE_STATUSES = new Set([
   "Reserved",
   "Maintenance",
   "Cleaning",
+]);
+
+const ACCEPTED_ORDER_STATUS_INPUTS = new Set([
+  ...Object.values(ORDER_STATUS),
+  "NEW",
+  "PAID",
+  "CANCELED",
+  "CANCELLED",
 ]);
 
 function isValidObjectId(id) {
@@ -28,6 +37,7 @@ function normalizeOrderRows(
   bookingMap,
   tableMap,
   userMap,
+  invoiceMap,
 ) {
   const itemMap = new Map();
   for (const item of orderItems) {
@@ -47,6 +57,28 @@ function normalizeOrderRows(
   }
 
   return orders.map((o) => {
+    const normalizedOrderStatus = normalizeOrderStatus(o.status);
+    const invoice = invoiceMap.get(o._id.toString()) || null;
+    const invoiceRemaining = Number(invoice?.remainingAmount || 0);
+    const invoiceStatus = String(invoice?.status || "").toUpperCase();
+    const isPaid = invoiceStatus === "PAID" || invoiceRemaining <= 0;
+
+    let paymentStatus = "WAITING_PAYMENT";
+    if (normalizedOrderStatus === ORDER_STATUS.CANCELLED) {
+      paymentStatus = "CANCELLED";
+    } else if (isPaid) {
+      paymentStatus = "PAID";
+    }
+
+    let staffStatus = "WAITING_PAYMENT";
+    if (normalizedOrderStatus === ORDER_STATUS.CANCELLED) {
+      staffStatus = "CANCELLED";
+    } else if (normalizedOrderStatus === ORDER_STATUS.COMPLETED) {
+      staffStatus = "COMPLETED";
+    } else if (isPaid) {
+      staffStatus = "PAID";
+    }
+
     const booking = bookingMap.get(o.bookingId?.toString());
     const table = tableMap.get(booking?.tableId?.toString());
     const user =
@@ -62,7 +94,11 @@ function normalizeOrderRows(
       tableName: table?.name || "Khong xac dinh",
       customerName: booking?.guestInfo?.name || user?.fullName || "Khach le",
       customerPhone: booking?.guestInfo?.phone || user?.phone || "",
-      status: o.status || "Pending",
+      status: normalizedOrderStatus,
+      staffStatus,
+      paymentStatus,
+      invoiceStatus: invoice?.status || "Pending",
+      remainingAmount: invoiceRemaining,
       totalAmount: Number(o.totalAmount || 0),
       createdAt: o.createdAt,
       items: itemMap.get(o._id.toString()) || [],
@@ -174,7 +210,7 @@ export const updateStaffTableStatus = async (req, res) => {
     const table = await Table.findByIdAndUpdate(
       id,
       { status: String(status) },
-      { new: true },
+      { returnDocument: "after" },
     ).lean();
 
     if (!table) {
@@ -203,7 +239,11 @@ export const getStaffOrders = async (req, res) => {
     const orderFilter = {};
 
     if (status && status !== "all") {
-      orderFilter.status = status;
+      const rawStatus = String(status).trim();
+      const normalizedStatus = normalizeOrderStatus(rawStatus);
+      orderFilter.status = {
+        $in: [...new Set([rawStatus, rawStatus.toUpperCase(), normalizedStatus])],
+      };
     }
 
     if (date) {
@@ -229,10 +269,13 @@ export const getStaffOrders = async (req, res) => {
       ...new Set(orders.map((o) => o.userId?.toString()).filter(Boolean)),
     ];
 
-    const [orderItems, bookings, users] = await Promise.all([
+    const [orderItems, bookings, users, invoices] = await Promise.all([
       OrderItem.find({ orderId: { $in: orderIds } }).lean(),
       Booking.find({ _id: { $in: bookingIds } }).lean(),
       User.find({ _id: { $in: userIds } }).lean(),
+      Invoice.find({ orderIds: { $in: orderIds } })
+        .select("orderIds status remainingAmount")
+        .lean(),
     ]);
 
     const tableIds = [
@@ -253,6 +296,12 @@ export const getStaffOrders = async (req, res) => {
     const tableMap = new Map(tables.map((t) => [t._id.toString(), t]));
     const userMap = new Map(users.map((u) => [u._id.toString(), u]));
     const menuMap = new Map(menuItems.map((m) => [m._id.toString(), m]));
+    const invoiceMap = new Map();
+    for (const invoice of invoices) {
+      for (const orderId of invoice.orderIds || []) {
+        invoiceMap.set(orderId.toString(), invoice);
+      }
+    }
 
     const rows = normalizeOrderRows(
       orders,
@@ -261,6 +310,7 @@ export const getStaffOrders = async (req, res) => {
       bookingMap,
       tableMap,
       userMap,
+      invoiceMap,
     );
 
     res.json(rows);
@@ -370,7 +420,7 @@ export const createCounterOrder = async (req, res) => {
     const order = await Order.create({
       userId: booking.userId || req.user.id,
       bookingId: booking._id,
-      status: "Pending",
+      status: ORDER_STATUS.PENDING,
       totalAmount,
     });
 
@@ -442,8 +492,30 @@ export const updateStaffOrder = async (req, res) => {
 
     let touched = false;
     if (typeof status === "string" && status.trim()) {
-      order.status = status.trim();
+      const rawStatus = status.trim().toUpperCase();
+      if (!ACCEPTED_ORDER_STATUS_INPUTS.has(rawStatus)) {
+        return res
+          .status(400)
+          .json({ message: "Trạng thái đơn hàng không hợp lệ." });
+      }
+      const targetStatus = normalizeOrderStatus(rawStatus);
+      if (targetStatus === ORDER_STATUS.COMPLETED) {
+        const invoice = await Invoice.findOne({ orderIds: order._id })
+          .select("status remainingAmount")
+          .lean();
+        const invoiceRemaining = Number(invoice?.remainingAmount || 0);
+        const invoiceStatus = String(invoice?.status || "").toUpperCase();
+        const isPaid = invoiceStatus === "PAID" || invoiceRemaining <= 0;
+        if (!isPaid) {
+          return res.status(400).json({
+            message: "Đơn chưa thanh toán, không thể xác nhận hoàn thành.",
+          });
+        }
+      }
+      order.status = targetStatus;
       touched = true;
+    } else {
+      order.status = normalizeOrderStatus(order.status);
     }
 
     if (Array.isArray(items)) {

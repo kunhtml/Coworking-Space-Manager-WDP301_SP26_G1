@@ -1,4 +1,4 @@
-import { Badge, Button, Card } from "react-bootstrap";
+import { Badge, Card } from "react-bootstrap";
 
 export default function AdminAccountStatusCard({ statusInfo, formatDate, profile }) {
   return (
@@ -22,16 +22,6 @@ export default function AdminAccountStatusCard({ statusInfo, formatDate, profile
           <p className="mb-0 fw-medium"><i className="bi bi-calendar-date me-2 text-muted"></i>{formatDate(profile.createdAt)}</p>
         </div>
 
-        <div className="mb-4">
-          <label className="form-label fw-semibold text-muted small">DANG NHAP GAN NHAT</label>
-          <p className="mb-0 fw-medium"><i className="bi bi-clock me-2 text-muted"></i>{formatDate(profile.lastLoginAt)}</p>
-        </div>
-
-        <div className="border-top pt-3">
-          <Button variant="outline-warning" size="sm" className="w-100" disabled>
-            <i className="bi bi-key me-2"></i>Doi mat khau o bieu mau ben duoi
-          </Button>
-        </div>
       </Card.Body>
     </Card>
   );
