@@ -80,6 +80,8 @@ export default function Dashboard() {
   const [targetBookingId, setTargetBookingId] = useState("");
   const [editingOrderId, setEditingOrderId] = useState("");
   const [orderLines, setOrderLines] = useState([emptyOrderLine()]);
+  const [lockedOrderItems, setLockedOrderItems] = useState([]);
+  const [appendOnlyEditMode, setAppendOnlyEditMode] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [invoiceOrder, setInvoiceOrder] = useState(null);
   const [showBookingInvoiceModal, setShowBookingInvoiceModal] = useState(false);
@@ -298,22 +300,29 @@ export default function Dashboard() {
     setOrderMode("create");
     setTargetBookingId(String(bookingId));
     setEditingOrderId("");
+    setLockedOrderItems([]);
+    setAppendOnlyEditMode(false);
     setOrderLines([emptyOrderLine()]);
     setShowOrderModal(true);
   };
 
   const openEditOrder = (order) => {
+    const appendOnly = Boolean(order?.appendOnlyEdit);
     setOrderMode("edit");
     setTargetBookingId(String(order.bookingId));
     setEditingOrderId(String(order.id));
+    setAppendOnlyEditMode(appendOnly);
+    setLockedOrderItems(appendOnly ? order.items || [] : []);
     setOrderLines(
-      order.items?.length
-        ? order.items.map((i) => ({
-            menuItemId: String(i.menuItemId || ""),
-            quantity: Number(i.quantity || 1),
-            note: i.note || "",
-          }))
-        : [emptyOrderLine()],
+      appendOnly
+        ? [emptyOrderLine()]
+        : order.items?.length
+          ? order.items.map((i) => ({
+              menuItemId: String(i.menuItemId || ""),
+              quantity: Number(i.quantity || 1),
+              note: i.note || "",
+            }))
+          : [emptyOrderLine()],
     );
     setShowOrderModal(true);
   };
@@ -349,7 +358,10 @@ export default function Dashboard() {
       if (orderMode === "create") {
         await createOrderApi(payload);
       } else {
-        await updateOrderApi(editingOrderId, { items: payload.items });
+        await updateOrderApi(editingOrderId, {
+          items: payload.items,
+          appendOnly: appendOnlyEditMode,
+        });
       }
       setShowOrderModal(false);
       await loadData();
@@ -480,6 +492,8 @@ export default function Dashboard() {
         menuItems={menuItems}
         updateOrderLine={updateOrderLine}
         removeOrderLine={removeOrderLine}
+        appendOnlyEditMode={appendOnlyEditMode}
+        lockedOrderItems={lockedOrderItems}
         fmt={fmt}
         savingOrder={savingOrder}
       />

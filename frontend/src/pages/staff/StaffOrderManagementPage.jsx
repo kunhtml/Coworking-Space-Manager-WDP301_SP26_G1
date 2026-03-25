@@ -25,18 +25,68 @@ import {
 const ORDER_STATUS_OPTIONS = ["COMPLETED", "CANCELLED"];
 
 const ORDER_STATUS_UI = {
-  WAITING_PAYMENT: { label: "Chờ thanh toán", bg: "#fef9c3", color: "#92400e", icon: "bi-hourglass-split" },
-  PAID:            { label: "Đã thanh toán",  bg: "#dbeafe", color: "#1d4ed8", icon: "bi-cash-coin" },
-  COMPLETED:       { label: "Hoàn thành",     bg: "#dcfce7", color: "#15803d", icon: "bi-trophy" },
-  CANCELLED:       { label: "Đã hủy",         bg: "#fee2e2", color: "#b91c1c", icon: "bi-x-circle" },
+  WAITING_PAYMENT: {
+    label: "Chờ thanh toán",
+    bg: "#fef9c3",
+    color: "#92400e",
+    icon: "bi-hourglass-split",
+  },
+  PAID: {
+    label: "Đã thanh toán",
+    bg: "#dbeafe",
+    color: "#1d4ed8",
+    icon: "bi-cash-coin",
+  },
+  COMPLETED: {
+    label: "Hoàn thành",
+    bg: "#dcfce7",
+    color: "#15803d",
+    icon: "bi-trophy",
+  },
+  CANCELLED: {
+    label: "Đã hủy",
+    bg: "#fee2e2",
+    color: "#b91c1c",
+    icon: "bi-x-circle",
+  },
 };
 
 const STAT_GROUPS = [
-  { key: "all",       label: "Tất cả",      icon: "bi-list-ul",        bg: "#f1f5f9", color: "#475569" },
-  { key: "WAITING_PAYMENT", label: "Chờ thanh toán", icon: "bi-hourglass-split", bg: "#fef9c3", color: "#92400e" },
-  { key: "PAID",            label: "Đã thanh toán",  icon: "bi-cash-coin",      bg: "#dbeafe", color: "#1d4ed8" },
-  { key: "COMPLETED",       label: "Hoàn thành",     icon: "bi-trophy",         bg: "#dcfce7", color: "#15803d" },
-  { key: "CANCELLED",       label: "Đã hủy",         icon: "bi-x-circle",       bg: "#fee2e2", color: "#b91c1c" },
+  {
+    key: "all",
+    label: "Tất cả",
+    icon: "bi-list-ul",
+    bg: "#f1f5f9",
+    color: "#475569",
+  },
+  {
+    key: "WAITING_PAYMENT",
+    label: "Chờ thanh toán",
+    icon: "bi-hourglass-split",
+    bg: "#fef9c3",
+    color: "#92400e",
+  },
+  {
+    key: "PAID",
+    label: "Đã thanh toán",
+    icon: "bi-cash-coin",
+    bg: "#dbeafe",
+    color: "#1d4ed8",
+  },
+  {
+    key: "COMPLETED",
+    label: "Hoàn thành",
+    icon: "bi-trophy",
+    bg: "#dcfce7",
+    color: "#15803d",
+  },
+  {
+    key: "CANCELLED",
+    label: "Đã hủy",
+    icon: "bi-x-circle",
+    bg: "#fee2e2",
+    color: "#b91c1c",
+  },
 ];
 
 function getWorkflowStatus(order) {
@@ -55,7 +105,10 @@ function fmtCur(v) {
 }
 function toTime(v) {
   if (!v) return "--";
-  return new Date(v).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+  return new Date(v).toLocaleTimeString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 function toDate(v) {
   if (!v) return "--";
@@ -66,39 +119,42 @@ function createEmptyLine() {
 }
 
 export default function StaffOrderManagementPage() {
-  const [orders, setOrders]       = useState([]);
-  const [tables, setTables]       = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [tables, setTables] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
   // Filters
   const [statusFilter, setStatusFilter] = useState("all");
-  const [search, setSearch]             = useState("");
-  const [tableFilter, setTableFilter]   = useState("all");
-  const [dateFilter, setDateFilter]     = useState("");
+  const [search, setSearch] = useState("");
+  const [tableFilter, setTableFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("");
 
   // Create counter order modal
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [creating, setCreating]               = useState(false);
+  const [creating, setCreating] = useState(false);
   const [createForm, setCreateForm] = useState({
-    tableId: "", customerName: "", customerPhone: "", durationHours: 2,
+    tableId: "",
+    customerName: "",
+    customerPhone: "",
+    durationHours: 2,
     items: [createEmptyLine()],
   });
 
   // Edit order modal
-  const [showEditModal, setShowEditModal]   = useState(false);
-  const [editingOrder, setEditingOrder]     = useState(null);
-  const [editingStatus, setEditingStatus]   = useState("COMPLETED");
-  const [editingItems, setEditingItems]     = useState([createEmptyLine()]);
-  const [updating, setUpdating]             = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingOrder, setEditingOrder] = useState(null);
+  const [editingStatus, setEditingStatus] = useState("COMPLETED");
+  const [editingItems, setEditingItems] = useState([createEmptyLine()]);
+  const [updating, setUpdating] = useState(false);
 
   // Invoice modal
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
-  const [invoiceData, setInvoiceData]           = useState(null);
-  const [invoiceLoading, setInvoiceLoading]     = useState(false);
-  const [exporting, setExporting]               = useState(false);
+  const [invoiceData, setInvoiceData] = useState(null);
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   // ── Load ────────────────────────────────────────────────────────────────────
   const loadPageData = async () => {
@@ -150,11 +206,18 @@ export default function StaffOrderManagementPage() {
 
   // ── Create counter order ─────────────────────────────────────────────────────
   const onChangeCreateItem = (i, k, v) =>
-    setCreateForm((p) => ({ ...p, items: p.items.map((it, idx) => idx === i ? { ...it, [k]: v } : it) }));
+    setCreateForm((p) => ({
+      ...p,
+      items: p.items.map((it, idx) => (idx === i ? { ...it, [k]: v } : it)),
+    }));
   const addCreateItem = () =>
     setCreateForm((p) => ({ ...p, items: [...p.items, createEmptyLine()] }));
   const removeCreateItem = (i) =>
-    setCreateForm((p) => ({ ...p, items: p.items.length <= 1 ? p.items : p.items.filter((_, idx) => idx !== i) }));
+    setCreateForm((p) => ({
+      ...p,
+      items:
+        p.items.length <= 1 ? p.items : p.items.filter((_, idx) => idx !== i),
+    }));
 
   const submitCreateCounterOrder = async (e) => {
     e.preventDefault();
@@ -168,15 +231,21 @@ export default function StaffOrderManagementPage() {
         durationHours: Number(createForm.durationHours || 2),
         items: createForm.items,
       });
-      
+
       setShowCreateModal(false);
-      setCreateForm({ tableId: "", customerName: "", customerPhone: "", durationHours: 2, items: [createEmptyLine()] });
-      
+      setCreateForm({
+        tableId: "",
+        customerName: "",
+        customerPhone: "",
+        durationHours: 2,
+        items: [createEmptyLine()],
+      });
+
       // Show success message with payment info
       const bookingAmt = result.bookingAmount || 0;
       const orderAmt = result.orderAmount || 0;
       const totalAmt = result.totalAmount || 0;
-      
+
       let message = `✅ Tạo đơn counter thành công!`;
       if (totalAmt > 0) {
         message += `\n💰 Tiền thuê bàn: ${bookingAmt.toLocaleString()}đ`;
@@ -185,19 +254,19 @@ export default function StaffOrderManagementPage() {
         }
         message += `\n📊 Tổng: ${totalAmt.toLocaleString()}đ`;
       }
-      
+
       setSuccessMsg(message);
-      
+
       // Open payment link if available
       if (result.payment?.checkoutUrl) {
         const openPayment = window.confirm(
-          `Đơn đã tạo thành công!\nTổng tiền: ${totalAmt.toLocaleString()}đ\n\nBạn có muốn mở link thanh toán?`
+          `Đơn đã tạo thành công!\nTổng tiền: ${totalAmt.toLocaleString()}đ\n\nBạn có muốn mở link thanh toán?`,
         );
         if (openPayment) {
           window.open(result.payment.checkoutUrl, "_blank");
         }
       }
-      
+
       await loadPageData();
       setTimeout(() => setSuccessMsg(""), 6000);
     } catch (err) {
@@ -215,7 +284,11 @@ export default function StaffOrderManagementPage() {
     );
     setEditingItems(
       (order.items || []).length
-        ? order.items.map((it) => ({ menuItemId: String(it.menuItemId || ""), quantity: Number(it.quantity || 1), note: it.note || "" }))
+        ? order.items.map((it) => ({
+            menuItemId: String(it.menuItemId || ""),
+            quantity: Number(it.quantity || 1),
+            note: it.note || "",
+          }))
         : [createEmptyLine()],
     );
     setShowEditModal(true);
@@ -223,10 +296,14 @@ export default function StaffOrderManagementPage() {
   };
 
   const onChangeEditItem = (i, k, v) =>
-    setEditingItems((p) => p.map((it, idx) => idx === i ? { ...it, [k]: v } : it));
-  const addEditItem    = () => setEditingItems((p) => [...p, createEmptyLine()]);
+    setEditingItems((p) =>
+      p.map((it, idx) => (idx === i ? { ...it, [k]: v } : it)),
+    );
+  const addEditItem = () => setEditingItems((p) => [...p, createEmptyLine()]);
   const removeEditItem = (i) =>
-    setEditingItems((p) => p.length <= 1 ? p : p.filter((_, idx) => idx !== i));
+    setEditingItems((p) =>
+      p.length <= 1 ? p : p.filter((_, idx) => idx !== i),
+    );
 
   const submitUpdateOrder = async (e) => {
     e.preventDefault();
@@ -234,7 +311,10 @@ export default function StaffOrderManagementPage() {
     setUpdating(true);
     setError("");
     try {
-      await updateStaffOrder(editingOrder.id, { status: editingStatus, items: editingItems });
+      await updateStaffOrder(editingOrder.id, {
+        status: editingStatus,
+        items: editingItems,
+      });
       setShowEditModal(false);
       setSuccessMsg("✅ Cập nhật đơn hàng thành công!");
       await loadPageData();
@@ -323,12 +403,20 @@ export default function StaffOrderManagementPage() {
 
       {/* Alerts */}
       {successMsg && (
-        <Alert className="border-0 rounded-3 mb-3" style={{ background: "#dcfce7", color: "#15803d" }}>
+        <Alert
+          className="border-0 rounded-3 mb-3"
+          style={{ background: "#dcfce7", color: "#15803d" }}
+        >
           {successMsg}
         </Alert>
       )}
       {error && (
-        <Alert variant="danger" className="rounded-3 mb-3" dismissible onClose={() => setError("")}>
+        <Alert
+          variant="danger"
+          className="rounded-3 mb-3"
+          dismissible
+          onClose={() => setError("")}
+        >
           {error}
         </Alert>
       )}
@@ -347,22 +435,46 @@ export default function StaffOrderManagementPage() {
                   border: `2px solid ${active ? g.color : "#e2e8f0"}`,
                   cursor: "pointer",
                   transition: "all 0.15s",
-                  boxShadow: active ? `0 4px 16px ${g.color}22` : "0 1px 4px rgba(0,0,0,0.04)",
+                  boxShadow: active
+                    ? `0 4px 16px ${g.color}22`
+                    : "0 1px 4px rgba(0,0,0,0.04)",
                 }}
               >
                 <div
                   className="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
-                  style={{ width: 38, height: 38, background: g.bg, fontSize: 16, color: g.color }}
+                  style={{
+                    width: 38,
+                    height: 38,
+                    background: g.bg,
+                    fontSize: 16,
+                    color: g.color,
+                  }}
                 >
                   <i className={`bi ${g.icon}`} />
                 </div>
                 <div>
-                  <div className="fw-bold lh-1" style={{ color: g.color, fontSize: "1.2rem" }}>
+                  <div
+                    className="fw-bold lh-1"
+                    style={{ color: g.color, fontSize: "1.2rem" }}
+                  >
                     {statCounts[g.key] ?? 0}
                   </div>
-                  <div style={{ color: "#64748b", fontSize: "0.7rem", fontWeight: 600 }}>{g.label}</div>
+                  <div
+                    style={{
+                      color: "#64748b",
+                      fontSize: "0.7rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {g.label}
+                  </div>
                 </div>
-                {active && <i className="bi bi-funnel-fill ms-auto" style={{ color: g.color, fontSize: "0.7rem" }} />}
+                {active && (
+                  <i
+                    className="bi bi-funnel-fill ms-auto"
+                    style={{ color: g.color, fontSize: "0.7rem" }}
+                  />
+                )}
               </div>
             </Col>
           );
@@ -374,17 +486,32 @@ export default function StaffOrderManagementPage() {
         <Col md={3}>
           <div className="staff-search-wrap">
             <i className="bi bi-search" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm mã đơn, tên khách..." />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Tìm mã đơn, tên khách..."
+            />
           </div>
         </Col>
         <Col md={2}>
-          <Form.Control type="date" className="staff-filter-control" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} />
+          <Form.Control
+            type="date"
+            className="staff-filter-control"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+          />
         </Col>
         <Col md={3}>
-          <Form.Select className="staff-filter-control" value={tableFilter} onChange={(e) => setTableFilter(e.target.value)}>
+          <Form.Select
+            className="staff-filter-control"
+            value={tableFilter}
+            onChange={(e) => setTableFilter(e.target.value)}
+          >
             <option value="all">Tất cả chỗ ngồi</option>
             {tables.map((t) => (
-              <option key={String(t.id)} value={String(t.id)}>{t.name}</option>
+              <option key={String(t.id)} value={String(t.id)}>
+                {t.name}
+              </option>
             ))}
           </Form.Select>
         </Col>
@@ -407,7 +534,9 @@ export default function StaffOrderManagementPage() {
           {loading ? (
             <div className="text-center py-5">
               <Spinner animation="border" style={{ color: "#6366f1" }} />
-              <p className="mt-2 text-muted small fw-semibold">Đang tải đơn hàng...</p>
+              <p className="mt-2 text-muted small fw-semibold">
+                Đang tải đơn hàng...
+              </p>
             </div>
           ) : displayOrders.length === 0 ? (
             <div className="text-center py-5 text-muted">
@@ -441,33 +570,56 @@ export default function StaffOrderManagementPage() {
                   return (
                     <tr key={String(order.id)}>
                       <td>
-                        <span className="fw-bold" style={{ color: "#6366f1" }}>{order.orderCode}</span>
+                        <span className="fw-bold" style={{ color: "#6366f1" }}>
+                          {order.orderCode}
+                        </span>
                       </td>
                       <td>
-                        <div className="fw-semibold" style={{ color: "#0f172a" }}>{order.customerName || "Khách lẻ"}</div>
+                        <div
+                          className="fw-semibold"
+                          style={{ color: "#0f172a" }}
+                        >
+                          {order.customerName || "Khách lẻ"}
+                        </div>
                         {order.customerPhone && (
-                          <div style={{ color: "#64748b", fontSize: "0.78rem" }}>📞 {order.customerPhone}</div>
+                          <div
+                            style={{ color: "#64748b", fontSize: "0.78rem" }}
+                          >
+                            📞 {order.customerPhone}
+                          </div>
                         )}
                       </td>
                       <td className="fw-semibold">{order.tableName || "--"}</td>
                       <td style={{ maxWidth: 200 }}>
                         <div style={{ fontSize: "0.82rem", color: "#475569" }}>
                           {(order.items || []).slice(0, 2).map((it) => (
-                            <div key={it.menuItemId || it.menuName}>{it.menuName} <span className="text-muted">x{it.quantity}</span></div>
+                            <div key={it.menuItemId || it.menuName}>
+                              {it.menuName}{" "}
+                              <span className="text-muted">x{it.quantity}</span>
+                            </div>
                           ))}
                           {(order.items || []).length > 2 && (
-                            <div style={{ color: "#94a3b8" }}>+{order.items.length - 2} món khác</div>
+                            <div style={{ color: "#94a3b8" }}>
+                              +{order.items.length - 2} món khác
+                            </div>
                           )}
                           {!(order.items || []).length && "--"}
                         </div>
                       </td>
                       <td>
-                        <span className="fw-bold" style={{ color: "#15803d" }}>{fmtCur(order.totalAmount)}</span>
+                        <span className="fw-bold" style={{ color: "#15803d" }}>
+                          {fmtCur(order.totalAmount)}
+                        </span>
                       </td>
                       <td>
                         <span
                           className="rounded-pill px-3 py-1 fw-bold d-inline-flex align-items-center gap-1"
-                          style={{ background: stUi.bg, color: stUi.color, fontSize: "0.76rem", whiteSpace: "nowrap" }}
+                          style={{
+                            background: stUi.bg,
+                            color: stUi.color,
+                            fontSize: "0.76rem",
+                            whiteSpace: "nowrap",
+                          }}
                         >
                           <i className={`bi ${stUi.icon}`} />
                           {stUi.label}
@@ -500,9 +652,16 @@ export default function StaffOrderManagementPage() {
                                 border: "1.5px solid #bbf7d0",
                               }}
                             >
-                              {completing === order.id
-                                ? <i className="bi bi-arrow-clockwise" style={{ animation: "spin 0.8s linear infinite" }} />
-                                : <i className="bi bi-check-circle-fill" />}
+                              {completing === order.id ? (
+                                <i
+                                  className="bi bi-arrow-clockwise"
+                                  style={{
+                                    animation: "spin 0.8s linear infinite",
+                                  }}
+                                />
+                              ) : (
+                                <i className="bi bi-check-circle-fill" />
+                              )}
                             </button>
                           )}
                           <button
@@ -525,7 +684,12 @@ export default function StaffOrderManagementPage() {
       </Card>
 
       {/* ── Modal: Tạo Counter Order ── */}
-      <Modal show={showCreateModal} onHide={() => setShowCreateModal(false)} size="lg" centered>
+      <Modal
+        show={showCreateModal}
+        onHide={() => setShowCreateModal(false)}
+        size="lg"
+        centered
+      >
         <Form onSubmit={submitCreateCounterOrder}>
           <Modal.Header closeButton className="border-0">
             <Modal.Title className="fw-bold">
@@ -535,10 +699,14 @@ export default function StaffOrderManagementPage() {
           <Modal.Body className="px-4">
             <Row className="g-3 mb-3">
               <Col md={6}>
-                <Form.Label className="fw-semibold">Bàn <span className="text-danger">*</span></Form.Label>
+                <Form.Label className="fw-semibold">
+                  Bàn <span className="text-danger">*</span>
+                </Form.Label>
                 <Form.Select
                   value={createForm.tableId}
-                  onChange={(e) => setCreateForm((p) => ({ ...p, tableId: e.target.value }))}
+                  onChange={(e) =>
+                    setCreateForm((p) => ({ ...p, tableId: e.target.value }))
+                  }
                   required
                 >
                   <option value="">Chọn bàn...</option>
@@ -550,18 +718,31 @@ export default function StaffOrderManagementPage() {
                 </Form.Select>
               </Col>
               <Col md={3}>
-                <Form.Label className="fw-semibold">Thời lượng (giờ)</Form.Label>
+                <Form.Label className="fw-semibold">
+                  Thời lượng (giờ)
+                </Form.Label>
                 <Form.Control
-                  type="number" min={1}
+                  type="number"
+                  min={1}
                   value={createForm.durationHours}
-                  onChange={(e) => setCreateForm((p) => ({ ...p, durationHours: e.target.value }))}
+                  onChange={(e) =>
+                    setCreateForm((p) => ({
+                      ...p,
+                      durationHours: e.target.value,
+                    }))
+                  }
                 />
               </Col>
               <Col md={3}>
                 <Form.Label className="fw-semibold">Tên khách</Form.Label>
                 <Form.Control
                   value={createForm.customerName}
-                  onChange={(e) => setCreateForm((p) => ({ ...p, customerName: e.target.value }))}
+                  onChange={(e) =>
+                    setCreateForm((p) => ({
+                      ...p,
+                      customerName: e.target.value,
+                    }))
+                  }
                   placeholder="Tên khách hàng"
                 />
               </Col>
@@ -569,7 +750,12 @@ export default function StaffOrderManagementPage() {
                 <Form.Label className="fw-semibold">Số điện thoại</Form.Label>
                 <Form.Control
                   value={createForm.customerPhone}
-                  onChange={(e) => setCreateForm((p) => ({ ...p, customerPhone: e.target.value }))}
+                  onChange={(e) =>
+                    setCreateForm((p) => ({
+                      ...p,
+                      customerPhone: e.target.value,
+                    }))
+                  }
                   placeholder="0912..."
                 />
               </Col>
@@ -580,17 +766,29 @@ export default function StaffOrderManagementPage() {
               style={{ background: "#f8fafc" }}
             >
               <h6 className="mb-0 fw-bold">🍽️ Danh sách món</h6>
-              <Button variant="outline-primary" size="sm" type="button" className="rounded-3" onClick={addCreateItem}>
-                <i className="bi bi-plus-lg me-1" />Thêm món
+              <Button
+                variant="outline-primary"
+                size="sm"
+                type="button"
+                className="rounded-3"
+                onClick={addCreateItem}
+              >
+                <i className="bi bi-plus-lg me-1" />
+                Thêm món
               </Button>
             </div>
 
             {createForm.items.map((item, index) => (
-              <Row className="g-2 mb-2 align-items-center" key={`create-line-${index}`}>
+              <Row
+                className="g-2 mb-2 align-items-center"
+                key={`create-line-${index}`}
+              >
                 <Col md={6}>
                   <Form.Select
                     value={item.menuItemId}
-                    onChange={(e) => onChangeCreateItem(index, "menuItemId", e.target.value)}
+                    onChange={(e) =>
+                      onChangeCreateItem(index, "menuItemId", e.target.value)
+                    }
                     required
                   >
                     <option value="">Chọn món...</option>
@@ -603,9 +801,12 @@ export default function StaffOrderManagementPage() {
                 </Col>
                 <Col md={2}>
                   <Form.Control
-                    type="number" min={1}
+                    type="number"
+                    min={1}
                     value={item.quantity}
-                    onChange={(e) => onChangeCreateItem(index, "quantity", e.target.value)}
+                    onChange={(e) =>
+                      onChangeCreateItem(index, "quantity", e.target.value)
+                    }
                     required
                     placeholder="SL"
                   />
@@ -613,7 +814,9 @@ export default function StaffOrderManagementPage() {
                 <Col md={3}>
                   <Form.Control
                     value={item.note}
-                    onChange={(e) => onChangeCreateItem(index, "note", e.target.value)}
+                    onChange={(e) =>
+                      onChangeCreateItem(index, "note", e.target.value)
+                    }
                     placeholder="Ghi chú (tuỳ chọn)"
                   />
                 </Col>
@@ -631,7 +834,11 @@ export default function StaffOrderManagementPage() {
             ))}
           </Modal.Body>
           <Modal.Footer className="border-0 px-4 pb-4">
-            <Button variant="outline-secondary" className="fw-semibold rounded-3" onClick={() => setShowCreateModal(false)}>
+            <Button
+              variant="outline-secondary"
+              className="fw-semibold rounded-3"
+              onClick={() => setShowCreateModal(false)}
+            >
               Hủy
             </Button>
             <Button
@@ -640,27 +847,44 @@ export default function StaffOrderManagementPage() {
               style={{ background: "#6366f1", border: "none" }}
               disabled={creating}
             >
-              {creating ? <><Spinner size="sm" className="me-1" />Đang tạo...</> : "✅ Tạo đơn"}
+              {creating ? (
+                <>
+                  <Spinner size="sm" className="me-1" />
+                  Đang tạo...
+                </>
+              ) : (
+                "✅ Tạo đơn"
+              )}
             </Button>
           </Modal.Footer>
         </Form>
       </Modal>
 
       {/* ── Modal: Cập nhật Order ── */}
-      <Modal show={showEditModal} onHide={() => setShowEditModal(false)} size="lg" centered>
+      <Modal
+        show={showEditModal}
+        onHide={() => setShowEditModal(false)}
+        size="lg"
+        centered
+      >
         <Form onSubmit={submitUpdateOrder}>
           <Modal.Header closeButton className="border-0">
             <Modal.Title className="fw-bold">
-              ✏️ Cập nhật đơn — <span style={{ color: "#6366f1" }}>{editingOrder?.orderCode}</span>
+              ✏️ Cập nhật đơn —{" "}
+              <span style={{ color: "#6366f1" }}>
+                {editingOrder?.orderCode}
+              </span>
             </Modal.Title>
           </Modal.Header>
           <Modal.Body className="px-4">
             {/* Status selector */}
             <div className="mb-4">
-              <Form.Label className="fw-bold mb-2">Trạng thái đơn hàng</Form.Label>
+              <Form.Label className="fw-bold mb-2">
+                Trạng thái đơn hàng
+              </Form.Label>
               <div className="d-flex flex-wrap gap-2">
                 {ORDER_STATUS_OPTIONS.map((s) => {
-                  const ui     = ORDER_STATUS_UI[s];
+                  const ui = ORDER_STATUS_UI[s];
                   const active = editingStatus === s;
                   return (
                     <div
@@ -679,7 +903,12 @@ export default function StaffOrderManagementPage() {
                     >
                       <i className={`bi ${ui.icon}`} />
                       {ui.label}
-                      {active && <i className="bi bi-check-circle-fill ms-1" style={{ color: ui.color }} />}
+                      {active && (
+                        <i
+                          className="bi bi-check-circle-fill ms-1"
+                          style={{ color: ui.color }}
+                        />
+                      )}
                     </div>
                   );
                 })}
@@ -688,28 +917,57 @@ export default function StaffOrderManagementPage() {
 
             {/* Customer info (read-only) */}
             {editingOrder && (
-              <div className="rounded-3 p-3 mb-3" style={{ background: "#f8fafc", fontSize: "0.84rem" }}>
+              <div
+                className="rounded-3 p-3 mb-3"
+                style={{ background: "#f8fafc", fontSize: "0.84rem" }}
+              >
                 <div className="d-flex gap-4 flex-wrap">
-                  <div><span style={{ color: "#64748b" }}>👤 Khách: </span><strong>{editingOrder.customerName || "Khách lẻ"}</strong></div>
-                  <div><span style={{ color: "#64748b" }}>🪑 Bàn: </span><strong>{editingOrder.tableName || "--"}</strong></div>
-                  <div><span style={{ color: "#64748b" }}>💰 Tổng: </span><strong style={{ color: "#15803d" }}>{fmtCur(editingOrder.totalAmount)}</strong></div>
+                  <div>
+                    <span style={{ color: "#64748b" }}>👤 Khách: </span>
+                    <strong>{editingOrder.customerName || "Khách lẻ"}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: "#64748b" }}>🪑 Bàn: </span>
+                    <strong>{editingOrder.tableName || "--"}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: "#64748b" }}>💰 Tổng: </span>
+                    <strong style={{ color: "#15803d" }}>
+                      {fmtCur(editingOrder.totalAmount)}
+                    </strong>
+                  </div>
                 </div>
               </div>
             )}
 
-            <div className="d-flex justify-content-between align-items-center mb-3 px-2 py-2 rounded-3" style={{ background: "#f8fafc" }}>
+            <div
+              className="d-flex justify-content-between align-items-center mb-3 px-2 py-2 rounded-3"
+              style={{ background: "#f8fafc" }}
+            >
               <h6 className="mb-0 fw-bold">🍽️ Danh sách món</h6>
-              <Button variant="outline-primary" size="sm" type="button" className="rounded-3" onClick={addEditItem}>
-                <i className="bi bi-plus-lg me-1" />Thêm món
+              <Button
+                variant="outline-primary"
+                size="sm"
+                type="button"
+                className="rounded-3"
+                onClick={addEditItem}
+              >
+                <i className="bi bi-plus-lg me-1" />
+                Thêm món
               </Button>
             </div>
 
             {editingItems.map((item, index) => (
-              <Row className="g-2 mb-2 align-items-center" key={`edit-line-${index}`}>
+              <Row
+                className="g-2 mb-2 align-items-center"
+                key={`edit-line-${index}`}
+              >
                 <Col md={6}>
                   <Form.Select
                     value={item.menuItemId}
-                    onChange={(e) => onChangeEditItem(index, "menuItemId", e.target.value)}
+                    onChange={(e) =>
+                      onChangeEditItem(index, "menuItemId", e.target.value)
+                    }
                     required
                   >
                     <option value="">Chọn món...</option>
@@ -721,15 +979,33 @@ export default function StaffOrderManagementPage() {
                   </Form.Select>
                 </Col>
                 <Col md={2}>
-                  <Form.Control type="number" min={1} value={item.quantity}
-                    onChange={(e) => onChangeEditItem(index, "quantity", e.target.value)} required placeholder="SL" />
+                  <Form.Control
+                    type="number"
+                    min={1}
+                    value={item.quantity}
+                    onChange={(e) =>
+                      onChangeEditItem(index, "quantity", e.target.value)
+                    }
+                    required
+                    placeholder="SL"
+                  />
                 </Col>
                 <Col md={3}>
-                  <Form.Control value={item.note}
-                    onChange={(e) => onChangeEditItem(index, "note", e.target.value)} placeholder="Ghi chú" />
+                  <Form.Control
+                    value={item.note}
+                    onChange={(e) =>
+                      onChangeEditItem(index, "note", e.target.value)
+                    }
+                    placeholder="Ghi chú"
+                  />
                 </Col>
                 <Col md={1}>
-                  <Button variant="outline-danger" type="button" className="w-100 rounded-3" onClick={() => removeEditItem(index)}>
+                  <Button
+                    variant="outline-danger"
+                    type="button"
+                    className="w-100 rounded-3"
+                    onClick={() => removeEditItem(index)}
+                  >
                     <i className="bi bi-x-lg" />
                   </Button>
                 </Col>
@@ -737,7 +1013,11 @@ export default function StaffOrderManagementPage() {
             ))}
           </Modal.Body>
           <Modal.Footer className="border-0 px-4 pb-4">
-            <Button variant="outline-secondary" className="fw-semibold rounded-3" onClick={() => setShowEditModal(false)}>
+            <Button
+              variant="outline-secondary"
+              className="fw-semibold rounded-3"
+              onClick={() => setShowEditModal(false)}
+            >
               Hủy
             </Button>
             <Button
@@ -746,14 +1026,26 @@ export default function StaffOrderManagementPage() {
               style={{ background: "#6366f1", border: "none" }}
               disabled={updating}
             >
-              {updating ? <><Spinner size="sm" className="me-1" />Đang lưu...</> : "💾 Lưu thay đổi"}
+              {updating ? (
+                <>
+                  <Spinner size="sm" className="me-1" />
+                  Đang lưu...
+                </>
+              ) : (
+                "💾 Lưu thay đổi"
+              )}
             </Button>
           </Modal.Footer>
         </Form>
       </Modal>
 
       {/* ── Modal: Hóa đơn ── */}
-      <Modal show={showInvoiceModal} onHide={() => setShowInvoiceModal(false)} size="md" centered>
+      <Modal
+        show={showInvoiceModal}
+        onHide={() => setShowInvoiceModal(false)}
+        size="md"
+        centered
+      >
         <Modal.Header closeButton className="border-0">
           <Modal.Title className="fw-bold">🧾 Hóa đơn</Modal.Title>
         </Modal.Header>
@@ -761,10 +1053,14 @@ export default function StaffOrderManagementPage() {
           {invoiceLoading ? (
             <div className="text-center py-4">
               <Spinner animation="border" style={{ color: "#6366f1" }} />
-              <p className="mt-2 text-muted small fw-semibold">Đang tải hóa đơn...</p>
+              <p className="mt-2 text-muted small fw-semibold">
+                Đang tải hóa đơn...
+              </p>
             </div>
           ) : !invoiceData ? (
-            <Alert variant="secondary" className="mb-0">Không có dữ liệu hóa đơn.</Alert>
+            <Alert variant="secondary" className="mb-0">
+              Không có dữ liệu hóa đơn.
+            </Alert>
           ) : (
             <div>
               {/* Invoice header */}
@@ -773,19 +1069,26 @@ export default function StaffOrderManagementPage() {
                   {invoiceData.invoiceCode}
                 </div>
                 <div className="text-muted small">
-                  {toDate(invoiceData.createdAt)} · {toTime(invoiceData.createdAt)}
+                  {toDate(invoiceData.createdAt)} ·{" "}
+                  {toTime(invoiceData.createdAt)}
                 </div>
               </div>
 
               {/* Info */}
-              <div className="rounded-3 p-3 mb-3" style={{ background: "#f8fafc", fontSize: "0.85rem" }}>
+              <div
+                className="rounded-3 p-3 mb-3"
+                style={{ background: "#f8fafc", fontSize: "0.85rem" }}
+              >
                 {[
-                  ["📋 Mã order",    invoiceData.order?.orderCode],
+                  ["📋 Mã order", invoiceData.order?.orderCode],
                   ["👤 Khách hàng", invoiceData.customer?.name || "Khách lẻ"],
-                  ["📞 SĐT",         invoiceData.customer?.phone || "--"],
-                  ["🪑 Bàn",         invoiceData.table?.name || "--"],
+                  ["📞 SĐT", invoiceData.customer?.phone || "--"],
+                  ["🪑 Bàn", invoiceData.table?.name || "--"],
                 ].map(([label, val]) => (
-                  <div key={label} className="d-flex justify-content-between py-1 border-bottom">
+                  <div
+                    key={label}
+                    className="d-flex justify-content-between py-1 border-bottom"
+                  >
                     <span style={{ color: "#64748b" }}>{label}</span>
                     <strong style={{ color: "#0f172a" }}>{val}</strong>
                   </div>
@@ -794,57 +1097,93 @@ export default function StaffOrderManagementPage() {
 
               {/* Items */}
               <h6 className="fw-bold mb-2">Danh sách món</h6>
-              <div className="rounded-3 overflow-hidden mb-3" style={{ border: "1px solid #e2e8f0" }}>
+              <div
+                className="rounded-3 overflow-hidden mb-3"
+                style={{ border: "1px solid #e2e8f0" }}
+              >
                 {(invoiceData.items || []).map((line, idx) => (
                   <div
                     key={`${line.menuName}-${idx}`}
                     className="d-flex justify-content-between align-items-center px-3 py-2"
-                    style={{ borderBottom: idx < (invoiceData.items.length - 1) ? "1px solid #f1f5f9" : "none" }}
+                    style={{
+                      borderBottom:
+                        idx < invoiceData.items.length - 1
+                          ? "1px solid #f1f5f9"
+                          : "none",
+                    }}
                   >
                     <div>
-                      <div className="fw-semibold" style={{ fontSize: "0.87rem" }}>{line.menuName}</div>
+                      <div
+                        className="fw-semibold"
+                        style={{ fontSize: "0.87rem" }}
+                      >
+                        {line.menuName}
+                      </div>
                       <div style={{ color: "#94a3b8", fontSize: "0.78rem" }}>
                         {fmtCur(line.priceAtOrder)} × {line.quantity}
                       </div>
                     </div>
-                    <strong style={{ color: "#15803d" }}>{fmtCur(line.lineTotal)}</strong>
+                    <strong style={{ color: "#15803d" }}>
+                      {fmtCur(line.lineTotal)}
+                    </strong>
                   </div>
                 ))}
               </div>
 
               {/* Totals */}
-              <div className="rounded-3 p-3" style={{ background: "#f8fafc", fontSize: "0.88rem" }}>
+              <div
+                className="rounded-3 p-3"
+                style={{ background: "#f8fafc", fontSize: "0.88rem" }}
+              >
                 <div className="d-flex justify-content-between mb-2">
                   <span style={{ color: "#64748b" }}>Tạm tính dịch vụ</span>
                   <strong>{fmtCur(invoiceData.summary?.subTotal)}</strong>
                 </div>
                 <div className="d-flex justify-content-between mb-2">
                   <span style={{ color: "#64748b" }}>Đặt cọc booking</span>
-                  <strong style={{ color: "#b91c1c" }}>−{fmtCur(invoiceData.summary?.depositAmount)}</strong>
+                  <strong style={{ color: "#b91c1c" }}>
+                    −{fmtCur(invoiceData.summary?.depositAmount)}
+                  </strong>
                 </div>
                 <hr className="my-2" />
                 <div className="d-flex justify-content-between">
                   <span className="fw-bold fs-6">Tổng cần thanh toán</span>
-                  <strong className="fs-5" style={{ color: "#6366f1" }}>{fmtCur(invoiceData.summary?.totalAmount)}</strong>
+                  <strong className="fs-5" style={{ color: "#6366f1" }}>
+                    {fmtCur(invoiceData.summary?.totalAmount)}
+                  </strong>
                 </div>
               </div>
             </div>
           )}
         </Modal.Body>
         <Modal.Footer className="border-0 px-4 pb-4 gap-2">
-          <Button variant="outline-secondary" className="fw-semibold rounded-3" onClick={() => setShowInvoiceModal(false)}>
+          <Button
+            variant="outline-secondary"
+            className="fw-semibold rounded-3"
+            onClick={() => setShowInvoiceModal(false)}
+          >
             Đóng
           </Button>
           <Button
             className="fw-bold rounded-3"
-            style={{ background: invoiceData ? "#6366f1" : "#94a3b8", border: "none" }}
+            style={{
+              background: invoiceData ? "#6366f1" : "#94a3b8",
+              border: "none",
+            }}
             disabled={!invoiceData || exporting}
             onClick={handleExport}
           >
-            {exporting
-              ? <><Spinner size="sm" className="me-1" />Đang xuất...</>
-              : <><i className="bi bi-download me-1" />Xuất hóa đơn (CSV)</>
-            }
+            {exporting ? (
+              <>
+                <Spinner size="sm" className="me-1" />
+                Đang xuất...
+              </>
+            ) : (
+              <>
+                <i className="bi bi-download me-1" />
+                Xuất hóa đơn (CSV)
+              </>
+            )}
           </Button>
         </Modal.Footer>
       </Modal>

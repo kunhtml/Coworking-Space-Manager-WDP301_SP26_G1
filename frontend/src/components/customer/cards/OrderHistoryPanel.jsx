@@ -205,7 +205,8 @@ export default function OrderHistoryPanel({
                         variant="outline-primary"
                         onClick={() => openEditOrder(order)}
                       >
-                        <i className="bi bi-pencil-square me-1"></i>Edit order
+                        <i className="bi bi-pencil-square me-1"></i>
+                        {order.appendOnlyEdit ? "Thêm món" : "Edit order"}
                       </Button>
                     ) : null}
                     {order.paymentStatus !== "PAID" &&

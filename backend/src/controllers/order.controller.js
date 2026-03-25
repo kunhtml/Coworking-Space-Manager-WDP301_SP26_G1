@@ -12,22 +12,27 @@ function mapOrderRow(order, bookingMap, itemMap, invoiceMap) {
   const booking = bookingMap.get(order.bookingId?.toString());
   const invoice = invoiceMap.get(order._id?.toString());
   const normalizedOrderStatus = normalizeOrderStatus(order.status);
+  const normalizedInvoiceStatus = String(invoice?.status || "").toUpperCase();
 
   let paymentStatus = "UNPAID";
   if (normalizedOrderStatus === ORDER_STATUS.CANCELLED) {
     paymentStatus = "CANCELLED";
   } else if (
-    String(invoice?.status || "").toUpperCase() === "PAID" ||
+    normalizedInvoiceStatus === "PAID" ||
     Number(invoice?.remainingAmount || 0) <= 0
   ) {
     paymentStatus = "PAID";
   }
+
+  const appendOnlyEdit =
+    paymentStatus === "PAID" || normalizedInvoiceStatus === "PARTIALLY_PAID";
 
   return {
     id: order._id,
     bookingId: order.bookingId,
     status: normalizedOrderStatus,
     paymentStatus,
+    appendOnlyEdit,
     totalAmount: Number(order.totalAmount || 0),
     createdAt: order.createdAt,
     bookingStatus: booking?.status || "Unknown",
@@ -180,7 +185,7 @@ export const createOrder = async (req, res) => {
 export const updateMyOrder = async (req, res) => {
   try {
     const { id } = req.params;
-    const { items } = req.body;
+    const { items, appendOnly } = req.body;
     if (!Array.isArray(items) || items.length === 0) {
       return res
         .status(400)
@@ -225,7 +230,116 @@ export const updateMyOrder = async (req, res) => {
       return res.status(400).json({ message: "Danh sách món không hợp lệ." });
     }
 
+    const invoice = await Invoice.findOne({ orderIds: order._id });
+    const successPayments = invoice
+      ? await Payment.find({
+          invoiceId: invoice._id,
+          paymentStatus: "Success",
+        }).lean()
+      : [];
+    const totalPaid = successPayments.reduce(
+      (sum, payment) => sum + Math.round(Number(payment.amount || 0)),
+      0,
+    );
+    const hasPaidAmount = totalPaid > 0;
+
     const oldTotalAmount = Number(order.totalAmount || 0);
+
+    if (hasPaidAmount) {
+      const existingItems = await OrderItem.find({ orderId: order._id }).lean();
+
+      const makeKey = (item) =>
+        `${String(item.menuItemId)}|${String(item.note || "").trim()}|${Number(item.priceAtOrder || 0)}`;
+
+      const existingQtyByKey = new Map();
+      for (const item of existingItems) {
+        const key = makeKey(item);
+        existingQtyByKey.set(
+          key,
+          Number(existingQtyByKey.get(key) || 0) + Number(item.quantity || 0),
+        );
+      }
+
+      const incomingByKey = new Map();
+      const incomingMetaByKey = new Map();
+      for (const item of normalizedItems) {
+        const key = makeKey(item);
+        incomingByKey.set(
+          key,
+          Number(incomingByKey.get(key) || 0) + Number(item.quantity || 0),
+        );
+        if (!incomingMetaByKey.has(key)) {
+          incomingMetaByKey.set(key, item);
+        }
+      }
+
+      const newlyAddedItems = [];
+      if (appendOnly) {
+        newlyAddedItems.push(...normalizedItems);
+      } else {
+        for (const [key, incomingQty] of incomingByKey.entries()) {
+          const oldQty = Number(existingQtyByKey.get(key) || 0);
+          const deltaQty = incomingQty - oldQty;
+          if (deltaQty > 0) {
+            const itemMeta = incomingMetaByKey.get(key);
+            newlyAddedItems.push({
+              menuItemId: itemMeta.menuItemId,
+              quantity: deltaQty,
+              note: itemMeta.note || "",
+              priceAtOrder: Number(itemMeta.priceAtOrder || 0),
+            });
+          }
+        }
+      }
+
+      if (!newlyAddedItems.length) {
+        return res.status(400).json({
+          message:
+            "Đơn đã có thanh toán. Bạn chỉ có thể thêm món mới, không thể sửa/xóa món đã thanh toán.",
+        });
+      }
+
+      await OrderItem.insertMany(
+        newlyAddedItems.map((item) => ({
+          orderId: order._id,
+          menuItemId: item.menuItemId,
+          quantity: item.quantity,
+          note: item.note,
+          priceAtOrder: item.priceAtOrder,
+        })),
+      );
+
+      const addedAmount = Math.round(
+        newlyAddedItems.reduce(
+          (sum, item) =>
+            sum + Number(item.quantity) * Number(item.priceAtOrder),
+          0,
+        ),
+      );
+
+      order.totalAmount = Math.round(oldTotalAmount + addedAmount);
+      await order.save();
+
+      if (invoice) {
+        invoice.totalAmount = Math.round(
+          Number(invoice.totalAmount || 0) + addedAmount,
+        );
+        invoice.remainingAmount = Math.max(0, invoice.totalAmount - totalPaid);
+        invoice.status =
+          invoice.remainingAmount <= 0
+            ? "Paid"
+            : totalPaid > 0
+              ? "Partially_Paid"
+              : "Pending";
+        await invoice.save();
+      }
+
+      return res.json({
+        message: "Đã thêm món mới vào đơn hàng thành công.",
+        appendOnly: Boolean(appendOnly),
+      });
+    }
+
     const newTotalAmount = Math.round(
       normalizedItems.reduce(
         (sum, item) => sum + Number(item.quantity) * Number(item.priceAtOrder),
@@ -247,20 +361,10 @@ export const updateMyOrder = async (req, res) => {
     order.totalAmount = newTotalAmount;
     await order.save();
 
-    const invoice = await Invoice.findOne({ orderIds: order._id });
     if (invoice) {
       const totalDiff = newTotalAmount - oldTotalAmount;
       invoice.totalAmount = Math.round(
         Number(invoice.totalAmount || 0) + totalDiff,
-      );
-
-      const successPayments = await Payment.find({
-        invoiceId: invoice._id,
-        paymentStatus: "Success",
-      }).lean();
-      const totalPaid = successPayments.reduce(
-        (sum, payment) => sum + Math.round(Number(payment.amount || 0)),
-        0,
       );
 
       invoice.remainingAmount = Math.max(0, invoice.totalAmount - totalPaid);
