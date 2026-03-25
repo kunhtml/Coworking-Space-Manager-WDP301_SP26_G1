@@ -1,0 +1,58 @@
+[
+  {
+    "_id": { "$oid": "65e6e1000000000000000001" },
+    "name": "Hot_Desk",
+    "description": "aaaaaaaaaaaaaaaa",
+    "capacity": 1,
+    "createdAt": { "$date": "2025-10-01T08:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6e1000000000000000002" },
+    "name": "Dedicated_Desk",
+    "description": "Ban co dinh danh rieng cho mot nguoi",
+    "capacity": 1,
+    "createdAt": { "$date": "2025-10-01T08:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6e1000000000000000003" },
+    "name": "Meeting_Room",
+    "description": "",
+    "capacity": 1,
+    "createdAt": { "$date": "2025-10-01T08:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6e1000000000000000004" },
+    "name": "Private_Office",
+    "description": "Van phong rieng cho doanh nghiep nho",
+    "capacity": 6,
+    "createdAt": { "$date": "2025-10-01T08:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "65e6e1000000000000000005" },
+    "name": "Event_Space",
+    "description": "Khong gian to chuc su kien va hoi thao",
+    "capacity": 50,
+    "createdAt": { "$date": "2025-10-01T08:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "69c40967efee12184efcceb7" },
+    "name": "Group_Table",
+    "description": "",
+    "capacity": 1,
+    "createdAt": { "$date": "2026-03-25T16:12:23.997Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "69c40968efee12184efcceb8" },
+    "name": "VIP_Room",
+    "description": "",
+    "capacity": 1,
+    "createdAt": { "$date": "2026-03-25T16:12:23.999Z" },
+    "__v": 0
+  }
+]
