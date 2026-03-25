@@ -3,6 +3,36 @@ import Booking from "../models/booking.js";
 import Table from "../models/table.js";
 import Order from "../models/order.js";
 import Invoice from "../models/invoice.js";
+import TableType from "../models/tableType.js";
+
+const buildTableTypeMetaMap = async (tables = []) => {
+  const typeIds = [
+    ...new Set(
+      tables.map((table) => table.tableTypeId?.toString()).filter(Boolean),
+    ),
+  ];
+  if (!typeIds.length) return new Map();
+
+  const tableTypes = await TableType.find({ _id: { $in: typeIds } }).lean();
+  return new Map(
+    tableTypes.map((type) => [
+      type._id.toString(),
+      {
+        name: String(type.name || ""),
+        capacity: Number(type.capacity || 0),
+      },
+    ]),
+  );
+};
+
+const resolveTableTypeMeta = (table, tableTypeMetaMap) =>
+  tableTypeMetaMap.get(table?.tableTypeId?.toString()) || null;
+
+const resolveTableCapacity = (table, tableTypeMetaMap) =>
+  Number(resolveTableTypeMeta(table, tableTypeMetaMap)?.capacity || 0);
+
+const resolveTableTypeName = (table, tableTypeMetaMap) =>
+  resolveTableTypeMeta(table, tableTypeMetaMap)?.name || "Unknown";
 
 export const getReportAnalytics = async (req, res) => {
   try {
@@ -12,13 +42,14 @@ export const getReportAnalytics = async (req, res) => {
     const [payments, bookings, tables, orders, invoices] = await Promise.all([
       Payment.find().sort({ paidAt: -1, createdAt: -1 }).lean(),
       Booking.find()
-        .populate("tableId", "name tableType capacity status")
+        .populate("tableId", "name tableTypeId status")
         .sort({ createdAt: -1 })
         .lean(),
       Table.find().sort({ name: 1 }).lean(),
       Order.find().sort({ createdAt: -1 }).lean(),
       Invoice.find().sort({ createdAt: -1 }).lean(),
     ]);
+    const tableTypeMetaMap = await buildTableTypeMetaMap(tables);
 
     const now = new Date();
     let revenueData = [];
@@ -164,7 +195,7 @@ export const getReportAnalytics = async (req, res) => {
 
     // Calculate occupancy rates based on bookings
     const totalCapacity = tables.reduce(
-      (sum, table) => sum + (table.capacity || 0),
+      (sum, table) => sum + resolveTableCapacity(table, tableTypeMetaMap),
       0,
     );
 
@@ -191,8 +222,13 @@ export const getReportAnalytics = async (req, res) => {
       if (period) {
         period.bookingCount += 1;
         // Calculate occupancy as percentage of table capacity usage
-        const tableCapacity = booking.tableId?.capacity || 1;
-        period.occupancyRate += (tableCapacity / totalCapacity) * 100;
+        const tableCapacity = resolveTableCapacity(
+          booking.tableId,
+          tableTypeMetaMap,
+        );
+        if (totalCapacity > 0) {
+          period.occupancyRate += (tableCapacity / totalCapacity) * 100;
+        }
       }
     });
 
@@ -223,14 +259,17 @@ export const getReportAnalytics = async (req, res) => {
     }, new Map());
 
     const tableTypeUsageMap = bookings.reduce((acc, booking) => {
-      const type = booking.tableId?.tableType || "Unknown";
+      const type = resolveTableTypeName(booking.tableId, tableTypeMetaMap);
       const existing = acc.get(type) || {
         tableType: type,
         bookings: 0,
         guests: 0,
       };
       existing.bookings += 1;
-      existing.guests += Number(booking.tableId?.capacity) || 0;
+      existing.guests += resolveTableCapacity(
+        booking.tableId,
+        tableTypeMetaMap,
+      );
       acc.set(type, existing);
       return acc;
     }, new Map());
@@ -239,8 +278,8 @@ export const getReportAnalytics = async (req, res) => {
     const occupiedTables = occupancyByStatusMap.get("Occupied") || 0;
     const availableTables = occupancyByStatusMap.get("Available") || 0;
     const maintenanceTables = occupancyByStatusMap.get("Maintenance") || 0;
-    const activeBookings = bookings.filter(
-      (booking) => ["CheckedIn", "In_Use"].includes(booking.status),
+    const activeBookings = bookings.filter((booking) =>
+      ["CheckedIn", "In_Use"].includes(booking.status),
     ).length;
 
     res.json({
@@ -293,7 +332,7 @@ export const getReportAnalytics = async (req, res) => {
         id: booking._id,
         bookingCode: booking.bookingCode,
         tableName: booking.tableId?.name || "N/A",
-        tableType: booking.tableId?.tableType || "N/A",
+        tableType: resolveTableTypeName(booking.tableId, tableTypeMetaMap),
         status: booking.status || "Unknown",
         startTime: booking.startTime,
         depositAmount: booking.depositAmount || 0,
@@ -319,7 +358,9 @@ export const getHourlyOccupancyAnalytics = async (req, res) => {
 
     const baseDate = date ? parseLocalDate(date) : new Date();
     if (!baseDate || Number.isNaN(baseDate.getTime())) {
-      return res.status(400).json({ message: "Ngay khong hop le (YYYY-MM-DD)." });
+      return res
+        .status(400)
+        .json({ message: "Ngay khong hop le (YYYY-MM-DD)." });
     }
 
     const dayStart = new Date(baseDate);
@@ -338,7 +379,9 @@ export const getHourlyOccupancyAnalytics = async (req, res) => {
       rangeEnd.setMonth(rangeEnd.getMonth() + 1, 1);
       dayCount = Math.max(
         1,
-        Math.round((rangeEnd.getTime() - rangeStart.getTime()) / (24 * 60 * 60 * 1000)),
+        Math.round(
+          (rangeEnd.getTime() - rangeStart.getTime()) / (24 * 60 * 60 * 1000),
+        ),
       );
     } else {
       rangeEnd.setDate(rangeEnd.getDate() + 1);
@@ -352,16 +395,21 @@ export const getHourlyOccupancyAnalytics = async (req, res) => {
         endTime: { $gt: rangeStart },
         status: { $nin: ["Cancelled", "No_Show", "NoShow", "Rejected"] },
       })
-        .populate("tableId", "capacity")
+        .populate("tableId", "tableTypeId")
         .lean(),
     ]);
 
+    const tableTypeMetaMap = await buildTableTypeMetaMap(tables);
+
     const tableCapacityById = new Map(
-      tables.map((table) => [String(table._id), Number(table.capacity) || 1]),
+      tables.map((table) => [
+        String(table._id),
+        resolveTableCapacity(table, tableTypeMetaMap),
+      ]),
     );
 
     const totalCapacity = tables.reduce(
-      (sum, table) => sum + (Number(table.capacity) || 1),
+      (sum, table) => sum + resolveTableCapacity(table, tableTypeMetaMap),
       0,
     );
 
@@ -403,8 +451,7 @@ export const getHourlyOccupancyAnalytics = async (req, res) => {
 
           if (tableId && !occupiedTableIds.has(tableId)) {
             occupiedTableIds.add(tableId);
-            occupiedCapacity +=
-              Number(booking.tableId?.capacity) || tableCapacityById.get(tableId) || 1;
+            occupiedCapacity += tableCapacityById.get(tableId) || 0;
           }
         });
 
@@ -422,7 +469,8 @@ export const getHourlyOccupancyAnalytics = async (req, res) => {
               ? Math.max(
                   1,
                   Math.round(
-                    (item.occupiedCapacitySum / (totalCapacity * Math.max(dayCount, 1))) *
+                    (item.occupiedCapacitySum /
+                      (totalCapacity * Math.max(dayCount, 1))) *
                       100,
                   ),
                 )
@@ -481,59 +529,60 @@ export const getDailyTableUsage = async (req, res) => {
   console.log("[getDailyTableUsage] API called with query:", req.query);
   try {
     const { year, month } = req.query;
-    
+
     const targetYear = year ? parseInt(year) : new Date().getFullYear();
     const targetMonth = month ? parseInt(month) - 1 : new Date().getMonth();
-    
+
     // Get first and last day of the month
     const monthStart = new Date(targetYear, targetMonth, 1, 0, 0, 0, 0);
     const monthEnd = new Date(targetYear, targetMonth + 1, 1, 0, 0, 0, 0);
-    
+
     // Get all tables and create a map for quick lookup
     const tables = await Table.find().lean();
+    const tableTypeMetaMap = await buildTableTypeMetaMap(tables);
     const totalTables = tables.length;
     const tablesMap = new Map();
-    tables.forEach(t => tablesMap.set(String(t._id), t));
-    
+    tables.forEach((t) => tablesMap.set(String(t._id), t));
+
     // Get all bookings for the month
     const bookings = await Booking.find({
       startTime: { $lt: monthEnd },
       endTime: { $gt: monthStart },
       status: { $nin: ["Cancelled", "No_Show", "NoShow", "Rejected"] },
     })
-      .populate("tableId", "_id name capacity pricePerHour location")
+      .populate("tableId", "_id name tableTypeId pricePerHour")
       .populate("userId", "_id name email phone")
       .lean();
-    
+
     // Calculate table usage for each day
     const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
     const dailyUsage = {};
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     for (let day = 1; day <= daysInMonth; day++) {
       const dayStart = new Date(targetYear, targetMonth, day, 0, 0, 0, 0);
       const dayEnd = new Date(targetYear, targetMonth, day, 23, 59, 59, 999);
-      
+
       // Check if this day is in the future
       const isFutureDay = dayStart > today;
-      
+
       // Find bookings that overlap with this day
       const dayBookings = bookings.filter((booking) => {
         const bookingStart = new Date(booking.startTime);
         const bookingEnd = new Date(booking.endTime);
         return bookingStart < dayEnd && bookingEnd > dayStart;
       });
-      
+
       // Count unique tables used on this day and collect table details
       const uniqueTablesMap = new Map();
       const bookingsWithoutTable = [];
-      
+
       dayBookings.forEach((booking) => {
         // Handle both populated tableId (object) and non-populated (ObjectId/string)
         let tableIdStr = null;
         let tableData = null;
-        
+
         if (booking.tableId) {
           if (booking.tableId._id) {
             // tableId was populated successfully
@@ -546,15 +595,14 @@ export const getDailyTableUsage = async (req, res) => {
             tableData = tablesMap.get(tableIdStr);
           }
         }
-        
+
         if (tableIdStr && tableData) {
           if (!uniqueTablesMap.has(tableIdStr)) {
             uniqueTablesMap.set(tableIdStr, {
               _id: tableData._id,
               name: tableData.name,
-              capacity: tableData.capacity,
+              capacity: resolveTableCapacity(tableData, tableTypeMetaMap),
               pricePerHour: tableData.pricePerHour,
-              location: tableData.location,
               bookings: [],
             });
           }
@@ -565,12 +613,14 @@ export const getDailyTableUsage = async (req, res) => {
             endTime: booking.endTime,
             status: booking.status,
             totalPrice: booking.totalPrice,
-            user: booking.userId ? {
-              _id: booking.userId._id,
-              name: booking.userId.name,
-              email: booking.userId.email,
-              phone: booking.userId.phone,
-            } : null,
+            user: booking.userId
+              ? {
+                  _id: booking.userId._id,
+                  name: booking.userId.name,
+                  email: booking.userId.email,
+                  phone: booking.userId.phone,
+                }
+              : null,
           });
         } else {
           // Booking without valid tableId (table deleted or never assigned)
@@ -581,27 +631,35 @@ export const getDailyTableUsage = async (req, res) => {
             endTime: booking.endTime,
             status: booking.status,
             totalPrice: booking.totalPrice,
-            user: booking.userId ? {
-              _id: booking.userId._id,
-              name: booking.userId.name,
-              email: booking.userId.email,
-              phone: booking.userId.phone,
-            } : null,
+            user: booking.userId
+              ? {
+                  _id: booking.userId._id,
+                  name: booking.userId.name,
+                  email: booking.userId.email,
+                  phone: booking.userId.phone,
+                }
+              : null,
           });
         }
       });
-      
+
       const tablesUsed = uniqueTablesMap.size;
-      const occupancyRate = totalTables > 0 ? Math.round((tablesUsed / totalTables) * 100) : 0;
-      
+      const occupancyRate =
+        totalTables > 0 ? Math.round((tablesUsed / totalTables) * 100) : 0;
+
       // Debug log for days with bookings
       if (dayBookings.length > 0 && day <= 10) {
-        console.log(`[DEBUG] Day ${day}: ${dayBookings.length} bookings, ${uniqueTablesMap.size} tables, ${bookingsWithoutTable.length} without table`);
+        console.log(
+          `[DEBUG] Day ${day}: ${dayBookings.length} bookings, ${uniqueTablesMap.size} tables, ${bookingsWithoutTable.length} without table`,
+        );
         if (uniqueTablesMap.size === 0 && dayBookings.length > 0) {
-          console.log(`  Sample booking:`, JSON.stringify(dayBookings[0], null, 2));
+          console.log(
+            `  Sample booking:`,
+            JSON.stringify(dayBookings[0], null, 2),
+          );
         }
       }
-      
+
       dailyUsage[day] = {
         tablesUsed,
         totalTables,
@@ -612,7 +670,7 @@ export const getDailyTableUsage = async (req, res) => {
         isFutureDay,
       };
     }
-    
+
     return res.json({
       year: targetYear,
       month: targetMonth + 1,
@@ -625,7 +683,9 @@ export const getDailyTableUsage = async (req, res) => {
   } catch (err) {
     console.error("[getDailyTableUsage] ERROR:", err);
     console.error(err.stack);
-    return res.status(500).json({ message: "Loi khi tai du lieu su dung ban theo ngay." });
+    return res
+      .status(500)
+      .json({ message: "Loi khi tai du lieu su dung ban theo ngay." });
   }
 };
 
