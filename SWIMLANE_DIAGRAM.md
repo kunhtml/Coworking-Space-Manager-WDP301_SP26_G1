@@ -1,132 +1,99 @@
-# Main Workflow - Coworking Space Manager
+# Main Workflow - Swimlane Diagram
 
-This document illustrates the core business workflows of the Coworking Space Manager system using Mermaid Swimlane Diagrams.
-
-## 1. Online Booking & Ordering Flow (Customer)
-
-This flow describes the journey of a Customer booking a workspace remotely, ordering food/drinks, and checking in.
+Dưới đây là sơ đồ luồng nghiệp vụ (Workflow) chính của hệ thống Coworking Space Manager, được thiết kế chuẩn theo định dạng **Swimlane Flowchart**. Các hàng (lane) đại diện cho các tác nhân/hệ thống, và quy trình chạy từ trái sang phải.
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    
-    actor Customer
-    participant Frontend
-    participant Backend (System)
-    participant PayOS (Payment)
-    actor Staff
-    
-    %% Setup & Auth
-    Customer->>Frontend: Access System & Login
-    Frontend->>Backend (System): Authenticate (JWT)
-    
-    %% Booking Spaces
-    Customer->>Frontend: Browse available Tables
-    Frontend->>Backend (System): Fetch Table statuses
-    Customer->>Frontend: Select Table & Time slots
-    
-    %% Adding Orders
-    Customer->>Frontend: (Optional) Add Food/Services
-    Frontend->>Customer: Display Cart & Total
-    
-    %% Checkout
-    Customer->>Frontend: Checkout Order
-    Frontend->>Backend (System): Create Booking & Order (Pending)
-    
-    %% Payment Phase
-    alt Pay with QR PayOS
-        Backend (System)->>PayOS (Payment): Generate Payment Link
-        PayOS (Payment)-->>Frontend: Return QR Payment URL
-        Customer->>Frontend: Scan QR & Pay via App
-        PayOS (Payment)->>Backend (System): Webhook: Payment Success
-        Backend (System)->>Backend (System): Update Status to PAID / CONFIRMED
-    else Pay with Cash (Later)
-        Customer->>Frontend: Select "Thanh toán tiền mặt"
+flowchart LR
+    %% Căn chỉnh giao diện: Các đường cong, màu sắc nhẹ nhàng
+    %%{init: {"flowchart": {"curve": "basis", "padding": 20}, "theme": "default"}}%%
+
+    %% ==========================================
+    %% SWIMLANE 1: CUSTOMER (Khách hàng)
+    %% ==========================================
+    subgraph Customer [👤 CUSTOMER]
+        direction LR
+        C1([Bắt đầu: Truy cập web])
+        C2(Chọn Bàn & Giờ thuê)
+        C3(Thêm Dịch vụ/Món ăn)
+        C4(Tiến hành thanh toán)
+        C5(Quét mã QR PayOS)
+        C6([Đến chi nhánh, đưa mã QR])
     end
+
+    %% ==========================================
+    %% SWIMLANE 2: SYSTEM (Hệ thống Backend)
+    %% ==========================================
+    subgraph System [⚙️ SYSTEM (Backend)]
+        direction LR
+        S1(Xác thực tài khoản)
+        S2(Kiểm tra chỗ trống thời gian thực)
+        S3(Lưu Đơn hàng & Booking PENDING)
+        S4(Gửi request thanh toán tới PayOS)
+        S5(Nhận Webhook & Trạng thái PAID)
+        S6(Gửi Email/Thông báo xác nhận)
+        S7(Xác thực QR Booking hợp lệ)
+        S8(Tự động tính giờ & Hết hạn)
+    end
+
+    %% ==========================================
+    %% SWIMLANE 3: STAFF / ADMIN (Nhân viên)
+    %% ==========================================
+    subgraph Staff [🧑‍💼 STAFF / Màn hình POS]
+        direction LR
+        T1(Quét QR của Khách)
+        T2(Xác nhận Check-in bàn)
+        T3([Phục vụ món ăn/dịch vụ])
+        T4(Thêm Order phát sinh tại POS)
+        T5(Đổi trạng thái "Đã hoàn thành")
+        T6([Khách trả bàn, dọn dẹp])
+    end
+
+    %% ==========================================
+    %% LUỒNG CHUYỂN GIAO (FLOW)
+    %% ==========================================
     
-    %% Staff Confirmation & Check-in
-    Backend (System)-->>Frontend: Notify "Booking Successful!"
+    %% Quy trình Đặt bàn (Online)
+    C1 --> S1
+    S1 --> C2
+    C2 --> S2
+    S2 --> C3
+    C3 --> C4
+    C4 --> S3
+    S3 --> S4
     
-    %% Visit
-    Customer->>Staff: Arrive at Space, provide QR Code
-    Staff->>Frontend: Scan QR / Search Booking
-    Frontend->>Backend (System): Verify Booking
-    Backend (System)-->>Staff: Verification Result
-    Staff->>Frontend: Click "Check-in"
-    Frontend->>Backend (System): Update Table to OCCUPIED / CHECKED-IN
+    %% Thanh toán
+    S4 --> C5
+    C5 --> S5
+    S5 --> S6
+    
+    %% Quy trình Check-in
+    S6 --> C6
+    C6 --> T1
+    T1 --> S7
+    S7 --> T2
+    
+    %% Quy trình Sử dụng & Phục vụ
+    T2 --> T3
+    T3 --> T4
+    T4 --> S8
+    S8 --> T5
+    T5 --> T6
+
+    %% ==========================================
+    %% STYLING TÙY CHỈNH
+    %% ==========================================
+    classDef curr fill:#fefce8,stroke:#ca8a04,stroke-width:2px;
+    classDef sys fill:#f3f4f6,stroke:#4b5563,stroke-width:2px,stroke-dasharray: 4 4;
+    classDef stf fill:#eff6ff,stroke:#3b82f6,stroke-width:2px;
+    
+    class C1,C2,C3,C4,C5,C6 curr;
+    class S1,S2,S3,S4,S5,S6,S7,S8 sys;
+    class T1,T2,T3,T4,T5,T6 stf;
 ```
 
-## 2. In-Store POS & Walk-in Flow (Staff)
-
-This flow represents a Walk-in Customer booking a table or buying food directly at the counter.
-
-```mermaid
-sequenceDiagram
-    autonumber
-    
-    actor Walk-In Customer
-    actor Staff
-    participant POS System (Frontend)
-    participant Backend (System)
-    
-    Walk-In Customer->>Staff: Request a Table / Order Food
-    Staff->>POS System (Frontend): Open `POS tại quầy`
-    
-    %% Choose Space & Duration
-    alt Booking a Table
-        Staff->>POS System (Frontend): Select Available Table
-        Staff->>POS System (Frontend): Adjust rental duration (X hours)
-        POS System (Frontend)->>Backend (System): Validate overlap
-        Backend (System)-->>POS System (Frontend): OK
-    end
-    
-    %% Order Items
-    Staff->>POS System (Frontend): Add Menu Items & Services
-    
-    %% Create Order
-    Staff->>POS System (Frontend): Review Invoice & Create Order
-    POS System (Frontend)->>Backend (System): Process Order (WALK-IN)
-    
-    alt Paid via QR 
-        Backend (System)-->>Staff: Provide PayOS QR
-        Staff->>Walk-In Customer: Show QR Code
-        Walk-In Customer->>Staff: Pay via Banking App
-    else Cash Payment
-        Walk-In Customer->>Staff: Hand Cash
-        Staff->>POS System (Frontend): Click `Thanh toán tiền mặt`
-    end
-    
-    %% Update System
-    Backend (System)->>Backend (System): Update Order to PAID
-    Backend (System)->>Backend (System): Update Table to OCCUPIED
-    
-    %% Service Fulfillment
-    Staff->>Walk-In Customer: Guide to Table & Serve Items
-    
-    %% Completion
-    Staff->>POS System (Frontend): Wait until items delivered
-    Staff->>POS System (Frontend): Mark Order as `COMPLETED`
-```
-
-## 3. Post-service & Reporting (Admin)
-
-```mermaid
-sequenceDiagram
-    autonumber
-    
-    actor Staff
-    participant Backend (System)
-    actor Admin
-    
-    %% End of occupancy
-    Staff->>Backend (System): Walk-in duration ends / Customer requests bill
-    Staff->>Backend (System): Mark Table as `CLEANING` or `AVAILABLE`
-    
-    %% Data Aggregation
-    Backend (System)->>Backend (System): Calculate revenue margins
-    
-    %% Admin Analytics
-    Admin->>Backend (System): Access Dashboard Analytics
-    Backend (System)-->>Admin: Display Daily Revenue, Occupancy Rates
-    Admin->>Backend (System): Manage Pricing / Menus / Roles
-```
+### Chú thích biểu đồ:
+- **Cột (Flow từ trái sang phải)** đại diện cho các bước theo thời gian thực (Time flow).
+- **Hàng (Swimlane theo chiều dọc)**:
+  1. `CUSTOMER`: Quy trình thao tác của khách hàng từ lúc chọn bàn đến lúc tới quầy.
+  2. `SYSTEM`: Hệ thống thực thi ngầm (Kiểm tra dữ liệu, lưu Database, nhận Webhook).
+  3. `STAFF`: Các nghiệp vụ trực tiếp tại quán (Quét mã, Check-in, giao đồ ăn/dịch vụ, tạo Order phát sinh).
