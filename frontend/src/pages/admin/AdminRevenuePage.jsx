@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Badge, Button, Card, Col, Row, Table } from "react-bootstrap";
+import { Alert, Button, Card, Col, Row, Table } from "react-bootstrap";
 import AdminLayout from "../../components/admin/AdminLayout";
 import RevenueChart from "../../components/admin/RevenueChart";
 import SummaryCard from "../../components/admin/SummaryCard";
@@ -27,12 +27,6 @@ const FILTER_LABEL = {
   week: "tuần",
   month: "tháng",
   year: "năm",
-};
-
-const STATUS_LABEL = {
-  Success: "Thành công",
-  Failed: "Thất bại",
-  Pending: "Đang chờ",
 };
 
 function formatVND(value) {
@@ -87,22 +81,30 @@ export default function AdminRevenuePage() {
     : [];
 
   const filteredRevenue = useMemo(
-    () => revenueByPeriod.reduce((sum, item) => sum + (Number(item.total) || 0), 0),
+    () =>
+      revenueByPeriod.reduce((sum, item) => sum + (Number(item.total) || 0), 0),
     [revenueByPeriod],
   );
 
   const filteredTransactions = useMemo(
-    () => revenueByPeriod.reduce((sum, item) => sum + (Number(item.count) || 0), 0),
+    () =>
+      revenueByPeriod.reduce((sum, item) => sum + (Number(item.count) || 0), 0),
     [revenueByPeriod],
   );
 
   const filteredBookings = useMemo(
-    () => occupancyByPeriod.reduce((sum, item) => sum + (Number(item.bookingCount) || 0), 0),
+    () =>
+      occupancyByPeriod.reduce(
+        (sum, item) => sum + (Number(item.bookingCount) || 0),
+        0,
+      ),
     [occupancyByPeriod],
   );
 
   const topTableTypeUsage = useMemo(() => {
-    const rows = Array.isArray(report?.tableTypeUsage) ? report.tableTypeUsage : [];
+    const rows = Array.isArray(report?.tableTypeUsage)
+      ? report.tableTypeUsage
+      : [];
     return rows.slice(0, 8);
   }, [report]);
 
@@ -146,7 +148,10 @@ export default function AdminRevenuePage() {
         </Col>
         <Col lg={4} className="text-lg-end">
           <small className="text-muted">
-            Cập nhật: {report?.generatedAt ? new Date(report.generatedAt).toLocaleString("vi-VN") : "-"}
+            Cập nhật:{" "}
+            {report?.generatedAt
+              ? new Date(report.generatedAt).toLocaleString("vi-VN")
+              : "-"}
           </small>
         </Col>
       </Row>
@@ -155,19 +160,36 @@ export default function AdminRevenuePage() {
 
       <Row className="g-3 mb-4">
         <Col xl={3} md={6}>
-          <SummaryCard label="Tổng doanh thu" value={loading ? "..." : formatVND(filteredRevenue)} />
+          <SummaryCard
+            label="Tổng doanh thu"
+            value={loading ? "..." : formatVND(filteredRevenue)}
+          />
         </Col>
         <Col xl={3} md={6}>
-          <SummaryCard label="Doanh thu cọc" value={loading ? "..." : formatVND(summary.depositRevenue)} />
+          <SummaryCard
+            label="Doanh thu cọc"
+            value={loading ? "..." : formatVND(summary.depositRevenue)}
+          />
         </Col>
         <Col xl={3} md={6}>
-          <SummaryCard label="Doanh thu đơn dịch vụ" value={loading ? "..." : formatVND(summary.totalOrderRevenue)} />
+          <SummaryCard
+            label="Doanh thu đơn dịch vụ"
+            value={loading ? "..." : formatVND(summary.totalOrderRevenue)}
+          />
         </Col>
         <Col xl={3} md={6}>
           <SummaryCard
             label={`Tổng booking theo ${FILTER_LABEL[timeFilter]}`}
-            value={loading ? "..." : Number(filteredBookings || 0).toLocaleString("vi-VN")}
-            subtitle={loading ? "" : `${Number(filteredTransactions || 0).toLocaleString("vi-VN")} giao dịch thành công`}
+            value={
+              loading
+                ? "..."
+                : Number(filteredBookings || 0).toLocaleString("vi-VN")
+            }
+            subtitle={
+              loading
+                ? ""
+                : `${Number(filteredTransactions || 0).toLocaleString("vi-VN")} giao dịch thành công`
+            }
           />
         </Col>
       </Row>
@@ -185,9 +207,11 @@ export default function AdminRevenuePage() {
             loading={loading}
             emptyText="Không có dữ liệu"
             renderCell={(col, row) => {
-              if (col.key === "period") return <span className="fw-semibold">{row._id}</span>;
+              if (col.key === "period")
+                return <span className="fw-semibold">{row._id}</span>;
               if (col.key === "total") return formatVND(row.total);
-              if (col.key === "count") return Number(row.count || 0).toLocaleString("vi-VN");
+              if (col.key === "count")
+                return Number(row.count || 0).toLocaleString("vi-VN");
               return null;
             }}
           />
@@ -200,7 +224,6 @@ export default function AdminRevenuePage() {
               { key: "paidAt", header: "Thời gian" },
               { key: "method", header: "Hình thức" },
               { key: "amount", header: "Số tiền" },
-              { key: "status", header: "Trạng thái" },
             ]}
             data={recentPayments}
             loading={loading}
@@ -209,13 +232,6 @@ export default function AdminRevenuePage() {
               if (col.key === "paidAt") return formatShortDate(row.paidAt);
               if (col.key === "method") return row.method || "-";
               if (col.key === "amount") return formatVND(row.amount);
-              if (col.key === "status") {
-                return (
-                  <Badge bg={row.status === "Success" ? "success" : row.status === "Failed" ? "danger" : "secondary"}>
-                    {STATUS_LABEL[row.status] || row.status || "-"}
-                  </Badge>
-                );
-              }
               return null;
             }}
           />
@@ -238,16 +254,22 @@ export default function AdminRevenuePage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={3} className="text-center text-muted py-4">Đang tải...</td>
+                  <td colSpan={3} className="text-center text-muted py-4">
+                    Đang tải...
+                  </td>
                 </tr>
               ) : topTableTypeUsage.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="text-center text-muted py-4">Không có dữ liệu</td>
+                  <td colSpan={3} className="text-center text-muted py-4">
+                    Không có dữ liệu
+                  </td>
                 </tr>
               ) : (
                 topTableTypeUsage.map((row) => (
                   <tr key={row.tableType}>
-                    <td className="fw-semibold">{row.tableType || "Không xác định"}</td>
+                    <td className="fw-semibold">
+                      {row.tableType || "Không xác định"}
+                    </td>
                     <td>{Number(row.bookings || 0).toLocaleString("vi-VN")}</td>
                     <td>{Number(row.guests || 0).toLocaleString("vi-VN")}</td>
                   </tr>
