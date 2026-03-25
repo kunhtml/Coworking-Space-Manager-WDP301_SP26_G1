@@ -2,157 +2,133 @@
   {
     "_id": { "$oid": "65e6e0000000000000000001" },
     "name": "Bàn chung Tầng 1 - 01",
-    "tableType": "Hot_Desk",
-    "capacity": 1,
+    "tableTypeId": { "$oid": "65e6e1000000000000000001" },
     "status": "Available",
     "pricePerHour": 20000,
     "pricePerDay": 100000,
     "createdAt": { "$date": "2026-01-01T08:00:00.000Z" },
     "__v": 0,
-    "description": "",
-    "location": "Tầng 1 - Khu A"
+    "description": ""
   },
   {
     "_id": { "$oid": "65e6e0000000000000000002" },
     "name": "Phòng họp A",
-    "tableType": "Meeting_Room",
-    "capacity": 10,
+    "tableTypeId": { "$oid": "65e6e1000000000000000003" },
     "status": "Occupied",
     "pricePerHour": 150000,
     "pricePerDay": 1000000,
     "createdAt": { "$date": "2026-01-01T08:00:00.000Z" },
     "__v": 0,
-    "description": "",
-    "location": "Tầng 1 - Khu Hội nghị"
+    "description": ""
   },
   {
     "_id": { "$oid": "65e6e0000000000000000003" },
     "name": "Bàn chung Tầng 1 - 02",
-    "tableType": "Hot_Desk",
-    "capacity": 1,
+    "tableTypeId": { "$oid": "65e6e1000000000000000001" },
     "status": "Available",
     "pricePerHour": 20000,
     "pricePerDay": 100000,
     "createdAt": { "$date": "2026-01-02T08:00:00.000Z" },
     "__v": 0,
-    "description": "",
-    "location": "Tầng 1 - Khu A"
+    "description": ""
   },
   {
     "_id": { "$oid": "65e6e0000000000000000004" },
     "name": "Bàn nhóm B1",
-    "tableType": "Group_Table",
-    "capacity": 4,
+    "tableTypeId": { "$oid": "69c40967efee12184efcceb7" },
     "status": "Available",
     "pricePerHour": 60000,
     "pricePerDay": 320000,
     "createdAt": { "$date": "2026-01-02T08:30:00.000Z" },
     "__v": 0,
-    "description": "",
-    "location": "Tầng 1 - Khu B"
+    "description": ""
   },
   {
     "_id": { "$oid": "65e6e0000000000000000005" },
     "name": "Bàn nhóm B2",
-    "tableType": "Group_Table",
-    "capacity": 6,
+    "tableTypeId": { "$oid": "69c40967efee12184efcceb7" },
     "status": "Available",
     "pricePerHour": 85000,
     "pricePerDay": 450000,
     "createdAt": { "$date": "2026-01-02T09:00:00.000Z" },
     "__v": 0,
-    "description": "",
-    "location": "Tầng 1 - Khu B"
+    "description": ""
   },
   {
     "_id": { "$oid": "65e6e0000000000000000006" },
     "name": "Phòng họp C",
-    "tableType": "Meeting_Room",
-    "capacity": 8,
+    "tableTypeId": { "$oid": "65e6e1000000000000000003" },
     "status": "Available",
     "pricePerHour": 120000,
     "pricePerDay": 780000,
     "createdAt": { "$date": "2026-01-03T08:00:00.000Z" },
     "__v": 0,
-    "description": "",
-    "location": "Tầng 2 - Khu Hội nghị"
+    "description": ""
   },
   {
     "_id": { "$oid": "65e6e0000000000000000007" },
     "name": "Bàn nhóm B3",
-    "tableType": "Group_Table",
-    "capacity": 6,
+    "tableTypeId": { "$oid": "69c40967efee12184efcceb7" },
     "status": "Available",
     "pricePerHour": 90000,
     "pricePerDay": 500000,
     "createdAt": { "$date": "2026-01-04T09:00:00.000Z" },
     "__v": 0,
-    "description": "",
-    "location": "Tầng 2 - Khu B"
+    "description": ""
   },
   {
     "_id": { "$oid": "65e6e0000000000000000008" },
     "name": "Phòng VIP 1",
-    "tableType": "VIP_Room",
-    "capacity": 12,
+    "tableTypeId": { "$oid": "69c40968efee12184efcceb8" },
     "status": "Available",
     "pricePerHour": 220000,
     "pricePerDay": 1400000,
     "createdAt": { "$date": "2026-01-05T09:00:00.000Z" },
     "__v": 0,
-    "description": "",
-    "location": "Tầng 3 - Khu VIP"
+    "description": ""
   },
   {
     "_id": { "$oid": "65e6e0000000000000000009" },
     "name": "Bàn cá nhân Tầng 2 - 01",
-    "tableType": "Hot_Desk",
-    "capacity": 1,
+    "tableTypeId": { "$oid": "65e6e1000000000000000001" },
     "status": "Available",
     "pricePerHour": 25000,
     "pricePerDay": 120000,
     "createdAt": { "$date": "2026-01-06T09:00:00.000Z" },
     "__v": 0,
-    "description": "",
-    "location": "Tầng 2 - Khu A"
+    "description": ""
   },
   {
     "_id": { "$oid": "65e6e000000000000000000a" },
     "name": "Bàn cá nhân Tầng 2 - 02",
-    "tableType": "Hot_Desk",
-    "capacity": 1,
+    "tableTypeId": { "$oid": "65e6e1000000000000000001" },
     "status": "Available",
     "pricePerHour": 25000,
     "pricePerDay": 120000,
     "createdAt": { "$date": "2026-01-06T09:15:00.000Z" },
     "__v": 0,
-    "description": "",
-    "location": "Tầng 2 - Khu A"
+    "description": ""
   },
   {
     "_id": { "$oid": "65e6e000000000000000000b" },
     "name": "Phòng họp B",
-    "tableType": "Meeting_Room",
-    "capacity": 12,
+    "tableTypeId": { "$oid": "65e6e1000000000000000003" },
     "status": "Maintenance",
     "pricePerHour": 180000,
     "pricePerDay": 1200000,
     "createdAt": { "$date": "2026-01-07T08:00:00.000Z" },
     "__v": 0,
-    "description": "",
-    "location": "Tầng 1 - Khu Hội nghị"
+    "description": ""
   },
   {
     "_id": { "$oid": "65e6e000000000000000000c" },
     "name": "Phòng Podcast",
-    "tableType": "VIP_Room",
-    "capacity": 3,
+    "tableTypeId": { "$oid": "69c40968efee12184efcceb8" },
     "status": "Reserved",
     "pricePerHour": 130000,
     "pricePerDay": 850000,
     "createdAt": { "$date": "2026-01-09T09:00:00.000Z" },
     "__v": 0,
-    "description": "",
-    "location": "Tầng 3 - Khu VIP"
+    "description": ""
   }
 ]

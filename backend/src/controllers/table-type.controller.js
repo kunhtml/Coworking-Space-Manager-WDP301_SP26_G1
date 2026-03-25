@@ -5,12 +5,13 @@ export const getTableTypes = async (req, res) => {
     const types = await TableType.find().sort({ name: 1 }).lean();
     res.json(
       types.map((t) => ({
+        _id: t._id.toString(),
         sourceId: t._id.toString(),
         name: t.name,
         description: t.description || "",
         capacity: t.capacity || 1,
         createdAt: t.createdAt,
-      }))
+      })),
     );
   } catch (err) {
     res.status(500).json({ message: "Lỗi server." });

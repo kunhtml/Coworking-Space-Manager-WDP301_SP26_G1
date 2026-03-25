@@ -8,11 +8,10 @@ export default function SpaceFormModal({
   submitText,
   formData,
   setFormData,
-  capacityError,
-  setCapacityError,
   priceError,
   setPriceError,
   mode,
+  tableTypes = [],
 }) {
   return (
     <Modal show={show} onHide={onHide} size="lg" centered>
@@ -25,39 +24,36 @@ export default function SpaceFormModal({
             <Col md={6}>
               <Form.Group>
                 <Form.Label>Ten ban *</Form.Label>
-                <Form.Control type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
+                <Form.Control
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  required
+                />
               </Form.Group>
             </Col>
             <Col md={6}>
               <Form.Group>
-                <Form.Label>Suc chua *</Form.Label>
-                <Form.Control
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={formData.capacity}
-                  isInvalid={!!capacityError}
-                  onKeyDown={(e) => {
-                    if (["-", "e", "E", "+", "."].includes(e.key)) {
-                      e.preventDefault();
-                      setCapacityError("Suc chua phai la so nguyen duong");
-                    }
-                  }}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === "") {
-                      setFormData({ ...formData, capacity: value });
-                      setCapacityError("");
-                    } else if (Number(value) >= 1 && Number.isInteger(Number(value))) {
-                      setFormData({ ...formData, capacity: value });
-                      setCapacityError("");
-                    } else {
-                      setCapacityError("Suc chua phai la so nguyen duong (>= 1)");
-                    }
-                  }}
+                <Form.Label>Loai ban *</Form.Label>
+                <Form.Select
+                  value={formData.tableTypeId || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, tableTypeId: e.target.value })
+                  }
                   required
-                />
-                <Form.Control.Feedback type="invalid">{capacityError}</Form.Control.Feedback>
+                >
+                  <option value="">Chon loai ban</option>
+                  {tableTypes.map((type) => (
+                    <option
+                      key={type._id || type.sourceId}
+                      value={type._id || type.sourceId}
+                    >
+                      {type.name}
+                    </option>
+                  ))}
+                </Form.Select>
               </Form.Group>
             </Col>
             <Col md={6}>
@@ -89,20 +85,21 @@ export default function SpaceFormModal({
                   }}
                   required
                 />
-                <Form.Control.Feedback type="invalid">{priceError}</Form.Control.Feedback>
-              </Form.Group>
-            </Col>
-            <Col md={6}>
-              <Form.Group>
-                <Form.Label>Vi tri</Form.Label>
-                <Form.Control type="text" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} />
+                <Form.Control.Feedback type="invalid">
+                  {priceError}
+                </Form.Control.Feedback>
               </Form.Group>
             </Col>
             {mode === "edit" ? (
               <Col md={12}>
                 <Form.Group>
                   <Form.Label>Trang thai</Form.Label>
-                  <Form.Select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
+                  <Form.Select
+                    value={formData.status}
+                    onChange={(e) =>
+                      setFormData({ ...formData, status: e.target.value })
+                    }
+                  >
                     <option value="Available">Co san</option>
                     <option value="Occupied">Dang su dung</option>
                     <option value="Maintenance">Bao tri</option>
@@ -114,14 +111,25 @@ export default function SpaceFormModal({
             <Col md={12}>
               <Form.Group>
                 <Form.Label>Mo ta</Form.Label>
-                <Form.Control as="textarea" rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+                <Form.Control
+                  as="textarea"
+                  rows={3}
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                />
               </Form.Group>
             </Col>
           </Row>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={onHide}>Huy</Button>
-          <Button variant={mode === "add" ? "success" : "info"} type="submit">{submitText}</Button>
+          <Button variant="secondary" onClick={onHide}>
+            Huy
+          </Button>
+          <Button variant={mode === "add" ? "success" : "info"} type="submit">
+            {submitText}
+          </Button>
         </Modal.Footer>
       </Form>
     </Modal>

@@ -21,7 +21,14 @@ function isValidObjectId(id) {
   return mongoose.Types.ObjectId.isValid(String(id || ""));
 }
 
-function normalizeOrderRows(orders, orderItems, menuMap, bookingMap, tableMap, userMap) {
+function normalizeOrderRows(
+  orders,
+  orderItems,
+  menuMap,
+  bookingMap,
+  tableMap,
+  userMap,
+) {
   const itemMap = new Map();
   for (const item of orderItems) {
     const key = item.orderId?.toString();
@@ -42,7 +49,9 @@ function normalizeOrderRows(orders, orderItems, menuMap, bookingMap, tableMap, u
   return orders.map((o) => {
     const booking = bookingMap.get(o.bookingId?.toString());
     const table = tableMap.get(booking?.tableId?.toString());
-    const user = userMap.get(booking?.userId?.toString()) || userMap.get(o.userId?.toString());
+    const user =
+      userMap.get(booking?.userId?.toString()) ||
+      userMap.get(o.userId?.toString());
 
     return {
       id: o._id,
@@ -72,12 +81,26 @@ export const getStaffTableStatusList = async (req, res) => {
 
     let tables = await Table.find(tableFilter).sort({ name: 1 }).lean();
 
+    const typeIds = [
+      ...new Set(tables.map((t) => t.tableTypeId?.toString()).filter(Boolean)),
+    ];
+    const tableTypes = typeIds.length
+      ? await TableType.find({ _id: { $in: typeIds } }).lean()
+      : [];
+    const tableTypeMap = new Map(
+      tableTypes.map((type) => [type._id.toString(), type]),
+    );
+
     if (search?.trim()) {
       const q = search.trim().toLowerCase();
       tables = tables.filter(
         (t) =>
-          String(t.name || "").toLowerCase().includes(q) ||
-          String(t.tableType || "").toLowerCase().includes(q),
+          String(t.name || "")
+            .toLowerCase()
+            .includes(q) ||
+          String(tableTypeMap.get(t.tableTypeId?.toString())?.name || "")
+            .toLowerCase()
+            .includes(q),
       );
     }
 
@@ -85,7 +108,9 @@ export const getStaffTableStatusList = async (req, res) => {
     const now = new Date();
     const activeBookings = await Booking.find({
       tableId: { $in: tableIds },
-      status: { $in: ["Pending", "Awaiting_Payment", "Confirmed", "CheckedIn"] },
+      status: {
+        $in: ["Pending", "Awaiting_Payment", "Confirmed", "CheckedIn"],
+      },
       startTime: { $lte: now },
       endTime: { $gte: now },
     })
@@ -104,8 +129,10 @@ export const getStaffTableStatusList = async (req, res) => {
       return {
         id: t._id,
         name: t.name,
-        tableType: t.tableType,
-        capacity: Number(t.capacity || 0),
+        tableType: tableTypeMap.get(t.tableTypeId?.toString())?.name || "",
+        capacity: Number(
+          tableTypeMap.get(t.tableTypeId?.toString())?.capacity || 0,
+        ),
         status: t.status || "Available",
         pricePerHour: Number(t.pricePerHour || 0),
         pricePerDay: Number(t.pricePerDay || 0),
@@ -189,7 +216,9 @@ export const getStaffOrders = async (req, res) => {
 
     if (search?.trim()) {
       const q = search.trim().toLowerCase();
-      orders = orders.filter((o) => String(o._id).slice(-6).toLowerCase().includes(q));
+      orders = orders.filter((o) =>
+        String(o._id).slice(-6).toLowerCase().includes(q),
+      );
     }
 
     const orderIds = orders.map((o) => o._id);
@@ -210,7 +239,9 @@ export const getStaffOrders = async (req, res) => {
       ...new Set(bookings.map((b) => b.tableId?.toString()).filter(Boolean)),
     ];
     const menuIds = [
-      ...new Set(orderItems.map((i) => i.menuItemId?.toString()).filter(Boolean)),
+      ...new Set(
+        orderItems.map((i) => i.menuItemId?.toString()).filter(Boolean),
+      ),
     ];
 
     const [tables, menuItems] = await Promise.all([
@@ -267,7 +298,9 @@ export const createCounterOrder = async (req, res) => {
       }
     } else {
       if (!tableId || !isValidObjectId(tableId)) {
-        return res.status(400).json({ message: "Vui lòng chọn tableId hợp lệ cho counter order." });
+        return res
+          .status(400)
+          .json({ message: "Vui lòng chọn tableId hợp lệ cho counter order." });
       }
 
       const table = await Table.findById(tableId).lean();
@@ -283,7 +316,9 @@ export const createCounterOrder = async (req, res) => {
       // Calculate deposit based on table price and duration
       const pricePerHour = Number(table.pricePerHour || 0);
       if (pricePerHour === 0) {
-        return res.status(400).json({ message: "Bàn chưa có giá. Vui lòng cập nhật giá bàn trước." });
+        return res.status(400).json({
+          message: "Bàn chưa có giá. Vui lòng cập nhật giá bàn trước.",
+        });
       }
       const depositAmount = Math.round(pricePerHour * hrs);
 
@@ -303,7 +338,9 @@ export const createCounterOrder = async (req, res) => {
       await Table.findByIdAndUpdate(table._id, { status: "Occupied" });
     }
 
-    const menuIds = [...new Set(items.map((i) => i.menuItemId).filter(Boolean))];
+    const menuIds = [
+      ...new Set(items.map((i) => i.menuItemId).filter(Boolean)),
+    ];
     const menus = await MenuItem.find({ _id: { $in: menuIds } }).lean();
     const menuMap = new Map(menus.map((m) => [m._id.toString(), m]));
 
@@ -361,7 +398,8 @@ export const createCounterOrder = async (req, res) => {
     });
 
     // Create payment link
-    const origin = req.get("origin") || `http://localhost:${process.env.PORT || 5000}`;
+    const origin =
+      req.get("origin") || `http://localhost:${process.env.PORT || 5000}`;
     const paymentResult = await createCounterOrderPayment({
       booking,
       order,
@@ -409,7 +447,9 @@ export const updateStaffOrder = async (req, res) => {
     }
 
     if (Array.isArray(items)) {
-      const menuIds = [...new Set(items.map((i) => i.menuItemId).filter(Boolean))];
+      const menuIds = [
+        ...new Set(items.map((i) => i.menuItemId).filter(Boolean)),
+      ];
       const menus = await MenuItem.find({ _id: { $in: menuIds } }).lean();
       const menuMap = new Map(menus.map((m) => [m._id.toString(), m]));
 
@@ -450,7 +490,9 @@ export const updateStaffOrder = async (req, res) => {
     }
 
     if (!touched) {
-      return res.status(400).json({ message: "Không có dữ liệu hợp lệ để cập nhật." });
+      return res
+        .status(400)
+        .json({ message: "Không có dữ liệu hợp lệ để cập nhật." });
     }
 
     await order.save();
@@ -483,7 +525,13 @@ async function buildStaffInvoicePayload(orderId) {
     booking?.userId ? User.findById(booking.userId).lean() : null,
   ]);
 
-  const menuIds = [...new Set(items.map((i) => i.menuItemId?.toString()).filter(Boolean))];
+  const tableType = table?.tableTypeId
+    ? await TableType.findById(table.tableTypeId).lean()
+    : null;
+
+  const menuIds = [
+    ...new Set(items.map((i) => i.menuItemId?.toString()).filter(Boolean)),
+  ];
   const menus = await MenuItem.find({ _id: { $in: menuIds } }).lean();
   const menuMap = new Map(menus.map((m) => [m._id.toString(), m]));
 
@@ -518,7 +566,9 @@ async function buildStaffInvoicePayload(orderId) {
     booking: booking
       ? {
           id: booking._id,
-          bookingCode: booking.bookingCode || `#${String(booking._id).slice(-6).toUpperCase()}`,
+          bookingCode:
+            booking.bookingCode ||
+            `#${String(booking._id).slice(-6).toUpperCase()}`,
           status: booking.status || "Pending",
           startTime: booking.startTime,
           endTime: booking.endTime,
@@ -534,7 +584,7 @@ async function buildStaffInvoicePayload(orderId) {
       ? {
           id: table._id,
           name: table.name,
-          tableType: table.tableType,
+          tableType: tableType?.name || "",
         }
       : null,
     items: orderLines,
@@ -585,7 +635,13 @@ export const exportStaffOrderInvoice = async (req, res) => {
       ["Status", payload.order.status],
       [],
       ["Menu", "Quantity", "Unit Price", "Line Total", "Note"],
-      ...payload.items.map((x) => [x.menuName, x.quantity, x.unitPrice, x.lineTotal, x.note]),
+      ...payload.items.map((x) => [
+        x.menuName,
+        x.quantity,
+        x.unitPrice,
+        x.lineTotal,
+        x.note,
+      ]),
       [],
       ["Subtotal", payload.summary.subTotal],
       ["Deposit", payload.summary.depositAmount],
@@ -612,35 +668,51 @@ export const exportStaffOrderInvoice = async (req, res) => {
 export const getStaffDashboardStats = async (req, res) => {
   try {
     const now = new Date();
-    const todayStart = new Date(`${now.toISOString().slice(0, 10)}T00:00:00.000+07:00`);
-    const todayEnd   = new Date(`${now.toISOString().slice(0, 10)}T23:59:59.999+07:00`);
+    const todayStart = new Date(
+      `${now.toISOString().slice(0, 10)}T00:00:00.000+07:00`,
+    );
+    const todayEnd = new Date(
+      `${now.toISOString().slice(0, 10)}T23:59:59.999+07:00`,
+    );
 
-    const [
-      totalTables,
-      occupiedTables,
-      todayOrders,
-      recentOrders,
-    ] = await Promise.all([
-      Table.countDocuments(),
-      Table.countDocuments({ status: "Occupied" }),
-      Order.find({ createdAt: { $gte: todayStart, $lte: todayEnd } }).lean(),
-      Order.find().sort({ createdAt: -1 }).limit(10).lean(),
-    ]);
+    const [totalTables, occupiedTables, todayOrders, recentOrders] =
+      await Promise.all([
+        Table.countDocuments(),
+        Table.countDocuments({ status: "Occupied" }),
+        Order.find({ createdAt: { $gte: todayStart, $lte: todayEnd } }).lean(),
+        Order.find().sort({ createdAt: -1 }).limit(10).lean(),
+      ]);
 
     const orderIds = recentOrders.map((o) => o._id);
-    const bookingIds = [...new Set(recentOrders.map((o) => o.bookingId?.toString()).filter(Boolean))];
+    const bookingIds = [
+      ...new Set(
+        recentOrders.map((o) => o.bookingId?.toString()).filter(Boolean),
+      ),
+    ];
 
     const [recentOrderItems, recentBookings, recentUsers] = await Promise.all([
       OrderItem.find({ orderId: { $in: orderIds } }).lean(),
       Booking.find({ _id: { $in: bookingIds } }).lean(),
-      User.find({ _id: { $in: [...new Set(recentOrders.map((o) => o.userId?.toString()).filter(Boolean))] } }).lean(),
+      User.find({
+        _id: {
+          $in: [
+            ...new Set(
+              recentOrders.map((o) => o.userId?.toString()).filter(Boolean),
+            ),
+          ],
+        },
+      }).lean(),
     ]);
 
-    const tableIds = [...new Set(recentBookings.map((b) => b.tableId?.toString()).filter(Boolean))];
+    const tableIds = [
+      ...new Set(
+        recentBookings.map((b) => b.tableId?.toString()).filter(Boolean),
+      ),
+    ];
     const recentTables = await Table.find({ _id: { $in: tableIds } }).lean();
 
-    const bkMap  = new Map(recentBookings.map((b) => [b._id.toString(), b]));
-    const tbMap  = new Map(recentTables.map((t) => [t._id.toString(), t]));
+    const bkMap = new Map(recentBookings.map((b) => [b._id.toString(), b]));
+    const tbMap = new Map(recentTables.map((t) => [t._id.toString(), t]));
     const usrMap = new Map(recentUsers.map((u) => [u._id.toString(), u]));
     const oimMap = new Map();
     for (const oi of recentOrderItems) {
@@ -648,30 +720,40 @@ export const getStaffDashboardStats = async (req, res) => {
       oimMap.set(key, (oimMap.get(key) || 0) + 1);
     }
 
-    const statusCounts = { Pending: 0, Confirmed: 0, Completed: 0, Cancelled: 0 };
+    const statusCounts = {
+      Pending: 0,
+      Confirmed: 0,
+      Completed: 0,
+      Cancelled: 0,
+    };
     for (const o of todayOrders) {
       if (statusCounts[o.status] !== undefined) statusCounts[o.status]++;
     }
 
     const activity = recentOrders.map((o) => {
-      const bk  = bkMap.get(o.bookingId?.toString());
-      const tb  = tbMap.get(bk?.tableId?.toString());
-      const usr = usrMap.get(bk?.userId?.toString()) || usrMap.get(o.userId?.toString());
+      const bk = bkMap.get(o.bookingId?.toString());
+      const tb = tbMap.get(bk?.tableId?.toString());
+      const usr =
+        usrMap.get(bk?.userId?.toString()) || usrMap.get(o.userId?.toString());
       return {
-        orderId:      o._id,
-        orderCode:    `#${String(o._id).slice(-6).toUpperCase()}`,
+        orderId: o._id,
+        orderCode: `#${String(o._id).slice(-6).toUpperCase()}`,
         customerName: bk?.guestInfo?.name || usr?.fullName || "Khách lẻ",
-        tableName:    tb?.name || "Walk-in",
-        status:       o.status || "Pending",
-        totalAmount:  Number(o.totalAmount || 0),
-        itemCount:    oimMap.get(o._id.toString()) || 0,
-        createdAt:    o.createdAt,
+        tableName: tb?.name || "Walk-in",
+        status: o.status || "Pending",
+        totalAmount: Number(o.totalAmount || 0),
+        itemCount: oimMap.get(o._id.toString()) || 0,
+        createdAt: o.createdAt,
       };
     });
 
     res.json({
-      tables:  { total: totalTables, occupied: occupiedTables, available: totalTables - occupiedTables },
-      orders:  { total: todayOrders.length, ...statusCounts },
+      tables: {
+        total: totalTables,
+        occupied: occupiedTables,
+        available: totalTables - occupiedTables,
+      },
+      orders: { total: todayOrders.length, ...statusCounts },
       activity,
     });
   } catch (err) {

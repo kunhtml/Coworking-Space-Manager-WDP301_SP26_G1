@@ -2,6 +2,7 @@ import Booking from "../models/booking.js";
 import Order from "../models/order.js";
 import User from "../models/user.js";
 import Table from "../models/table.js";
+import TableType from "../models/tableType.js";
 import OrderItem from "../models/order_item.js";
 import MenuItem from "../models/menu_item.js";
 import Invoice from "../models/invoice.js";
@@ -47,6 +48,9 @@ export const getPaymentData = async (req, res) => {
     const table = booking.tableId
       ? await Table.findById(booking.tableId).lean()
       : null;
+    const tableType = table?.tableTypeId
+      ? await TableType.findById(table.tableTypeId).lean()
+      : null;
 
     const fmt = (n) => `${new Intl.NumberFormat("vi-VN").format(n)}đ`;
     const fmtDate = (v) => (v ? new Date(v).toLocaleDateString("vi-VN") : "--");
@@ -73,8 +77,7 @@ export const getPaymentData = async (req, res) => {
       table: table
         ? {
             name: table.name,
-            type: table.tableType,
-            location: table.location || "",
+            type: tableType?.name || "",
           }
         : null,
       invoice: {
@@ -328,7 +331,11 @@ export const processCounterPayment = async (req, res) => {
     const paymentMethod = normalizePaymentMethod(method || PAYMENT_METHOD.CASH);
 
     if (!PAYMENT_METHOD_VALUES.includes(paymentMethod)) {
-      return res.status(400).json({ message: "Phương thức thanh toán chỉ hỗ trợ CASH hoặc QR_PAYOS." });
+      return res
+        .status(400)
+        .json({
+          message: "Phương thức thanh toán chỉ hỗ trợ CASH hoặc QR_PAYOS.",
+        });
     }
 
     let order = null;
@@ -337,7 +344,9 @@ export const processCounterPayment = async (req, res) => {
     } else if (bookingId) {
       order = await Order.findOne({ bookingId }).sort({ createdAt: -1 });
     } else {
-      return res.status(400).json({ message: "Vui lòng cung cấp orderId hoặc bookingId." });
+      return res
+        .status(400)
+        .json({ message: "Vui lòng cung cấp orderId hoặc bookingId." });
     }
 
     if (!order) {
@@ -351,16 +360,25 @@ export const processCounterPayment = async (req, res) => {
 
     const invoice =
       (await Invoice.findOne({ orderIds: order._id })) ||
-      (order.bookingId ? await Invoice.findOne({ bookingId: order.bookingId }) : null);
+      (order.bookingId
+        ? await Invoice.findOne({ bookingId: order.bookingId })
+        : null);
 
     if (!invoice) {
-      return res.status(404).json({ message: "Không tìm thấy hóa đơn của đơn hàng." });
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy hóa đơn của đơn hàng." });
     }
 
     const amountToPay = Math.max(
       0,
       Math.round(
-        Number(invoice.remainingAmount ?? invoice.totalAmount ?? order.totalAmount ?? 0),
+        Number(
+          invoice.remainingAmount ??
+            invoice.totalAmount ??
+            order.totalAmount ??
+            0,
+        ),
       ),
     );
 
