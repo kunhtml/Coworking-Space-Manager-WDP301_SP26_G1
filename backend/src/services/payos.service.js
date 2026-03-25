@@ -85,7 +85,8 @@ export async function getBookingPaymentSnapshot(bookingId) {
     (p) =>
       p.paymentMethod === PAYOS_PAYMENT_METHOD &&
       p.paymentStatus === "Pending" &&
-      p.payos?.checkoutUrl,
+      p.payos?.checkoutUrl &&
+      Math.round(Number(p.amount || 0)) === remainingAmount,
   );
   const latestPayOSPayment = payments.find(
     (p) => p.paymentMethod === PAYOS_PAYMENT_METHOD && p.payos,
@@ -432,10 +433,11 @@ export async function buildPaymentPageData(bookingId, userId) {
     }
   }
 
-  const activePayment =
-    freshSnapshot.pendingPayOSPayment ||
-    freshSnapshot.latestPayOSPayment ||
-    null;
+  const activePayment = freshSnapshot.pendingPayOSPayment
+    ? freshSnapshot.pendingPayOSPayment
+    : freshSnapshot.paymentUi.canPay
+      ? null
+      : freshSnapshot.latestPayOSPayment || null;
   const qrCodeValue = activePayment?.payos?.qrCode || "";
   let qrCodeDataUrl = null;
   if (qrCodeValue) {
@@ -478,7 +480,8 @@ export async function getOrderPaymentSnapshot(orderId) {
     (p) =>
       p.paymentMethod === PAYOS_PAYMENT_METHOD &&
       p.paymentStatus === "Pending" &&
-      p.payos?.checkoutUrl,
+      p.payos?.checkoutUrl &&
+      Math.round(Number(p.amount || 0)) === remainingAmount,
   );
   const latestPayOSPayment = payments.find(
     (p) => p.paymentMethod === PAYOS_PAYMENT_METHOD && p.payos,
@@ -699,10 +702,11 @@ export async function buildOrderPaymentPageData(orderId, userId) {
     }
   }
 
-  const activePayment =
-    freshSnapshot.pendingPayOSPayment ||
-    freshSnapshot.latestPayOSPayment ||
-    null;
+  const activePayment = freshSnapshot.pendingPayOSPayment
+    ? freshSnapshot.pendingPayOSPayment
+    : freshSnapshot.paymentUi.canPay
+      ? null
+      : freshSnapshot.latestPayOSPayment || null;
   const qrCodeValue = activePayment?.payos?.qrCode || "";
   let qrCodeDataUrl = null;
   if (qrCodeValue) {
