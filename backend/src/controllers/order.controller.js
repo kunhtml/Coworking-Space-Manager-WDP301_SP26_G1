@@ -4,19 +4,30 @@ import OrderItem from "../models/order_item.js";
 import MenuItem from "../models/menu_item.js";
 import Invoice from "../models/invoice.js";
 import Payment from "../models/payment.js";
-import {
-  ORDER_STATUS,
-  normalizeOrderStatus,
-} from "../constants/domain.js";
+import { ORDER_STATUS, normalizeOrderStatus } from "../constants/domain.js";
 
 const BLOCKED_BOOKING_STATUSES = new Set(["Cancelled", "Canceled"]);
 
-function mapOrderRow(order, bookingMap, itemMap) {
+function mapOrderRow(order, bookingMap, itemMap, invoiceMap) {
   const booking = bookingMap.get(order.bookingId?.toString());
+  const invoice = invoiceMap.get(order._id?.toString());
+  const normalizedOrderStatus = normalizeOrderStatus(order.status);
+
+  let paymentStatus = "UNPAID";
+  if (normalizedOrderStatus === ORDER_STATUS.CANCELLED) {
+    paymentStatus = "CANCELLED";
+  } else if (
+    String(invoice?.status || "").toUpperCase() === "PAID" ||
+    Number(invoice?.remainingAmount || 0) <= 0
+  ) {
+    paymentStatus = "PAID";
+  }
+
   return {
     id: order._id,
     bookingId: order.bookingId,
-    status: normalizeOrderStatus(order.status),
+    status: normalizedOrderStatus,
+    paymentStatus,
     totalAmount: Number(order.totalAmount || 0),
     createdAt: order.createdAt,
     bookingStatus: booking?.status || "Unknown",
@@ -35,9 +46,12 @@ export const getMyOrders = async (req, res) => {
       ...new Set(orders.map((o) => o.bookingId?.toString()).filter(Boolean)),
     ];
 
-    const [items, bookings] = await Promise.all([
+    const [items, bookings, invoices] = await Promise.all([
       OrderItem.find({ orderId: { $in: orderIds } }).lean(),
       Booking.find({ _id: { $in: bookingIds } }).lean(),
+      Invoice.find({ orderIds: { $in: orderIds } })
+        .select("orderIds status remainingAmount")
+        .lean(),
     ]);
 
     const menuIds = [
@@ -46,6 +60,12 @@ export const getMyOrders = async (req, res) => {
     const menus = await MenuItem.find({ _id: { $in: menuIds } }).lean();
 
     const bookingMap = new Map(bookings.map((b) => [b._id.toString(), b]));
+    const invoiceMap = new Map();
+    for (const invoice of invoices) {
+      for (const orderId of invoice.orderIds || []) {
+        invoiceMap.set(orderId.toString(), invoice);
+      }
+    }
     const menuMap = new Map(menus.map((m) => [m._id.toString(), m]));
 
     const itemMap = new Map();
@@ -65,7 +85,9 @@ export const getMyOrders = async (req, res) => {
       itemMap.set(key, arr);
     }
 
-    res.json(orders.map((o) => mapOrderRow(o, bookingMap, itemMap)));
+    res.json(
+      orders.map((o) => mapOrderRow(o, bookingMap, itemMap, invoiceMap)),
+    );
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Lỗi server." });
@@ -91,7 +113,9 @@ export const createOrder = async (req, res) => {
         .json({ message: "Booking đã hủy, không thể tạo đơn hàng." });
     }
 
-    const menuIds = [...new Set(items.map((i) => i.menuItemId).filter(Boolean))];
+    const menuIds = [
+      ...new Set(items.map((i) => i.menuItemId).filter(Boolean)),
+    ];
     const menus = await MenuItem.find({ _id: { $in: menuIds } }).lean();
     const menuMap = new Map(menus.map((m) => [m._id.toString(), m]));
 
@@ -177,7 +201,9 @@ export const updateMyOrder = async (req, res) => {
       });
     }
 
-    const menuIds = [...new Set(items.map((i) => i.menuItemId).filter(Boolean))];
+    const menuIds = [
+      ...new Set(items.map((i) => i.menuItemId).filter(Boolean)),
+    ];
     const menus = await MenuItem.find({ _id: { $in: menuIds } }).lean();
     const menuMap = new Map(menus.map((m) => [m._id.toString(), m]));
 
@@ -224,7 +250,9 @@ export const updateMyOrder = async (req, res) => {
     const invoice = await Invoice.findOne({ orderIds: order._id });
     if (invoice) {
       const totalDiff = newTotalAmount - oldTotalAmount;
-      invoice.totalAmount = Math.round(Number(invoice.totalAmount || 0) + totalDiff);
+      invoice.totalAmount = Math.round(
+        Number(invoice.totalAmount || 0) + totalDiff,
+      );
 
       const successPayments = await Payment.find({
         invoiceId: invoice._id,
