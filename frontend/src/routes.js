@@ -36,11 +36,6 @@ export default [
   route("staff-dashboard/orders", "pages/staff/StaffOrderManagementPage.jsx"),
   route("staff-dashboard/counter-pos", "pages/staff/StaffPOSPage.jsx"),
   route("staff/orders", "pages/staff/StaffOrdersPage.jsx"),
-  route(
-    "staff-dashboard/create-service",
-    "pages/staff/StaffCreateServicePage.jsx",
-  ),
-  route("staff-dashboard/services", "pages/staff/StaffServiceListPage.jsx"),
   route("staff-dashboard/profile", "pages/staff/StaffProfilePage.jsx"),
   route("staff-dashboard/password", "pages/staff/StaffPasswordPage.jsx", {
     id: "staff-password",

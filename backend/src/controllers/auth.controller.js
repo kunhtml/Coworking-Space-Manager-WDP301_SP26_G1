@@ -296,7 +296,7 @@ export const updateProfile = async (req, res) => {
         email: emailLower,
         phone: phone?.trim() || "",
       },
-      { new: true },
+      { returnDocument: "after" },
     ).lean();
     res.json({
       id: updated._id,
@@ -316,12 +316,6 @@ export const updateProfile = async (req, res) => {
 
 export const changePassword = async (req, res) => {
   try {
-    if (!ensureOtpVerified(req.user.id, OTP_PURPOSE.CHANGE_PASSWORD)) {
-      return res.status(403).json({
-        message: "Vui lòng xác thực OTP trước khi đổi mật khẩu.",
-      });
-    }
-
     const { currentPassword, newPassword, confirmPassword } = req.body;
     if (!currentPassword || !newPassword || !confirmPassword) {
       return res
@@ -337,6 +331,9 @@ export const changePassword = async (req, res) => {
       return res.status(400).json({ message: "Mật khẩu xác nhận không khớp." });
     }
     const user = await User.findById(req.user.id).lean();
+    if (!user) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng." });
+    }
     const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!isMatch)
       return res.status(401).json({ message: "Mật khẩu hiện tại không đúng." });

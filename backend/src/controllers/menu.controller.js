@@ -6,7 +6,10 @@ import {
   normalizeMenuAvailability,
 } from "../constants/domain.js";
 
-const normalizeRole = (role) => String(role || "").trim().toLowerCase();
+const normalizeRole = (role) =>
+  String(role || "")
+    .trim()
+    .toLowerCase();
 
 const getRequesterRole = (req) => {
   const auth = req.headers.authorization;
@@ -26,7 +29,8 @@ const canUseAdminMenuView = (req) => {
   const role = getRequesterRole(req);
   if (!role) return false;
 
-  const requestedAdminScope = req.query.admin === "true" || req.query.scope === "all";
+  const requestedAdminScope =
+    req.query.admin === "true" || req.query.scope === "all";
   if (!requestedAdminScope) return false;
 
   return role === "staff" || role === "admin";
@@ -46,27 +50,30 @@ export const getMenuItems = async (req, res) => {
 
     if (isAdmin) {
       // Admin: lấy tất cả món không lọc
-      const items = await MenuItem.find().populate("categoryId", "name isActive").lean();
+      const items = await MenuItem.find()
+        .populate("categoryId", "name isActive")
+        .lean();
       return res.json(items.map(toNormalizedMenuItem));
     }
 
     // Public (khách hàng): chỉ lấy món của danh mục đang hiển thị
     // và loại bỏ món Hết hàng (Unavailable)
-    const activeCategories = await Category.find({ isActive: true }).select("_id").lean();
+    const activeCategories = await Category.find({ isActive: true })
+      .select("_id")
+      .lean();
     const activeCatIds = activeCategories.map((c) => c._id);
 
     const items = await MenuItem.find({
-      $or: [
-        { categoryId: { $in: activeCatIds } },
-        { categoryId: null },
-      ],
+      $or: [{ categoryId: { $in: activeCatIds } }, { categoryId: null }],
     })
       .populate("categoryId", "name isActive")
       .lean();
 
     const publicItems = items
       .map(toNormalizedMenuItem)
-      .filter((item) => item.availabilityStatus === MENU_AVAILABILITY.AVAILABLE);
+      .filter(
+        (item) => item.availabilityStatus === MENU_AVAILABILITY.AVAILABLE,
+      );
 
     return res.json(publicItems);
   } catch (err) {
@@ -165,11 +172,8 @@ export const updateMenuItem = async (req, res) => {
         stockQuantity: qty,
         availabilityStatus: resolvedStatus,
       },
-      { new: true },
-    )
-      .populate("categoryId", "name")
-      .lean();
-
+      { returnDocument: "after" },
+    ).lean();
 
     if (!updated)
       return res.status(404).json({ message: "Không tìm thấy món." });
@@ -198,7 +202,10 @@ export const deleteMenuItem = async (req, res) => {
 
 export const getCategories = async (req, res) => {
   try {
-    const categories = await Category.find().lean();
+    const isAdmin = canUseAdminMenuView(req);
+    const categories = isAdmin
+      ? await Category.find().lean()
+      : await Category.find({ isActive: true }).lean();
     res.json(categories);
   } catch (err) {
     console.error(err);
@@ -236,7 +243,9 @@ export const updateCategory = async (req, res) => {
   try {
     const { name, description, isActive } = req.body;
     if (!name?.trim()) {
-      return res.status(400).json({ message: "Tên danh mục không được để trống." });
+      return res
+        .status(400)
+        .json({ message: "Tên danh mục không được để trống." });
     }
     const updated = await Category.findByIdAndUpdate(
       req.params.id,
@@ -245,10 +254,11 @@ export const updateCategory = async (req, res) => {
         description: description?.trim() || "",
         isActive: isActive !== false,
       },
-      { new: true }
+      { returnDocument: "after" },
     ).lean();
 
-    if (!updated) return res.status(404).json({ message: "Không tìm thấy danh mục." });
+    if (!updated)
+      return res.status(404).json({ message: "Không tìm thấy danh mục." });
     res.json({ message: "Cập nhật danh mục thành công!", category: updated });
   } catch (err) {
     res.status(500).json({ message: "Lỗi khi cập nhật danh mục." });
@@ -262,13 +272,15 @@ export const deleteCategory = async (req, res) => {
     // Kiểm tra xem có sản phẩm nào đang thuộc danh mục này không trước khi xóa
     const hasProducts = await MenuItem.findOne({ categoryId: req.params.id });
     if (hasProducts) {
-      return res.status(400).json({ 
-        message: "Không thể xóa danh mục đang chứa sản phẩm. Vui lòng xóa hoặc chuyển sản phẩm trước." 
+      return res.status(400).json({
+        message:
+          "Không thể xóa danh mục đang chứa sản phẩm. Vui lòng xóa hoặc chuyển sản phẩm trước.",
       });
     }
 
     const deleted = await Category.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ message: "Không tìm thấy danh mục." });
+    if (!deleted)
+      return res.status(404).json({ message: "Không tìm thấy danh mục." });
     res.json({ message: "Xoá danh mục thành công!" });
   } catch (err) {
     res.status(500).json({ message: "Lỗi khi xoá danh mục." });

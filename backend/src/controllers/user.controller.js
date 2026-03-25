@@ -12,7 +12,7 @@ export const getAllUsers = async (req, res) => {
       query.$or = [
         { fullName: searchRegex },
         { email: searchRegex },
-        { phone: searchRegex }
+        { phone: searchRegex },
       ];
     }
 
@@ -45,10 +45,13 @@ export const getUserById = async (req, res) => {
 
 export const createUser = async (req, res) => {
   try {
-    const { fullName, email, password, phone, role, membershipStatus } = req.body;
+    const { fullName, email, password, phone, role, membershipStatus } =
+      req.body;
 
     if (!email?.trim() || !password?.trim()) {
-      return res.status(400).json({ message: "Email và mật khẩu là bắt buộc." });
+      return res
+        .status(400)
+        .json({ message: "Email và mật khẩu là bắt buộc." });
     }
 
     // Check if user exists
@@ -73,9 +76,9 @@ export const createUser = async (req, res) => {
     const userResponse = newUser.toObject();
     delete userResponse.passwordHash;
 
-    res.status(201).json({ 
-      message: "Tạo người dùng thành công!", 
-      user: userResponse 
+    res.status(201).json({
+      message: "Tạo người dùng thành công!",
+      user: userResponse,
     });
   } catch (err) {
     console.error(err);
@@ -95,9 +98,9 @@ export const updateUser = async (req, res) => {
 
     // Check email uniqueness if changed
     if (email && email.toLowerCase().trim() !== user.email) {
-      const existing = await User.findOne({ 
+      const existing = await User.findOne({
         email: email.toLowerCase().trim(),
-        _id: { $ne: userId }
+        _id: { $ne: userId },
       });
       if (existing) {
         return res.status(400).json({ message: "Email đã được sử dụng." });
@@ -109,16 +112,17 @@ export const updateUser = async (req, res) => {
     if (email !== undefined) user.email = email.toLowerCase().trim();
     if (phone !== undefined) user.phone = phone.trim();
     if (role !== undefined) user.role = role;
-    if (membershipStatus !== undefined) user.membershipStatus = membershipStatus;
+    if (membershipStatus !== undefined)
+      user.membershipStatus = membershipStatus;
 
     await user.save();
 
     const userResponse = user.toObject();
     delete userResponse.passwordHash;
 
-    res.json({ 
-      message: "Cập nhật người dùng thành công!", 
-      user: userResponse 
+    res.json({
+      message: "Cập nhật người dùng thành công!",
+      user: userResponse,
     });
   } catch (err) {
     console.error(err);
@@ -132,13 +136,15 @@ export const deleteUser = async (req, res) => {
 
     // Don't allow deactivating yourself.
     if (req.user && String(req.user.id) === String(userId)) {
-      return res.status(400).json({ message: "Không thể vô hiệu hóa tài khoản của chính mình." });
+      return res
+        .status(400)
+        .json({ message: "Không thể vô hiệu hóa tài khoản của chính mình." });
     }
 
     const user = await User.findByIdAndUpdate(
       userId,
       { membershipStatus: "Inactive" },
-      { new: true },
+      { returnDocument: "after" },
     ).select("-passwordHash");
 
     if (!user) {

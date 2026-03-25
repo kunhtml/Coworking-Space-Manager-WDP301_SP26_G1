@@ -87,6 +87,19 @@ export const sendRegisterOtpApi = (email) =>
 export const verifyRegisterOtpApi = (email, otp) =>
   apiClient.post("/auth/register/verify-otp", { email, otp });
 
+export const sendForgotPasswordOtpApi = (email) =>
+  apiClient.post("/auth/forgot-password/send-otp", { email });
+
+export const verifyForgotPasswordOtpApi = (email, otp) =>
+  apiClient.post("/auth/forgot-password/verify-otp", { email, otp });
+
+export const resetForgotPasswordApi = (email, newPassword, confirmPassword) =>
+  apiClient.post("/auth/forgot-password/reset", {
+    email,
+    newPassword,
+    confirmPassword,
+  });
+
 export const getMeApi = () => apiClient.get("/auth/me");
 
 export const updateProfileApi = (data) => apiClient.put("/auth/profile", data);

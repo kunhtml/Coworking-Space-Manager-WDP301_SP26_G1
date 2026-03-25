@@ -10,6 +10,7 @@ export default function SeatZoneSection({
   getSeatIcon,
   formatTime,
   bookingStatusLabel,
+  colProps = { xl: 2, lg: 3, md: 4, sm: 6 } // Default for full page
 }) {
   return (
     <div className="mb-5">
@@ -28,7 +29,7 @@ export default function SeatZoneSection({
           const isHover = hoveredId === id;
           const iconName = getSeatIcon(table.tableType);
           return (
-            <Col xl={2} lg={3} md={4} sm={6} key={String(id)}>
+            <Col {...colProps} key={String(id)}>
               <Card
                 className="border-2 staff-seat-card"
                 style={{

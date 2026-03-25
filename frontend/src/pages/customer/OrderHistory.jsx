@@ -19,6 +19,7 @@ import EditOrderModal from "../../components/customer/modals/EditOrderModal";
 import {
   BOOKING_STATUS_MAP,
   ORDER_STATUS_MAP,
+  PAYMENT_STATUS_MAP,
   PAGE_SIZE,
 } from "./orderHistory/constants";
 import {
@@ -60,6 +61,7 @@ export default function Dashboard() {
   const [orderSearch, setOrderSearch] = useState("");
   const [orderDateFilter, setOrderDateFilter] = useState("");
   const [orderStatusFilter, setOrderStatusFilter] = useState("all");
+  const [orderPaymentFilter, setOrderPaymentFilter] = useState("all");
 
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [savingBooking, setSavingBooking] = useState(false);
@@ -78,6 +80,8 @@ export default function Dashboard() {
   const [targetBookingId, setTargetBookingId] = useState("");
   const [editingOrderId, setEditingOrderId] = useState("");
   const [orderLines, setOrderLines] = useState([emptyOrderLine()]);
+  const [lockedOrderItems, setLockedOrderItems] = useState([]);
+  const [appendOnlyEditMode, setAppendOnlyEditMode] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [invoiceOrder, setInvoiceOrder] = useState(null);
   const [showBookingInvoiceModal, setShowBookingInvoiceModal] = useState(false);
@@ -86,14 +90,19 @@ export default function Dashboard() {
   const canEditBooking = (status) =>
     !["Confirmed", "Cancelled"].includes(status);
   const normalizeOrderStatus = (rawStatus) => {
-    const status = String(rawStatus || "").trim().toUpperCase();
+    const status = String(rawStatus || "")
+      .trim()
+      .toUpperCase();
     if (!status) return "PENDING";
     if (status === "NEW") return "PENDING";
     if (status === "PAID") return "COMPLETED";
     if (status === "CANCELED") return "CANCELLED";
     return status;
   };
-  const canEditOrder = (status) => !["CONFIRMED", "CANCELLED", "COMPLETED"].includes(normalizeOrderStatus(status));
+  const canEditOrder = (status) =>
+    !["CONFIRMED", "CANCELLED", "COMPLETED"].includes(
+      normalizeOrderStatus(status),
+    );
 
   const loadData = async () => {
     setLoading(true);
@@ -106,7 +115,10 @@ export default function Dashboard() {
       ]);
       setBookings(bookingRows || []);
       const normalizedOrders = Array.isArray(orderRows)
-        ? orderRows.map((order) => ({ ...order, status: normalizeOrderStatus(order?.status) }))
+        ? orderRows.map((order) => ({
+            ...order,
+            status: normalizeOrderStatus(order?.status),
+          }))
         : [];
       setOrders(normalizedOrders);
       setMenuItems(Array.isArray(menuRows) ? menuRows : []);
@@ -173,9 +185,18 @@ export default function Dashboard() {
       const byDate = !orderDateFilter || orderDate === orderDateFilter;
       const byStatus =
         orderStatusFilter === "all" || order.status === orderStatusFilter;
-      return byCode && byDate && byStatus;
+      const byPaymentStatus =
+        orderPaymentFilter === "all" ||
+        String(order.paymentStatus || "UNPAID") === orderPaymentFilter;
+      return byCode && byDate && byStatus && byPaymentStatus;
     });
-  }, [orders, orderSearch, orderDateFilter, orderStatusFilter]);
+  }, [
+    orders,
+    orderSearch,
+    orderDateFilter,
+    orderStatusFilter,
+    orderPaymentFilter,
+  ]);
 
   const bookingTotalPages = Math.max(
     1,
@@ -202,7 +223,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     setOrderPage(1);
-  }, [orderSearch, orderDateFilter, orderStatusFilter]);
+  }, [orderSearch, orderDateFilter, orderStatusFilter, orderPaymentFilter]);
 
   useEffect(() => {
     if (!filteredBookings.length) {
@@ -279,22 +300,29 @@ export default function Dashboard() {
     setOrderMode("create");
     setTargetBookingId(String(bookingId));
     setEditingOrderId("");
+    setLockedOrderItems([]);
+    setAppendOnlyEditMode(false);
     setOrderLines([emptyOrderLine()]);
     setShowOrderModal(true);
   };
 
   const openEditOrder = (order) => {
+    const appendOnly = Boolean(order?.appendOnlyEdit);
     setOrderMode("edit");
     setTargetBookingId(String(order.bookingId));
     setEditingOrderId(String(order.id));
+    setAppendOnlyEditMode(appendOnly);
+    setLockedOrderItems(appendOnly ? order.items || [] : []);
     setOrderLines(
-      order.items?.length
-        ? order.items.map((i) => ({
-            menuItemId: String(i.menuItemId || ""),
-            quantity: Number(i.quantity || 1),
-            note: i.note || "",
-          }))
-        : [emptyOrderLine()],
+      appendOnly
+        ? [emptyOrderLine()]
+        : order.items?.length
+          ? order.items.map((i) => ({
+              menuItemId: String(i.menuItemId || ""),
+              quantity: Number(i.quantity || 1),
+              note: i.note || "",
+            }))
+          : [emptyOrderLine()],
     );
     setShowOrderModal(true);
   };
@@ -330,7 +358,10 @@ export default function Dashboard() {
       if (orderMode === "create") {
         await createOrderApi(payload);
       } else {
-        await updateOrderApi(editingOrderId, { items: payload.items });
+        await updateOrderApi(editingOrderId, {
+          items: payload.items,
+          appendOnly: appendOnlyEditMode,
+        });
       }
       setShowOrderModal(false);
       await loadData();
@@ -418,7 +449,10 @@ export default function Dashboard() {
             setOrderDateFilter={setOrderDateFilter}
             orderStatusFilter={orderStatusFilter}
             setOrderStatusFilter={setOrderStatusFilter}
+            orderPaymentFilter={orderPaymentFilter}
+            setOrderPaymentFilter={setOrderPaymentFilter}
             ORDER_STATUS_MAP={ORDER_STATUS_MAP}
+            PAYMENT_STATUS_MAP={PAYMENT_STATUS_MAP}
             filteredOrders={filteredOrders}
             pagedOrders={pagedOrders}
             activeOrderKey={activeOrderKey}
@@ -430,6 +464,7 @@ export default function Dashboard() {
             openEditOrder={openEditOrder}
             setInvoiceOrder={setInvoiceOrder}
             setShowInvoiceModal={setShowInvoiceModal}
+            navigate={navigate}
             orderPage={orderPage}
             orderTotalPages={orderTotalPages}
             setOrderPage={setOrderPage}
@@ -457,6 +492,8 @@ export default function Dashboard() {
         menuItems={menuItems}
         updateOrderLine={updateOrderLine}
         removeOrderLine={removeOrderLine}
+        appendOnlyEditMode={appendOnlyEditMode}
+        lockedOrderItems={lockedOrderItems}
         fmt={fmt}
         savingOrder={savingOrder}
       />
@@ -500,13 +537,17 @@ export default function Dashboard() {
         </div>
         <div className="d-flex justify-content-between">
           <span>Số order liên quan</span>
-          <strong>{orderCountByBooking.get(String(invoiceBooking?.id || "")) || 0}</strong>
+          <strong>
+            {orderCountByBooking.get(String(invoiceBooking?.id || "")) || 0}
+          </strong>
         </div>
 
         <hr />
         <div className="d-flex justify-content-between align-items-center">
           <h5 className="mb-0 text-secondary">TỔNG BOOKING</h5>
-          <h3 className="text-primary fw-bold mb-0">{fmt(invoiceBooking?.depositAmount)}d</h3>
+          <h3 className="text-primary fw-bold mb-0">
+            {fmt(invoiceBooking?.depositAmount)}d
+          </h3>
         </div>
       </InvoicePreviewModal>
 
@@ -525,7 +566,12 @@ export default function Dashboard() {
         <div className="fw-bold mb-2">THÔNG TIN ĐƠN HÀNG</div>
         <div className="d-flex justify-content-between">
           <span>Mã đơn</span>
-          <strong>#{String(invoiceOrder?.order?.id || "").slice(-6).toUpperCase()}</strong>
+          <strong>
+            #
+            {String(invoiceOrder?.order?.id || "")
+              .slice(-6)
+              .toUpperCase()}
+          </strong>
         </div>
         <div className="d-flex justify-content-between">
           <span>Ngày tạo</span>
@@ -542,7 +588,10 @@ export default function Dashboard() {
 
         <div className="fw-bold mt-3 mb-2">CHI TIẾT MÓN</div>
         {(invoiceOrder?.order?.items || []).map((item) => (
-          <div key={item.id} className="d-flex justify-content-between border-bottom py-2">
+          <div
+            key={item.id}
+            className="d-flex justify-content-between border-bottom py-2"
+          >
             <span>
               {item.menuName} x{item.quantity}
             </span>
@@ -553,7 +602,9 @@ export default function Dashboard() {
         <hr />
         <div className="d-flex justify-content-between align-items-center">
           <h5 className="mb-0 text-secondary">TỔNG CỘNG</h5>
-          <h3 className="text-primary fw-bold mb-0">{fmt(invoiceOrder?.order?.totalAmount)}d</h3>
+          <h3 className="text-primary fw-bold mb-0">
+            {fmt(invoiceOrder?.order?.totalAmount)}d
+          </h3>
         </div>
       </InvoicePreviewModal>
     </div>

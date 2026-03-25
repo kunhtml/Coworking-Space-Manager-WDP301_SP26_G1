@@ -431,7 +431,7 @@ export default function StaffSeatMapPage() {
             getCfg={getCfg}
             hoveredId={hoveredId}
             setHoveredId={setHoveredId}
-            onOpen={handleTableClick}
+            onOpen={handleOpenModal}
             getSeatIcon={getSeatIcon}
             formatTime={formatTime}
             bookingStatusLabel={BOOKING_STATUS_LABEL}
@@ -447,6 +447,7 @@ export default function StaffSeatMapPage() {
         }}
         selected={selected}
         activeBooking={selected?.activeBooking}
+        upcomingBookings={selected?.upcomingBookings || []}
         error={error}
         statuses={ALL_STATUSES}
         getCfg={getCfg}
@@ -456,6 +457,7 @@ export default function StaffSeatMapPage() {
         updating={updating}
         formatTime={formatTime}
         bookingStatusLabel={BOOKING_STATUS_LABEL}
+        onGoToPOS={() => handleTableClick(selected)}
       />
     </AdminLayout>
   );

@@ -1,18 +1,71 @@
 import Booking from "../models/booking.js";
 import Table from "../models/table.js";
+import TableType from "../models/tableType.js";
+import mongoose from "mongoose";
+
+const toObjectIdString = (value) => {
+  if (!value) return "";
+  return value.toString();
+};
+
+const buildTableTypeMap = async (tables = []) => {
+  const typeIds = Array.from(
+    new Set(tables.map((t) => toObjectIdString(t.tableTypeId)).filter(Boolean)),
+  );
+
+  if (typeIds.length === 0) return new Map();
+
+  const types = await TableType.find({ _id: { $in: typeIds } }).lean();
+  return new Map(types.map((type) => [toObjectIdString(type._id), type]));
+};
+
+const resolveCapacityFromTypeMap = (table, tableTypeMap) =>
+  Number(tableTypeMap.get(toObjectIdString(table.tableTypeId))?.capacity || 0);
+
+const resolveTableTypePayload = async ({ tableTypeId, tableType }) => {
+  const normalizedId = String(tableTypeId || "").trim();
+  const normalizedName = String(tableType || "").trim();
+
+  if (normalizedId) {
+    if (!mongoose.isValidObjectId(normalizedId)) {
+      return { error: "Loại bàn không hợp lệ." };
+    }
+    const type = await TableType.findById(normalizedId).lean();
+    if (!type) return { error: "Loại bàn không tồn tại." };
+    return {
+      tableTypeId: type._id,
+    };
+  }
+
+  if (normalizedName) {
+    const matchedType = await TableType.findOne({
+      name: normalizedName,
+    }).lean();
+    return {
+      tableTypeId: matchedType?._id || null,
+    };
+  }
+
+  return {
+    tableTypeId: null,
+  };
+};
 
 export const getTables = async (req, res) => {
   try {
     const tables = await Table.find().sort({ name: 1 }).lean();
+    const tableTypeMap = await buildTableTypeMap(tables);
+
     res.json(
       tables.map((t) => ({
         _id: t._id.toString(),
         sourceId: t._id.toString(),
         name: t.name,
-        tableType: t.tableType,
-        capacity: t.capacity,
+        tableTypeId: toObjectIdString(t.tableTypeId),
+        tableType:
+          tableTypeMap.get(toObjectIdString(t.tableTypeId))?.name || "",
+        capacity: resolveCapacityFromTypeMap(t, tableTypeMap),
         status: t.status,
-        location: t.location || "",
         description: t.description || "",
         pricePerHour: t.pricePerHour || 0,
         pricePerDay: t.pricePerDay || 0,
@@ -132,10 +185,12 @@ export const getAvailableTables = async (req, res) => {
       .sort({ name: 1 })
       .lean();
 
+    const tableTypeMap = await buildTableTypeMap(tables);
+
     if (tableType) {
       const normalizedType = String(tableType).toLowerCase();
       tables = tables.filter((t) =>
-        String(t.tableType || "")
+        String(tableTypeMap.get(toObjectIdString(t.tableTypeId))?.name || "")
           .toLowerCase()
           .includes(normalizedType),
       );
@@ -148,8 +203,11 @@ export const getAvailableTables = async (req, res) => {
         _id: t._id.toString(),
         sourceId: t._id.toString(),
         name: t.name,
-        tableType: { name: t.tableType },
-        capacity: t.capacity,
+        tableType: {
+          sourceId: toObjectIdString(t.tableTypeId),
+          name: tableTypeMap.get(toObjectIdString(t.tableTypeId))?.name || "",
+        },
+        capacity: resolveCapacityFromTypeMap(t, tableTypeMap),
         status: t.status,
         pricePerHour: t.pricePerHour || 0,
         pricePerDay: t.pricePerDay || 0,
@@ -167,27 +225,35 @@ export const createTable = async (req, res) => {
   try {
     const {
       name,
+      tableTypeId,
       tableType,
-      capacity,
       status,
       pricePerHour,
       pricePerDay,
-      location,
       description,
     } = req.body;
-    if (!name || !capacity) {
-      return res
-        .status(400)
-        .json({ message: "Vui lòng cung cấp tên và sức chứa." });
+    if (!name) {
+      return res.status(400).json({ message: "Vui lòng cung cấp tên bàn." });
     }
+    if (!tableTypeId && !tableType) {
+      return res.status(400).json({ message: "Vui lòng chọn loại bàn." });
+    }
+
+    const tableTypePayload = await resolveTableTypePayload({
+      tableTypeId,
+      tableType,
+    });
+
+    if (tableTypePayload.error) {
+      return res.status(400).json({ message: tableTypePayload.error });
+    }
+
     const table = await Table.create({
       name,
-      tableType: tableType || "",
-      capacity,
+      tableTypeId: tableTypePayload.tableTypeId,
       status: status || "Available",
       pricePerHour: pricePerHour || 0,
       pricePerDay: pricePerDay || 0,
-      location: location || "",
       description: description || "",
     });
     res.status(201).json({ message: "Thêm bàn thành công!", table });
@@ -203,27 +269,38 @@ export const updateTable = async (req, res) => {
   try {
     const {
       name,
+      tableTypeId,
       tableType,
-      capacity,
       status,
       pricePerHour,
       pricePerDay,
-      location,
       description,
     } = req.body;
+
+    const tableTypeInputProvided =
+      tableTypeId !== undefined || tableType !== undefined;
+
+    const tableTypePayload = tableTypeInputProvided
+      ? await resolveTableTypePayload({ tableTypeId, tableType })
+      : null;
+
+    if (tableTypePayload?.error) {
+      return res.status(400).json({ message: tableTypePayload.error });
+    }
+
     const table = await Table.findByIdAndUpdate(
       req.params.id,
       {
         name,
-        tableType,
-        capacity,
+        tableTypeId: tableTypeInputProvided
+          ? tableTypePayload.tableTypeId
+          : undefined,
         status,
         pricePerHour,
         pricePerDay,
-        location,
         description,
       },
-      { new: true, runValidators: true },
+      { returnDocument: "after", runValidators: true },
     );
     if (!table) return res.status(404).json({ message: "Không tìm thấy bàn." });
     res.json({ message: "Cập nhật bàn thành công!", table });

@@ -16,6 +16,8 @@ import {
   createCounterOrder,
   getStaffTables,
 } from "../../services/staffDashboardService";
+import { processCounterPayment } from "../../services/staffPaymentService";
+import SeatZoneSection from "../../components/staff/SeatZoneSection";
 
 // ── Table status config ─────────────────────────────────────────────────────
 const STATUS_CONFIG = {
@@ -51,6 +53,21 @@ function getSeatIcon(type) {
   return "bi-person-workspace";
 }
 
+// ── Booking Status Labels ──
+const BOOKING_STATUS_LABEL = {
+  Pending: "Chờ thanh toán",
+  Awaiting_Payment: "Chờ thanh toán",
+  Confirmed: "Đã xác nhận",
+  CheckedIn: "Đã check-in",
+  Completed: "Hoàn thành",
+  Cancelled: "Đã hủy",
+};
+
+function formatTime(d) {
+  if (!d) return "";
+  return new Date(d).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+}
+
 export default function StaffPOSPage() {
   const [searchParams] = useSearchParams();
   const urlTableId = searchParams.get("tableId");
@@ -59,6 +76,7 @@ export default function StaffPOSPage() {
   // ── Tables ──
   const [tables, setTables] = useState([]);
   const [selectedTable, setSelectedTable] = useState(null);
+  const [hoveredId, setHoveredId] = useState(null);
   const [tableSearch, setTableSearch] = useState("");
   const [tableStatusFilter, setTableStatusFilter] = useState("all");
   const [tableTypeFilter, setTableTypeFilter] = useState("all");
@@ -68,6 +86,7 @@ export default function StaffPOSPage() {
   const [menuItems, setMenuItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [menuStockFilter, setMenuStockFilter] = useState("all");
   const [menuSearch, setMenuSearch] = useState("");
 
   // ── Cart & Order ──
@@ -154,11 +173,19 @@ export default function StaffPOSPage() {
 
   // ── Menu filtering ──
   const availableMenu = useMemo(() => {
-    let items = menuItems.filter((item) => normalizeMenuStatus(item) === "AVAILABLE");
+    let items = menuItems; // Start with all items
     if (selectedCategory !== "all") {
       items = items.filter((item) => {
         const catId = String(item?.categoryId?._id || item?.categoryId || "");
         return catId === selectedCategory;
+      });
+    }
+    if (menuStockFilter !== "all") {
+      items = items.filter((item) => {
+        const isAvailable = normalizeMenuStatus(item) === "AVAILABLE";
+        if (menuStockFilter === "AVAILABLE") return isAvailable;
+        if (menuStockFilter === "OUT_OF_STOCK") return !isAvailable;
+        return true;
       });
     }
     if (menuSearch.trim()) {
@@ -168,7 +195,7 @@ export default function StaffPOSPage() {
       );
     }
     return items;
-  }, [menuItems, selectedCategory, menuSearch]);
+  }, [menuItems, selectedCategory, menuSearch, menuStockFilter]);
 
   // ── Cart logic ──
   const cartTotal = useMemo(
@@ -206,27 +233,60 @@ export default function StaffPOSPage() {
   };
 
   // ── Submit order ──
-  const submitOrder = async () => {
-    if (!selectedTable) { setError("Vui lòng chọn bàn trước."); return; }
-    if (!cart.length) { setError("Giỏ hàng trống."); return; }
+  const submitOrder = async (payMethod) => {
+    if (!selectedTable && !cart.length) {
+      setError("Vui lòng chọn bàn hoặc thêm món vào hoá đơn."); return;
+    }
 
     setCreating(true);
     setError("");
     try {
-      const result = await createCounterOrder({
-        tableId: selectedTable.id || selectedTable._id,
+      const orderItems = cart.map((item) => ({
+        menuItemId: item.menuItemId,
+        quantity: Number(item.quantity || 0),
+        note: "",
+      }));
+
+      const payload = {
         customerName: customerName || undefined,
         customerPhone: customerPhone || undefined,
-        durationHours: Number(durationHours || 2),
-        items: cart.map((item) => ({ menuItemId: item.menuItemId, quantity: Number(item.quantity || 0), note: "" })),
-      });
+        items: orderItems.length > 0 ? orderItems : undefined,
+      };
+      if (selectedTable) {
+        payload.tableId = selectedTable.id || selectedTable._id;
+        payload.durationHours = Number(durationHours || 2);
+      }
 
+      const result = await createCounterOrder(payload);
+
+      const orderId = result.orderId;
       const totalAmt = result.totalAmount || 0;
-      setSuccess(`✅ Tạo đơn thành công: ${result.orderCode} — ${fmtCur(totalAmt)}`);
 
-      if (result.payment?.checkoutUrl) {
-        const openPay = window.confirm(`Tổng tiền: ${fmtCur(totalAmt)}\nMở link thanh toán?`);
-        if (openPay) window.open(result.payment.checkoutUrl, "_blank");
+      // Process payment based on method
+      if (payMethod === "CASH" && orderId) {
+        try {
+          await processCounterPayment(orderId, "CASH");
+          setSuccess(`✅ Thanh toán tiền mặt thành công: ${result.orderCode} — ${fmtCur(totalAmt)}`);
+        } catch (payErr) {
+          setSuccess(`✅ Tạo đơn thành công: ${result.orderCode}. Lỗi thanh toán: ${payErr.message}`);
+        }
+      } else if (payMethod === "QR_PAYOS" && orderId) {
+        try {
+          const payResult = await processCounterPayment(orderId, "QR_PAYOS");
+          const checkoutUrl = payResult.checkoutUrl || payResult.payment?.payos?.checkoutUrl;
+          if (checkoutUrl) {
+            window.open(checkoutUrl, "_blank");
+          }
+          setSuccess(`✅ Tạo đơn thành công: ${result.orderCode} — Đang chờ thanh toán QR`);
+        } catch (payErr) {
+          // Fallback: try checkout URL from createCounterOrder result
+          if (result.payment?.checkoutUrl) {
+            window.open(result.payment.checkoutUrl, "_blank");
+          }
+          setSuccess(`✅ Tạo đơn: ${result.orderCode}. Mở link thanh toán QR...`);
+        }
+      } else {
+        setSuccess(`✅ Tạo đơn thành công: ${result.orderCode} — ${fmtCur(totalAmt)}`);
       }
 
       setCart([]);
@@ -291,75 +351,65 @@ export default function StaffPOSPage() {
             </Card.Header>
 
             {/* Mini stat chips */}
-            <div className="px-3 pt-3 d-flex flex-wrap gap-2">
-              {[
-                { key: "all", label: "Tất cả", count: tableStats.total, bg: "#f1f5f9", color: "#475569" },
-                ...Object.entries(STATUS_CONFIG).map(([key, cfg]) => ({
-                  key, label: cfg.label, count: tableStats[key] || 0, bg: cfg.bg, color: cfg.color,
-                })),
-              ].map((s) => (
-                <span
-                  key={s.key}
-                  className="rounded-pill px-2 py-1 fw-bold d-inline-flex align-items-center gap-1"
-                  style={{
-                    background: tableStatusFilter === s.key ? s.bg : "#f8fafc",
-                    color: s.color,
-                    fontSize: "0.7rem",
-                    cursor: "pointer",
-                    border: `1.5px solid ${tableStatusFilter === s.key ? s.color : "#e2e8f0"}`,
-                    transition: "all 0.15s",
-                  }}
-                  onClick={() => setTableStatusFilter(s.key)}
-                >
-                  {s.label} <strong>{s.count}</strong>
-                </span>
-              ))}
-            </div>
-
-            {/* Table type filter */}
-            <div className="px-3 pt-2 d-flex flex-wrap gap-1">
-              <span
-                className="rounded-pill px-2 py-1 fw-bold"
-                style={{
-                  background: tableTypeFilter === "all" ? "#6366f1" : "#f1f5f9",
-                  color: tableTypeFilter === "all" ? "#fff" : "#475569",
-                  fontSize: "0.68rem", cursor: "pointer", transition: "all 0.15s",
-                }}
-                onClick={() => setTableTypeFilter("all")}
-              >
-                Tất cả loại
-              </span>
-              {tableTypes.map((type) => (
-                <span
-                  key={type}
-                  className="rounded-pill px-2 py-1 fw-bold"
-                  style={{
-                    background: tableTypeFilter === type ? "#6366f1" : "#f1f5f9",
-                    color: tableTypeFilter === type ? "#fff" : "#475569",
-                    fontSize: "0.68rem", cursor: "pointer", transition: "all 0.15s",
-                  }}
-                  onClick={() => setTableTypeFilter(type)}
-                >
-                  {type}
-                </span>
-              ))}
-            </div>
-
-            {/* Search */}
-            <div className="px-3 pt-2">
-              <div className="staff-search-wrap" style={{ borderRadius: 10 }}>
-                <i className="bi bi-search" />
-                <input
-                  value={tableSearch}
-                  onChange={(e) => setTableSearch(e.target.value)}
-                  placeholder="Tìm bàn..."
-                  style={{ width: "100%" }}
-                />
+            <div className="px-3 pt-3">
+              <div className="d-flex flex-wrap gap-2 mb-2">
+                {[
+                  { key: "all", label: "Tất cả", count: tableStats.total, bg: "#f1f5f9", color: "#475569" },
+                  ...Object.entries(STATUS_CONFIG).map(([key, cfg]) => ({
+                    key, label: cfg.label, count: tableStats[key] || 0, bg: cfg.bg, color: cfg.color,
+                  })),
+                ].map((s) => (
+                  <span
+                    key={s.key}
+                    className="rounded-pill px-2 py-1 fw-bold d-inline-flex align-items-center gap-1"
+                    style={{
+                      background: tableStatusFilter === s.key ? s.bg : "#f8fafc",
+                      color: s.color,
+                      fontSize: "0.7rem",
+                      cursor: "pointer",
+                      border: `1.5px solid ${tableStatusFilter === s.key ? s.color : "#e2e8f0"}`,
+                      transition: "all 0.15s",
+                    }}
+                    onClick={() => setTableStatusFilter(s.key)}
+                  >
+                    {s.label} <strong>{s.count}</strong>
+                  </span>
+                ))}
               </div>
             </div>
 
+            {/* Filters */}
+            <div className="px-3 pt-1 pb-2 border-bottom">
+              <Row className="g-2">
+                <Col xs={6}>
+                  <Form.Select
+                    size="sm"
+                    className="staff-filter-control"
+                    value={tableTypeFilter}
+                    onChange={(e) => setTableTypeFilter(e.target.value)}
+                  >
+                    <option value="all">Tất cả loại bàn</option>
+                    {tableTypes.map((type) => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </Form.Select>
+                </Col>
+                <Col xs={6}>
+                  <div className="staff-search-wrap" style={{ borderRadius: 6, padding: "2px 8px" }}>
+                    <i className="bi bi-search" style={{ fontSize: "0.8rem" }} />
+                    <input
+                      style={{ fontSize: "0.8rem" }}
+                      value={tableSearch}
+                      onChange={(e) => setTableSearch(e.target.value)}
+                      placeholder="Tìm bàn..."
+                    />
+                  </div>
+                </Col>
+              </Row>
+            </div>
+
             {/* Table grid */}
-            <Card.Body style={{ maxHeight: "calc(100vh - 380px)", overflowY: "auto" }}>
+            <Card.Body className="p-3" style={{ maxHeight: "calc(100vh - 380px)", overflowY: "auto", background: "#f8fafc" }}>
               {loadingTables ? (
                 <div className="text-center py-4">
                   <Spinner animation="border" size="sm" style={{ color: "#6366f1" }} />
@@ -367,55 +417,30 @@ export default function StaffPOSPage() {
               ) : displayedTables.length === 0 ? (
                 <div className="text-center py-4 text-muted small fw-semibold">Không có bàn phù hợp</div>
               ) : (
-                <Row className="g-2">
-                  {displayedTables.map((table) => {
-                    const cfg = getCfg(table.status);
-                    const isSelected = selectedTable && String(selectedTable.id || selectedTable._id) === String(table.id);
-                    const icon = getSeatIcon(table.tableType);
-                    return (
-                      <Col xs={6} sm={4} key={String(table.id)}>
-                        <div
-                          className="rounded-3 p-2 text-center"
-                          style={{
-                            cursor: "pointer",
-                            background: isSelected ? "#eef2ff" : "#fff",
-                            border: `2px solid ${isSelected ? "#6366f1" : cfg.border + "66"}`,
-                            boxShadow: isSelected ? "0 0 0 3px rgba(99,102,241,0.15)" : "0 1px 4px rgba(0,0,0,0.04)",
-                            transition: "all 0.18s",
-                            transform: isSelected ? "scale(1.03)" : "scale(1)",
-                          }}
-                          onClick={() => setSelectedTable(table)}
-                        >
-                          <div
-                            className="rounded-circle mx-auto mb-1 d-flex align-items-center justify-content-center"
-                            style={{
-                              width: 36, height: 36,
-                              background: isSelected ? "#6366f1" : cfg.bg,
-                              color: isSelected ? "#fff" : cfg.color,
-                              fontSize: 16, transition: "all 0.18s",
-                            }}
-                          >
-                            <i className={`bi ${icon}`} />
-                          </div>
-                          <div className="fw-bold text-truncate" style={{ fontSize: "0.78rem", color: "#0f172a" }} title={table.name}>
-                            {table.name}
-                          </div>
-                          <span
-                            className="rounded-pill px-2 py-0 fw-bold d-inline-block"
-                            style={{ background: cfg.bg, color: cfg.color, fontSize: "0.62rem" }}
-                          >
-                            {cfg.emoji} {cfg.label}
-                          </span>
-                          {table.pricePerHour > 0 && (
-                            <div style={{ fontSize: "0.62rem", color: "#64748b", fontWeight: 600 }}>
-                              {fmtCur(table.pricePerHour)}/h
-                            </div>
-                          )}
-                        </div>
-                      </Col>
-                    );
-                  })}
-                </Row>
+                (() => {
+                  const groupedMap = {};
+                  displayedTables.forEach((t) => {
+                    const c = t.tableType || "Khác";
+                    if (!groupedMap[c]) groupedMap[c] = [];
+                    groupedMap[c].push(t);
+                  });
+                  const zoneNames = Object.keys(groupedMap).sort();
+                  return zoneNames.map((zone) => (
+                    <SeatZoneSection
+                      key={zone}
+                      zone={zone}
+                      tables={groupedMap[zone]}
+                      getCfg={getCfg}
+                      hoveredId={hoveredId}
+                      setHoveredId={setHoveredId}
+                      onOpen={(t) => setSelectedTable(selectedTable && (selectedTable.id || selectedTable._id) === (t.id || t._id) ? null : t)}
+                      getSeatIcon={getSeatIcon}
+                      formatTime={formatTime}
+                      bookingStatusLabel={BOOKING_STATUS_LABEL}
+                      colProps={{ xs: 6, xl: 6 }}
+                    />
+                  ));
+                })()
               )}
             </Card.Body>
           </Card>
@@ -468,6 +493,55 @@ export default function StaffPOSPage() {
                     </div>
                   </Col>
                 </Row>
+
+                {/* Upcoming bookings timeline */}
+                {selectedTable.upcomingBookings && selectedTable.upcomingBookings.length > 0 && (
+                  <div className="mt-3 pt-2 border-top">
+                    <div className="fw-bold mb-2" style={{ fontSize: "0.76rem", color: "#64748b" }}>
+                      <i className="bi bi-calendar-event me-1" />Lịch đặt sắp tới ({selectedTable.upcomingBookings.length})
+                    </div>
+                    {selectedTable.upcomingBookings.map((b) => {
+                      const start = new Date(b.startTime);
+                      const end = new Date(b.endTime);
+                      const fmtT = (d) => d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+                      const fmtD = (d) => d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
+                      const isNow = start <= new Date() && end >= new Date();
+                      return (
+                        <div
+                          key={String(b.id)}
+                          className="d-flex align-items-center gap-2 mb-1 rounded-2 px-2 py-1"
+                          style={{
+                            background: isNow ? "#fef2f2" : "#f8fafc",
+                            border: isNow ? "1px solid #fca5a5" : "1px solid #e2e8f0",
+                            fontSize: "0.72rem",
+                          }}
+                        >
+                          <span style={{ color: isNow ? "#dc2626" : "#6366f1", fontWeight: 700, minWidth: 85 }}>
+                            {fmtT(start)} – {fmtT(end)}
+                          </span>
+                          <span className="text-muted" style={{ fontSize: "0.65rem" }}>{fmtD(start)}</span>
+                          <span
+                            className="rounded-pill px-2 ms-auto fw-bold"
+                            style={{
+                              fontSize: "0.6rem",
+                              background: isNow ? "#fee2e2" : "#dbeafe",
+                              color: isNow ? "#dc2626" : "#1d4ed8",
+                            }}
+                          >
+                            {isNow ? "Đang dùng" : b.status}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* No upcoming bookings */}
+                {(!selectedTable.upcomingBookings || selectedTable.upcomingBookings.length === 0) && (
+                  <div className="mt-2 pt-2 border-top text-center" style={{ fontSize: "0.72rem", color: "#16a34a", fontWeight: 600 }}>
+                    <i className="bi bi-check-circle me-1" />Không có lịch đặt — bàn trống hoàn toàn
+                  </div>
+                )}
               </Card.Body>
             </Card>
           )}
@@ -486,45 +560,48 @@ export default function StaffPOSPage() {
                     </h5>
                     <small className="text-muted fw-semibold">{availableMenu.length} món</small>
                   </div>
-                  {/* Category chips */}
-                  <div className="d-flex flex-wrap gap-1">
-                    <span
-                      className={`rounded-pill px-2 py-1 fw-bold ${selectedCategory === "all" ? "" : ""}`}
-                      style={{
-                        background: selectedCategory === "all" ? "#6366f1" : "#f1f5f9",
-                        color: selectedCategory === "all" ? "#fff" : "#475569",
-                        fontSize: "0.72rem", cursor: "pointer", transition: "all 0.15s",
-                      }}
-                      onClick={() => setSelectedCategory("all")}
-                    >
-                      Tất cả
-                    </span>
-                    {categories.map((cat) => (
-                      <span
-                        key={String(cat._id)}
-                        className="rounded-pill px-2 py-1 fw-bold"
-                        style={{
-                          background: selectedCategory === String(cat._id) ? "#6366f1" : "#f1f5f9",
-                          color: selectedCategory === String(cat._id) ? "#fff" : "#475569",
-                          fontSize: "0.72rem", cursor: "pointer", transition: "all 0.15s",
-                        }}
-                        onClick={() => setSelectedCategory(String(cat._id))}
-                      >
-                        {cat.name}
-                      </span>
-                    ))}
-                  </div>
-                  {/* Menu search */}
-                  <div className="mt-2">
-                    <div className="staff-search-wrap" style={{ borderRadius: 10 }}>
-                      <i className="bi bi-search" />
-                      <input
-                        value={menuSearch}
-                        onChange={(e) => setMenuSearch(e.target.value)}
-                        placeholder="Tìm món..."
-                        style={{ width: "100%" }}
-                      />
-                    </div>
+                  {/* Category & Stock filters */}
+                  <div className="px-1 mt-3">
+                    <Row className="g-2">
+                      <Col xs={4}>
+                        <Form.Select
+                          size="sm"
+                          className="staff-filter-control"
+                          value={selectedCategory}
+                          onChange={(e) => setSelectedCategory(e.target.value)}
+                        >
+                          <option value="all">Tất cả danh mục</option>
+                          {categories.map((cat) => (
+                            <option key={String(cat._id)} value={String(cat._id)}>
+                              {cat.name}
+                            </option>
+                          ))}
+                        </Form.Select>
+                      </Col>
+                      <Col xs={4}>
+                        <Form.Select
+                          size="sm"
+                          className="staff-filter-control"
+                          value={menuStockFilter}
+                          onChange={(e) => setMenuStockFilter(e.target.value)}
+                        >
+                          <option value="all">Mọi trạng thái</option>
+                          <option value="AVAILABLE">Còn hàng</option>
+                          <option value="OUT_OF_STOCK">Tạm hết</option>
+                        </Form.Select>
+                      </Col>
+                      <Col xs={4}>
+                        <div className="staff-search-wrap" style={{ borderRadius: 6, padding: "2px 8px" }}>
+                          <i className="bi bi-search" style={{ fontSize: "0.8rem" }} />
+                          <input
+                            style={{ fontSize: "0.8rem" }}
+                            value={menuSearch}
+                            onChange={(e) => setMenuSearch(e.target.value)}
+                            placeholder="Tìm món..."
+                          />
+                        </div>
+                      </Col>
+                    </Row>
                   </div>
                 </Card.Header>
                 <Card.Body style={{ maxHeight: "calc(100vh - 340px)", overflowY: "auto" }}>
@@ -567,113 +644,202 @@ export default function StaffPOSPage() {
               </Card>
             </Col>
 
-            {/* Cart */}
+            {/* Hoá đơn */}
             <Col xl={4}>
               <Card className="border-0 shadow-sm" style={{ borderRadius: 16, position: "sticky", top: 16 }}>
                 <Card.Header className="bg-white border-bottom py-3 d-flex justify-content-between align-items-center" style={{ borderRadius: "16px 16px 0 0" }}>
                   <h5 className="mb-0 fw-bold">
-                    <i className="bi bi-cart3 me-2" style={{ color: "#6366f1" }} />Giỏ hàng
+                    <i className="bi bi-receipt me-2" style={{ color: "#6366f1" }} />Hoá đơn
                   </h5>
-                  <Badge pill style={{ background: "#6366f1", border: "none", fontSize: "0.78rem" }}>
-                    {cart.length}
-                  </Badge>
+                  {selectedTable ? (
+                    <Badge pill style={{ background: "#6366f1", border: "none", fontSize: "0.78rem" }}>
+                      {selectedTable.name}
+                    </Badge>
+                  ) : cart.length > 0 ? (
+                    <Badge pill style={{ background: "#f59e0b", border: "none", fontSize: "0.78rem" }}>
+                      Mua mang đi
+                    </Badge>
+                  ) : null}
                 </Card.Header>
-                <Card.Body style={{ maxHeight: "calc(100vh - 480px)", overflowY: "auto" }}>
-                  {cart.length === 0 ? (
+                <Card.Body style={{ maxHeight: "calc(100vh - 420px)", overflowY: "auto" }}>
+                  {!selectedTable && cart.length === 0 ? (
                     <div className="text-center py-4">
-                      <div style={{ fontSize: 36 }}>🛒</div>
-                      <div className="text-muted fw-semibold small mt-1">Chưa có món</div>
-                      <div className="text-muted" style={{ fontSize: "0.72rem" }}>Bấm vào món để thêm</div>
+                      <div style={{ fontSize: 36 }}>📋</div>
+                      <div className="text-muted fw-semibold small mt-1">Hoá đơn trống</div>
+                      <div className="text-muted" style={{ fontSize: "0.72rem" }}>Chọn bàn hoặc thêm món từ menu</div>
                     </div>
                   ) : (
-                    cart.map((item) => (
-                      <div key={String(item.menuItemId)} className="mb-2 pb-2 border-bottom">
-                        <div className="d-flex justify-content-between align-items-start">
-                          <div className="fw-semibold" style={{ fontSize: "0.84rem" }}>{item.name}</div>
-                          <button
-                            type="button"
-                            className="btn btn-sm p-0"
-                            style={{ color: "#ef4444", fontSize: "0.78rem" }}
-                            onClick={() => removeFromCart(item.menuItemId)}
-                          >
-                            <i className="bi bi-x-lg" />
-                          </button>
-                        </div>
-                        <div className="d-flex justify-content-between align-items-center mt-1">
-                          <div className="d-flex align-items-center gap-1">
-                            <button
-                              type="button"
-                              className="btn btn-sm rounded-circle"
-                              style={{ width: 26, height: 26, background: "#f1f5f9", border: "none", fontSize: "0.72rem", fontWeight: 700 }}
-                              onClick={() => updateQty(item.menuItemId, item.quantity - 1)}
-                            >
-                              −
-                            </button>
-                            <span className="fw-bold px-1" style={{ fontSize: "0.85rem", minWidth: 20, textAlign: "center" }}>
-                              {item.quantity}
+                    <>
+                      {/* Table rental line (only if table selected) */}
+                      {selectedTable && (
+                        <div className="mb-2 pb-2 border-bottom">
+                          <div className="d-flex justify-content-between align-items-start">
+                            <div>
+                              <div className="fw-bold d-flex align-items-center" style={{ fontSize: "0.84rem", color: "#6366f1" }}>
+                                <i className="bi bi-building me-2" />{selectedTable.name}
+                                <button
+                                  type="button"
+                                  className="btn btn-sm p-0 ms-2"
+                                  style={{ color: "#ef4444", fontSize: "0.78rem" }}
+                                  onClick={() => setSelectedTable(null)}
+                                >
+                                  <i className="bi bi-x-lg" />
+                                </button>
+                              </div>
+                              <div className="d-flex align-items-center gap-2 mt-1">
+                                <span className="text-muted" style={{ fontSize: "0.72rem" }}>
+                                  {selectedTable.tableType} · {fmtCur(selectedTable.pricePerHour)}/h
+                                </span>
+                                <div className="d-flex align-items-center rounded" style={{ background: "#f8fafc", border: "1px solid #cbd5e1" }}>
+                                  <button
+                                    className="btn btn-sm p-0 text-secondary d-flex align-items-center justify-content-center hover-bg-light"
+                                    style={{ width: 24, height: 24 }}
+                                    onClick={() => setDurationHours(Math.max(1, durationHours - 1))}
+                                  >
+                                    <i className="bi bi-dash" />
+                                  </button>
+                                  <div className="fw-bold text-center" style={{ fontSize: "0.75rem", width: 20, color: "#334155" }}>
+                                    {durationHours}
+                                  </div>
+                                  <button
+                                    className="btn btn-sm p-0 text-secondary d-flex align-items-center justify-content-center hover-bg-light"
+                                    style={{ width: 24, height: 24 }}
+                                    onClick={() => setDurationHours(durationHours + 1)}
+                                  >
+                                    <i className="bi bi-plus" />
+                                  </button>
+                                </div>
+                                <span className="text-muted fw-semibold" style={{ fontSize: "0.72rem" }}>giờ</span>
+                              </div>
+                            </div>
+                            <span className="fw-bold" style={{ color: "#15803d", fontSize: "0.85rem" }}>
+                              {fmtCur(Number(selectedTable.pricePerHour || 0) * Number(durationHours || 0))}
                             </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Menu items */}
+                      {cart.length > 0 && (
+                        <div className="mb-1" style={{ fontSize: "0.68rem", color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                          Dịch vụ & Thực đơn
+                        </div>
+                      )}
+                      {cart.map((item) => (
+                        <div key={String(item.menuItemId)} className="mb-2 pb-2 border-bottom">
+                          <div className="d-flex justify-content-between align-items-start">
+                            <div className="fw-semibold" style={{ fontSize: "0.84rem" }}>{item.name}</div>
                             <button
                               type="button"
-                              className="btn btn-sm rounded-circle"
-                              style={{ width: 26, height: 26, background: "#eef2ff", border: "none", color: "#6366f1", fontSize: "0.72rem", fontWeight: 700 }}
-                              onClick={() => updateQty(item.menuItemId, item.quantity + 1)}
+                              className="btn btn-sm p-0"
+                              style={{ color: "#ef4444", fontSize: "0.78rem" }}
+                              onClick={() => removeFromCart(item.menuItemId)}
                             >
-                              +
+                              <i className="bi bi-x-lg" />
                             </button>
                           </div>
-                          <span className="fw-bold" style={{ color: "#15803d", fontSize: "0.82rem" }}>
-                            {fmtCur(Number(item.price || 0) * Number(item.quantity || 0))}
-                          </span>
+                          <div className="d-flex justify-content-between align-items-center mt-1">
+                            <div className="d-flex align-items-center gap-1">
+                              <button
+                                type="button"
+                                className="btn btn-sm rounded-circle"
+                                style={{ width: 26, height: 26, background: "#f1f5f9", border: "none", fontSize: "0.72rem", fontWeight: 700 }}
+                                onClick={() => updateQty(item.menuItemId, item.quantity - 1)}
+                              >
+                                −
+                              </button>
+                              <span className="fw-bold px-1" style={{ fontSize: "0.85rem", minWidth: 20, textAlign: "center" }}>
+                                {item.quantity}
+                              </span>
+                              <button
+                                type="button"
+                                className="btn btn-sm rounded-circle"
+                                style={{ width: 26, height: 26, background: "#eef2ff", border: "none", color: "#6366f1", fontSize: "0.72rem", fontWeight: 700 }}
+                                onClick={() => updateQty(item.menuItemId, item.quantity + 1)}
+                              >
+                                +
+                              </button>
+                            </div>
+                            <span className="fw-bold" style={{ color: "#15803d", fontSize: "0.82rem" }}>
+                              {fmtCur(Number(item.price || 0) * Number(item.quantity || 0))}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      ))}
+
+                      {selectedTable && cart.length === 0 && (
+                        <div className="text-center py-2 text-muted" style={{ fontSize: "0.72rem" }}>
+                          <i className="bi bi-cup-hot me-1" />(Tuỳ chọn) Thêm đồ ăn/uống từ menu
+                        </div>
+                      )}
+                    </>
                   )}
                 </Card.Body>
 
-                {/* Cart footer */}
+                {/* Invoice footer */}
                 <div className="px-3 pb-3">
-                  {selectedTable && cart.length > 0 && (
-                    <div className="rounded-3 p-2 mb-2" style={{ background: "#f8fafc", fontSize: "0.8rem" }}>
-                      <div className="d-flex justify-content-between">
-                        <span style={{ color: "#64748b" }}>Thuê bàn ({durationHours}h)</span>
-                        <strong>{fmtCur(Number(selectedTable.pricePerHour || 0) * Number(durationHours || 0))}</strong>
+                  {(selectedTable || cart.length > 0) && (
+                    <>
+                      <div className="rounded-3 p-2 mb-2" style={{ background: "#f8fafc", fontSize: "0.8rem" }}>
+                        {selectedTable && (
+                          <div className="d-flex justify-content-between">
+                            <span style={{ color: "#64748b" }}>Thuê bàn ({durationHours}h)</span>
+                            <strong>{fmtCur(Number(selectedTable.pricePerHour || 0) * Number(durationHours || 0))}</strong>
+                          </div>
+                        )}
+                        {cartTotal > 0 && (
+                          <div className="d-flex justify-content-between">
+                            <span style={{ color: "#64748b" }}>Dịch vụ</span>
+                            <strong>{fmtCur(cartTotal)}</strong>
+                          </div>
+                        )}
+                        <hr className="my-1" />
+                        <div className="d-flex justify-content-between">
+                          <strong>Tổng cộng</strong>
+                          <strong style={{ color: "#6366f1", fontSize: "1.1rem" }}>
+                            {fmtCur(cartTotal + (selectedTable ? Number(selectedTable.pricePerHour || 0) * Number(durationHours || 0) : 0))}
+                          </strong>
+                        </div>
                       </div>
-                      <div className="d-flex justify-content-between">
-                        <span style={{ color: "#64748b" }}>Dịch vụ</span>
-                        <strong>{fmtCur(cartTotal)}</strong>
-                      </div>
-                      <hr className="my-1" />
-                      <div className="d-flex justify-content-between">
-                        <strong>Tổng cộng</strong>
-                        <strong style={{ color: "#6366f1", fontSize: "1rem" }}>
-                          {fmtCur(cartTotal + Number(selectedTable.pricePerHour || 0) * Number(durationHours || 0))}
-                        </strong>
-                      </div>
-                    </div>
-                  )}
 
-                  <Button
-                    className="w-100 fw-bold rounded-3 d-flex align-items-center justify-content-center gap-2"
-                    style={{
-                      background: selectedTable && cart.length ? "#6366f1" : "#94a3b8",
-                      border: "none",
-                      padding: "10px 0",
-                      fontSize: "0.92rem",
-                    }}
-                    disabled={creating || !cart.length || !selectedTable}
-                    onClick={submitOrder}
-                  >
-                    {creating ? (
-                      <><Spinner size="sm" /> Đang tạo...</>
-                    ) : (
-                      <><i className="bi bi-check-circle-fill" /> Tạo đơn</>
-                    )}
-                  </Button>
-
-                  {!selectedTable && cart.length > 0 && (
-                    <div className="text-center mt-1" style={{ color: "#f59e0b", fontSize: "0.72rem", fontWeight: 600 }}>
-                      ⚠️ Vui lòng chọn bàn trước
-                    </div>
+                      {/* Payment buttons */}
+                      <div className="d-flex gap-2">
+                        <Button
+                          className="flex-grow-1 fw-bold rounded-3 d-flex align-items-center justify-content-center gap-1"
+                          style={{
+                            background: "#16a34a",
+                            border: "none",
+                            padding: "10px 0",
+                            fontSize: "0.85rem",
+                          }}
+                          disabled={creating}
+                          onClick={() => submitOrder("CASH")}
+                        >
+                          {creating ? (
+                            <><Spinner size="sm" /> .....</>
+                          ) : (
+                            <><i className="bi bi-cash-coin" /> Tiền mặt</>
+                          )}
+                        </Button>
+                        <Button
+                          className="flex-grow-1 fw-bold rounded-3 d-flex align-items-center justify-content-center gap-1"
+                          style={{
+                            background: "#6366f1",
+                            border: "none",
+                            padding: "10px 0",
+                            fontSize: "0.85rem",
+                          }}
+                          disabled={creating}
+                          onClick={() => submitOrder("QR_PAYOS")}
+                        >
+                          {creating ? (
+                            <><Spinner size="sm" /> .....</>
+                          ) : (
+                            <><i className="bi bi-qr-code" /> QR PayOS</>
+                          )}
+                        </Button>
+                      </div>
+                    </>
                   )}
                 </div>
               </Card>
