@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router";
 import { Alert, Col, Form, Row, Spinner } from "react-bootstrap";
 import AdminLayout from "../../components/admin/AdminLayout";
 import ServiceForm from "../../components/staff/ServiceForm";
@@ -18,6 +19,7 @@ function isServiceAvailable(item) {
 }
 
 export default function StaffCreateServicePage() {
+  const [searchParams] = useSearchParams();
   const [tables, setTables] = useState([]);
   const [categories, setCategories] = useState([]);
   const [services, setServices] = useState([]);
@@ -25,7 +27,7 @@ export default function StaffCreateServicePage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const [selectedTableId, setSelectedTableId] = useState("");
+  const [selectedTableId, setSelectedTableId] = useState(searchParams.get("tableId") || "");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [cart, setCart] = useState([]);
   const [creatingOrder, setCreatingOrder] = useState(false);
@@ -43,6 +45,12 @@ export default function StaffCreateServicePage() {
       setTables(Array.isArray(tableRows) ? tableRows : []);
       setCategories(Array.isArray(categoryRows) ? categoryRows : []);
       setServices(Array.isArray(itemRows) ? itemRows : []);
+
+      // Pre-select tableId from URL if available and not already set
+      const urlTableId = searchParams.get("tableId");
+      if (urlTableId && !selectedTableId) {
+        setSelectedTableId(urlTableId);
+      }
     } catch (err) {
       setError(err.message || "Không thể tải dữ liệu dịch vụ.");
     } finally {

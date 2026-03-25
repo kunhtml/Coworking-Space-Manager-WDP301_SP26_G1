@@ -9,6 +9,7 @@ export default function StaffBookingTable({
   fmtTime,
   fmtCur,
   checkingId,
+  now,
   onCheckin,
   onViewDetail,
 }) {
@@ -16,7 +17,9 @@ export default function StaffBookingTable({
     <Row className="g-3">
       {data.map((booking) => {
         const st = statusStyle[booking.status] || { color: "#475569" };
-        const canCheckIn = ["Confirmed", "Awaiting_Payment"].includes(booking.status);
+        const isExpired = booking.endTime && new Date(booking.endTime) < (now || new Date());
+        const canCheckIn =
+          ["Confirmed", "Awaiting_Payment"].includes(booking.status) && !isExpired;
         return (
           <BookingCard
             key={String(booking.id)}
@@ -27,6 +30,7 @@ export default function StaffBookingTable({
             fmtTime={fmtTime}
             fmtCur={fmtCur}
             canCheckIn={canCheckIn}
+            isExpired={isExpired}
             isChecking={checkingId === String(booking.id)}
             onCheckin={onCheckin}
             onViewDetail={onViewDetail}
@@ -36,3 +40,4 @@ export default function StaffBookingTable({
     </Row>
   );
 }
+

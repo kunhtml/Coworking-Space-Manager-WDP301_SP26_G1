@@ -6,44 +6,45 @@ export default [
   // Shared pages
   index("pages/shared/HomeNew.jsx"),
   route("login", "pages/shared/Login.jsx"),
+  route("forgot-password", "pages/shared/ForgotPassword.jsx"),
   route("register", "pages/shared/Register.jsx"),
   route("spaces", "pages/shared/SpacesPage.jsx"),
   route("menu", "pages/shared/OrderPage.jsx"),
-  route("payment/:bookingId", "pages/shared/PaymentPage.jsx", {
+  route("payment/:bookingId", "pages/shared/PaymentBookingPage.jsx", {
     id: "booking-payment",
   }),
-  route("payment/order/:orderId", "pages/shared/PaymentPage.jsx", {
+  route("payment/order/:orderId", "pages/shared/PaymentOrderPage.jsx", {
     id: "order-payment",
   }),
 
   // Customer pages
   route("order-table", "pages/customer/BookingPage.jsx"),
   route(
-    "customer-dashboard",
-    "pages/customer/routes/CustomerDashboardRedirect.jsx",
-  ),
-  route(
     "customer-dashboard/profile",
     "pages/customer/routes/CustomerProfilePage.jsx",
   ),
-  route("customer-dashboard/password", "pages/customer/CustomerPassword.jsx"),
+  route("customer-dashboard/password", "pages/customer/CustomerPassword.jsx", {
+    id: "customer-password",
+  }),
   route("dashboard", "pages/shared/DashboardEntry.jsx"),
-  route("profile", "pages/customer/routes/LegacyCustomerProfilePage.jsx"),
+  route("profile", "pages/customer/routes/CustomerProfileRoot.jsx"),
 
   // Staff pages
   route("staff-dashboard", "pages/staff/StaffDashboard.jsx"),
   route("staff-dashboard/checkin", "pages/staff/StaffCheckinPage.jsx"),
   route("staff-dashboard/tables", "pages/staff/StaffSeatMapPage.jsx"),
   route("staff-dashboard/orders", "pages/staff/StaffOrderManagementPage.jsx"),
-  // Redirect route để xử lý payment link cũ
-  route("staff/orders", "pages/staff/StaffOrdersRedirect.jsx"),
+  route("staff-dashboard/counter-pos", "pages/staff/StaffPOSPage.jsx"),
+  route("staff/orders", "pages/staff/StaffOrdersPage.jsx"),
   route(
     "staff-dashboard/create-service",
     "pages/staff/StaffCreateServicePage.jsx",
   ),
   route("staff-dashboard/services", "pages/staff/StaffServiceListPage.jsx"),
-  route("staff-dashboard/profile", "pages/admin/AdminProfileNew.jsx"),
-  route("staff-dashboard/password", "pages/admin/routes/StaffPasswordPage.jsx"),
+  route("staff-dashboard/profile", "pages/staff/StaffProfilePage.jsx"),
+  route("staff-dashboard/password", "pages/staff/StaffPasswordPage.jsx", {
+    id: "staff-password",
+  }),
 
   // Admin pages
   route("admin-dashboard/users", "pages/admin/AdminUsers.jsx"),
@@ -51,8 +52,10 @@ export default [
   route("admin-dashboard/services", "pages/admin/AdminServiceListPage.jsx"),
   route("admin-dashboard/revenue", "pages/admin/AdminRevenuePage.jsx"),
   route("admin-dashboard/occupancy", "pages/admin/AdminOccupancyPage.jsx"),
-  route("admin-dashboard/profile", "pages/admin/routes/AdminProfilePage.jsx"),
-  route("admin-dashboard/password", "pages/admin/routes/AdminPasswordPage.jsx"),
+  route("admin-dashboard/profile", "pages/admin/AdminProfilePage.jsx"),
+  route("admin-dashboard/password", "pages/admin/AdminPasswordPage.jsx", {
+    id: "admin-password",
+  }),
 
   route("admin", "pages/shared/AdminToDashboard.jsx"),
 ];

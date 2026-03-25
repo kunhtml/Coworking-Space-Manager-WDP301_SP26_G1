@@ -296,6 +296,16 @@ export const getAllBookings = async (req, res) => {
       filter.startTime = { $gte: from, $lte: to };
     }
 
+    // Auto-cancel expired bookings (endTime already passed but still not checked-in)
+    const now = new Date();
+    await Booking.updateMany(
+      {
+        endTime: { $lt: now },
+        status: { $in: ["Pending", "Awaiting_Payment", "Confirmed"] },
+      },
+      { $set: { status: "Cancelled" } },
+    );
+
     let bookings = await Booking.find(filter).sort({ startTime: 1 }).lean();
 
     // Search by booking code or guest name
@@ -356,6 +366,17 @@ export const checkInBooking = async (req, res) => {
     const booking = await Booking.findById(id);
     if (!booking)
       return res.status(404).json({ message: "Không tìm thấy booking." });
+
+    // Auto-cancel if booking time has already passed
+    const now = new Date();
+    if (booking.endTime && new Date(booking.endTime) < now) {
+      booking.status = "Cancelled";
+      await booking.save();
+      return res.status(400).json({
+        message: "Khung giờ đã trôi qua, booking đã được tự động hủy.",
+      });
+    }
+
     if (!["Confirmed", "Awaiting_Payment"].includes(booking.status)) {
       return res.status(400).json({
         message: `Chỉ có thể check-in booking đã xác nhận/chờ thanh toán (trạng thái hiện tại: ${booking.status}).`,

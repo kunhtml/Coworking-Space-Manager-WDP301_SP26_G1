@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router";
 import {
   Col,
   Form,
@@ -127,6 +128,7 @@ function getCfg(status) {
 }
 
 export default function StaffSeatMapPage() {
+  const navigate = useNavigate();
   const [tables, setTables]         = useState([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState("");
@@ -159,7 +161,12 @@ export default function StaffSeatMapPage() {
     }
   }, []);
 
-  useEffect(() => { fetchTables(); }, [fetchTables]);
+  useEffect(() => {
+    fetchTables();
+    // Auto-refresh every 30 seconds for real-time status
+    const interval = setInterval(fetchTables, 30_000);
+    return () => clearInterval(interval);
+  }, [fetchTables]);
 
   // ── Filter & Search (client-side) ─────────────────────────────────────────
   const displayed = useMemo(() => {
@@ -193,7 +200,13 @@ export default function StaffSeatMapPage() {
   const groupedMap   = useMemo(() => groupByType(displayed), [displayed]);
   const zoneNames    = Object.keys(groupedMap);
 
-  // ── Update status ─────────────────────────────────────────────────────────
+  // ── Click table → navigate to order form ──────────────────────────────────
+  const handleTableClick = (table) => {
+    const tableId = table.id || table._id;
+    navigate(`/staff-dashboard/counter-pos?tableId=${tableId}`);
+  };
+
+  // ── Update status (via long press / context) ──────────────────────────────
   const handleOpenModal = (table) => {
     setSelected(table);
     setNewStatus(table.status);
@@ -418,7 +431,7 @@ export default function StaffSeatMapPage() {
             getCfg={getCfg}
             hoveredId={hoveredId}
             setHoveredId={setHoveredId}
-            onOpen={handleOpenModal}
+            onOpen={handleTableClick}
             getSeatIcon={getSeatIcon}
             formatTime={formatTime}
             bookingStatusLabel={BOOKING_STATUS_LABEL}
