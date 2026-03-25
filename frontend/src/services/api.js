@@ -81,6 +81,12 @@ export const registerApi = (fullName, email, phone, passwordHash) =>
     membershipStatus: "active",
   });
 
+export const sendRegisterOtpApi = (email) =>
+  apiClient.post("/auth/register/send-otp", { email });
+
+export const verifyRegisterOtpApi = (email, otp) =>
+  apiClient.post("/auth/register/verify-otp", { email, otp });
+
 export const getMeApi = () => apiClient.get("/auth/me");
 
 export const updateProfileApi = (data) => apiClient.put("/auth/profile", data);

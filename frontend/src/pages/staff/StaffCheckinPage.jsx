@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import {
   Alert,
   Button,
@@ -70,6 +70,9 @@ export default function StaffCheckinPage() {
   const [dateFilter, setDateFilter] = useState(todayStr());
   const [statusFilter, setStatusFilter] = useState("all");
 
+  // Real-time clock for expiry check (updates every 30s)
+  const [now, setNow] = useState(() => new Date());
+
   // Modal check-in xác nhận
   const [pendingBooking, setPendingBooking] = useState(null);
   const [checkingId, setCheckingId]         = useState("");
@@ -95,6 +98,12 @@ export default function StaffCheckinPage() {
     const t = setTimeout(loadBookings, 300);
     return () => clearTimeout(t);
   }, [search, dateFilter]);
+
+  // Auto-refresh `now` every 30s for real-time expiry check
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(timer);
+  }, []);
 
   // ── Stats ─────────────────────────────────────────────────────────────────
   const statCounts = useMemo(() => {
@@ -281,6 +290,7 @@ export default function StaffCheckinPage() {
             fmtTime={fmt}
             fmtCur={fmtCur}
             checkingId={checkingId}
+            now={now}
             onCheckin={(booking) => setPendingBooking(booking)}
             onViewDetail={(booking) => setDetailBooking(booking)}
           />

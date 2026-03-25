@@ -9,6 +9,7 @@ export default function BookingCard({
   fmtTime,
   fmtCur,
   canCheckIn,
+  isExpired,
   isChecking,
   onCheckin,
   onViewDetail,
@@ -19,8 +20,9 @@ export default function BookingCard({
         className="border-0 shadow-sm h-100"
         style={{
           borderRadius: 16,
-          borderLeft: `4px solid ${statusStyle.color}`,
+          borderLeft: `4px solid ${isExpired ? "#ef4444" : statusStyle.color}`,
           transition: "box-shadow 0.2s",
+          opacity: isExpired ? 0.75 : 1,
         }}
       >
         <Card.Body className="p-4">
@@ -33,7 +35,17 @@ export default function BookingCard({
                 {booking.customerName || "Khong xac dinh"}
               </div>
             </div>
-            <StatusBadge status={statusLabel} className="px-3 py-1" />
+            <div className="d-flex flex-column align-items-end gap-1">
+              <StatusBadge status={statusLabel} className="px-3 py-1" />
+              {isExpired && (
+                <span
+                  className="rounded-pill px-2 py-1 fw-bold d-inline-flex align-items-center gap-1"
+                  style={{ background: "#fee2e2", color: "#b91c1c", fontSize: "0.72rem" }}
+                >
+                  <i className="bi bi-clock-history" /> Hết giờ
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="rounded-3 px-3 py-2 mb-3" style={{ background: "#f8fafc", fontSize: "0.84rem" }}>
@@ -71,7 +83,7 @@ export default function BookingCard({
               disabled={!canCheckIn || isChecking}
               onClick={() => onCheckin(booking)}
             >
-              {isChecking ? "Dang xu ly..." : "Check-in"}
+              {isChecking ? "Dang xu ly..." : isExpired ? "Hết giờ" : "Check-in"}
             </Button>
             <Button
               variant="outline-secondary"

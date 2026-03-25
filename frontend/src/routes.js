@@ -34,7 +34,7 @@ export default [
   route("staff-dashboard/checkin", "pages/staff/StaffCheckinPage.jsx"),
   route("staff-dashboard/tables", "pages/staff/StaffSeatMapPage.jsx"),
   route("staff-dashboard/orders", "pages/staff/StaffOrderManagementPage.jsx"),
-  route("staff-dashboard/counter-pos", "pages/staff/StaffCounterOrderPage.jsx"),
+  route("staff-dashboard/counter-pos", "pages/staff/StaffPOSPage.jsx"),
   route("staff/orders", "pages/staff/StaffOrdersPage.jsx"),
   route(
     "staff-dashboard/create-service",

@@ -121,6 +121,39 @@ export const getStaffTableStatusList = async (req, res) => {
       tableFilter.status = status;
     }
 
+    const now = new Date();
+
+    // Auto-cancel expired bookings (endTime passed, still not checked-in)
+    await Booking.updateMany(
+      {
+        endTime: { $lt: now },
+        status: { $in: ["Pending", "Awaiting_Payment", "Confirmed"] },
+      },
+      { $set: { status: "Cancelled" } },
+    );
+
+    // Auto-release Occupied tables that have no active booking right now
+    const occupiedTables = await Table.find({ status: "Occupied" }).lean();
+    if (occupiedTables.length > 0) {
+      const occupiedIds = occupiedTables.map((t) => t._id);
+      const stillActive = await Booking.find({
+        tableId: { $in: occupiedIds },
+        status: { $in: ["CheckedIn", "Confirmed", "Awaiting_Payment"] },
+        startTime: { $lte: now },
+        endTime: { $gte: now },
+      })
+        .select("tableId")
+        .lean();
+      const activeSet = new Set(stillActive.map((b) => b.tableId?.toString()));
+      const toRelease = occupiedIds.filter((id) => !activeSet.has(id.toString()));
+      if (toRelease.length > 0) {
+        await Table.updateMany(
+          { _id: { $in: toRelease } },
+          { $set: { status: "Available" } },
+        );
+      }
+    }
+
     let tables = await Table.find(tableFilter).sort({ name: 1 }).lean();
 
     if (search?.trim()) {
@@ -133,7 +166,6 @@ export const getStaffTableStatusList = async (req, res) => {
     }
 
     const tableIds = tables.map((t) => t._id);
-    const now = new Date();
     const activeBookings = await Booking.find({
       tableId: { $in: tableIds },
       status: { $in: ["Pending", "Awaiting_Payment", "Confirmed", "CheckedIn"] },
