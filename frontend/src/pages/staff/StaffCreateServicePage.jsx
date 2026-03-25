@@ -36,7 +36,7 @@ export default function StaffCreateServicePage() {
     try {
       const [tableRows, categoryRows, itemRows] = await Promise.all([
         getStaffTables({}),
-        apiClient.get("/menu/categories"),
+        apiClient.get("/menu/categories?admin=true"),
         apiClient.get("/menu/items"),
       ]);
 

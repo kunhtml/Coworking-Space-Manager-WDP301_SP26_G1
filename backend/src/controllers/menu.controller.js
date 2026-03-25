@@ -202,7 +202,10 @@ export const deleteMenuItem = async (req, res) => {
 
 export const getCategories = async (req, res) => {
   try {
-    const categories = await Category.find().lean();
+    const isAdmin = canUseAdminMenuView(req);
+    const categories = isAdmin
+      ? await Category.find().lean()
+      : await Category.find({ isActive: true }).lean();
     res.json(categories);
   } catch (err) {
     console.error(err);

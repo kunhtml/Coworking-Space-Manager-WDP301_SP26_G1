@@ -46,7 +46,7 @@ export default function StaffServiceListPage() {
     setError("");
     try {
       const [categoryRows, itemRows] = await Promise.all([
-        apiClient.get("/menu/categories"),
+        apiClient.get("/menu/categories?admin=true"),
         apiClient.get("/menu/items?admin=true"),
       ]);
       setCategories(Array.isArray(categoryRows) ? categoryRows : []);
