@@ -1,4 +1,4 @@
-import { Alert, Button, Modal, Spinner } from "react-bootstrap";
+import { Button, Modal } from "react-bootstrap";
 
 export default function SeatStatusModal({
   show,
@@ -6,13 +6,6 @@ export default function SeatStatusModal({
   selected,
   activeBooking,
   upcomingBookings = [],
-  error,
-  statuses,
-  getCfg,
-  newStatus,
-  setNewStatus,
-  onSave,
-  updating,
   formatTime,
   bookingStatusLabel,
   onGoToPOS,
@@ -57,9 +50,9 @@ export default function SeatStatusModal({
 
         {/* Upcoming Bookings */}
         {upcomingBookings && upcomingBookings.length > 0 ? (
-          <div className="rounded-3 p-3 mb-4" style={{ background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
+          <div className="rounded-3 p-3 text-center" style={{ background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
             <div className="fw-bold fs-6 mb-2" style={{ color: "#166534" }}>Lịch đặt sắp tới</div>
-            <div className="d-flex flex-column gap-2">
+            <div className="d-flex flex-column gap-2 text-start">
               {upcomingBookings.slice(0, 3).map((b, idx) => (
                 <div key={idx} className="d-flex justify-content-between align-items-center bg-white px-2 py-1 rounded shadow-sm" style={{ borderLeft: "3px solid #22c55e" }}>
                   <div style={{ color: "#166534", fontSize: "0.85rem", fontWeight: 600 }}>
@@ -74,64 +67,26 @@ export default function SeatStatusModal({
             </div>
           </div>
         ) : (
-          <div className="rounded-3 p-3 mb-4 text-center" style={{ background: "#f8fafc", border: "1px dashed #cbd5e1" }}>
+          <div className="rounded-3 p-3 text-center" style={{ background: "#f8fafc", border: "1px dashed #cbd5e1" }}>
             <i className="bi bi-calendar-check fs-4 text-success mb-1" />
             <div className="fw-bold text-success" style={{ fontSize: "0.9rem" }}>Hiện giờ có lịch trống</div>
             <div className="text-muted" style={{ fontSize: "0.75rem" }}>Chưa có booking nào sắp tới.</div>
           </div>
         )}
-
-        {/* Update Status Selection */}
-        <p className="fw-bold text-secondary small mb-2 text-uppercase">Cập nhật trạng thái</p>
-        {error && <Alert variant="danger" className="py-1 px-2 small mb-2">{error}</Alert>}
-
-        <div className="d-flex flex-wrap gap-2">
-          {statuses.map((s) => {
-            const cfg = getCfg(s);
-            const isActive = newStatus === s;
-            return (
-              <div
-                key={s}
-                onClick={() => setNewStatus(s)}
-                className="rounded-3 px-3 py-2 d-flex align-items-center gap-2"
-                style={{
-                  background: isActive ? cfg.badgeBg : "#f8fafc",
-                  border: `2px solid ${isActive ? cfg.borderColor : "#e2e8f0"}`,
-                  cursor: "pointer",
-                  transition: "all 0.15s",
-                  flex: "1 1 calc(50% - 0.5rem)",
-                }}
-              >
-                <span style={{ fontSize: "1.1rem" }}>{cfg.emoji}</span>
-                <span className="fw-bold" style={{ color: isActive ? cfg.badgeColor : "#64748b", fontSize: "0.85rem" }}>
-                  {cfg.label}
-                </span>
-              </div>
-            );
-          })}
-        </div>
       </Modal.Body>
       <Modal.Footer className="border-0 pt-0 px-3 pb-3 d-flex flex-wrap">
-        <Button variant="outline-secondary" className="fw-semibold rounded-3 flex-grow-1" onClick={onClose} disabled={updating}>
-          Đóng
-        </Button>
-        <Button
-          className="fw-bold rounded-3 flex-grow-1"
-          style={{ background: "#10b981", border: "none" }}
-          onClick={onSave}
-          disabled={updating || newStatus === selected?.status}
-        >
-          {updating ? <><Spinner size="sm" className="me-1" /> Đang lưu...</> : "Lưu trạng thái"}
-        </Button>
         {onGoToPOS && (
           <Button
-            className="fw-bold rounded-3 w-100 mt-2 d-flex justify-content-center align-items-center gap-2"
+            className="fw-bold rounded-3 w-100 mb-2 d-flex justify-content-center align-items-center gap-2"
             style={{ background: "#6366f1", border: "none" }}
             onClick={onGoToPOS}
           >
             <i className="bi bi-calculator" /> Chuyển đến màn hình POS
           </Button>
         )}
+        <Button variant="outline-secondary" className="fw-semibold rounded-3 flex-grow-1" onClick={onClose}>
+          Đóng
+        </Button>
       </Modal.Footer>
     </Modal>
   );

@@ -9,6 +9,7 @@ import {
   Row,
   Spinner,
   Table,
+  Pagination,
 } from "react-bootstrap";
 import AdminLayout from "../../components/admin/AdminLayout";
 import { apiClient } from "../../services/api";
@@ -133,6 +134,10 @@ export default function StaffOrderManagementPage() {
   const [tableFilter, setTableFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("");
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   // Create counter order modal
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -204,6 +209,18 @@ export default function StaffOrderManagementPage() {
     }
     return rows;
   }, [orders, statusFilter, tableFilter]);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, tableFilter, dateFilter]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(displayOrders.length / itemsPerPage);
+  const paginatedOrders = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return displayOrders.slice(start, start + itemsPerPage);
+  }, [displayOrders, currentPage]);
 
   // ── Create counter order ─────────────────────────────────────────────────────
   const onChangeCreateItem = (i, k, v) =>
@@ -583,7 +600,7 @@ export default function StaffOrderManagementPage() {
                 </tr>
               </thead>
               <tbody>
-                {displayOrders.map((order) => {
+                {paginatedOrders.map((order) => {
                   const workflowStatus = getWorkflowStatus(order);
                   const stUi = ORDER_STATUS_UI[workflowStatus] || {
                     label: workflowStatus,
@@ -745,6 +762,31 @@ export default function StaffOrderManagementPage() {
                 })}
               </tbody>
             </Table>
+          )}
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="d-flex justify-content-center py-3 border-top bg-light">
+              <Pagination className="mb-0">
+                <Pagination.Prev
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                />
+                {[...Array(totalPages)].map((_, i) => (
+                  <Pagination.Item
+                    key={i + 1}
+                    active={i + 1 === currentPage}
+                    onClick={() => setCurrentPage(i + 1)}
+                  >
+                    {i + 1}
+                  </Pagination.Item>
+                ))}
+                <Pagination.Next
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                />
+              </Pagination>
+            </div>
           )}
         </Card.Body>
       </Card>
