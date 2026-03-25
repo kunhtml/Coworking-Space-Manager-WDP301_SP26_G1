@@ -83,7 +83,7 @@ flowchart LR
         T2(Chọn Bàn còn trống)
         T3(Thêm món ăn vào Hóa đơn)
         T4(Chọn Thanh toán QR hoặc Tiền mặt)
-        T5(Đưa QR / Nhận Tiền & Xác nhận "Hoàn thành")
+        T5(Đưa QR / Nhận Tiền & Xác nhận Hoàn thành)
         T6(Giao đồ ăn đến Bàn)
     end
 
