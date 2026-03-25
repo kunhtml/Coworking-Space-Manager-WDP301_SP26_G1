@@ -82,7 +82,7 @@ flowchart LR
         T1(Mở giao diện POS)
         T2(Chọn Bàn còn trống)
         T3(Thêm món ăn vào Hóa đơn)
-        T4(Chọn "Thanh toán QR" hoặc "Tiền mặt")
+        T4(Chọn Thanh toán QR hoặc Tiền mặt)
         T5(Đưa QR / Nhận Tiền & Xác nhận "Hoàn thành")
         T6(Giao đồ ăn đến Bàn)
     end
@@ -151,7 +151,7 @@ flowchart LR
     subgraph System ["⚙️ BACKEND SYSTEM"]
         direction LR
         S1(Kiểm tra mã vé hợp lệ)
-        S2(Khởi tạo Countdown Timer (Thời lượng thuê))
+        S2(Khởi tạo Timer / Thời lượng thuê)
         S3(Gửi thông báo Hết Giờ 15p)
         S4(Kết nối POS với Tài khoản Khách)
         S5(Đổi Bàn thành Trống - AVAILABLE)
