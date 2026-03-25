@@ -242,7 +242,9 @@ export const getStaffOrders = async (req, res) => {
       const rawStatus = String(status).trim();
       const normalizedStatus = normalizeOrderStatus(rawStatus);
       orderFilter.status = {
-        $in: [...new Set([rawStatus, rawStatus.toUpperCase(), normalizedStatus])],
+        $in: [
+          ...new Set([rawStatus, rawStatus.toUpperCase(), normalizedStatus]),
+        ],
       };
     }
 
