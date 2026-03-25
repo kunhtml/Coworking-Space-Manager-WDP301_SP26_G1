@@ -5,8 +5,9 @@ import Booking from "../models/booking.js";
 import Order from "../models/order.js";
 import Payment from "../models/payment.js";
 import Invoice from "../models/invoice.js";
+import { PAYMENT_METHOD } from "../constants/domain.js";
 
-const PAYOS_PAYMENT_METHOD = "PayOS";
+const PAYOS_PAYMENT_METHOD = PAYMENT_METHOD.QR_PAYOS;
 const PAYOS_PENDING_STATUSES = new Set(["PENDING", "PROCESSING", "UNDERPAID"]);
 const PAYOS_FAILED_STATUSES = new Set(["CANCELLED", "EXPIRED", "FAILED"]);
 
