@@ -4,6 +4,7 @@ import Table from "../models/table.js";
 import Order from "../models/order.js";
 import Invoice from "../models/invoice.js";
 import TableType from "../models/tableType.js";
+import User from "../models/user.js";
 
 const buildTableTypeMetaMap = async (tables = []) => {
   const typeIds = [
@@ -544,15 +545,24 @@ export const getDailyTableUsage = async (req, res) => {
     const tablesMap = new Map();
     tables.forEach((t) => tablesMap.set(String(t._id), t));
 
-    // Get all bookings for the month
+    // Get all bookings for the month (no populate for better performance)
     const bookings = await Booking.find({
       startTime: { $lt: monthEnd },
       endTime: { $gt: monthStart },
       status: { $nin: ["Cancelled", "No_Show", "NoShow", "Rejected"] },
     })
-      .populate("tableId", "_id name tableTypeId pricePerHour")
-      .populate("userId", "_id name email phone")
+      .select("_id userId tableId startTime endTime status depositAmount")
       .lean();
+
+    const userIds = [
+      ...new Set(bookings.map((booking) => booking.userId?.toString()).filter(Boolean)),
+    ];
+    const users = userIds.length
+      ? await User.find({ _id: { $in: userIds } })
+          .select("fullName email phone")
+          .lean()
+      : [];
+    const userMap = new Map(users.map((user) => [String(user._id), user]));
 
     // Calculate table usage for each day
     const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
@@ -579,22 +589,11 @@ export const getDailyTableUsage = async (req, res) => {
       const bookingsWithoutTable = [];
 
       dayBookings.forEach((booking) => {
-        // Handle both populated tableId (object) and non-populated (ObjectId/string)
-        let tableIdStr = null;
-        let tableData = null;
-
-        if (booking.tableId) {
-          if (booking.tableId._id) {
-            // tableId was populated successfully
-            tableIdStr = String(booking.tableId._id);
-            tableData = booking.tableId;
-          } else {
-            // tableId is ObjectId or string (not populated - table might be deleted)
-            tableIdStr = String(booking.tableId);
-            // Try to find table in our map
-            tableData = tablesMap.get(tableIdStr);
-          }
-        }
+        const tableIdStr = booking.tableId ? String(booking.tableId) : null;
+        const tableData = tableIdStr ? tablesMap.get(tableIdStr) : null;
+        const userData = booking.userId
+          ? userMap.get(String(booking.userId))
+          : null;
 
         if (tableIdStr && tableData) {
           if (!uniqueTablesMap.has(tableIdStr)) {
@@ -612,13 +611,13 @@ export const getDailyTableUsage = async (req, res) => {
             startTime: booking.startTime,
             endTime: booking.endTime,
             status: booking.status,
-            totalPrice: booking.totalPrice,
-            user: booking.userId
+            totalPrice: Number(booking.depositAmount || 0),
+            user: userData
               ? {
-                  _id: booking.userId._id,
-                  name: booking.userId.name,
-                  email: booking.userId.email,
-                  phone: booking.userId.phone,
+                  _id: userData._id,
+                  name: userData.fullName,
+                  email: userData.email,
+                  phone: userData.phone,
                 }
               : null,
           });
@@ -630,13 +629,13 @@ export const getDailyTableUsage = async (req, res) => {
             startTime: booking.startTime,
             endTime: booking.endTime,
             status: booking.status,
-            totalPrice: booking.totalPrice,
-            user: booking.userId
+            totalPrice: Number(booking.depositAmount || 0),
+            user: userData
               ? {
-                  _id: booking.userId._id,
-                  name: booking.userId.name,
-                  email: booking.userId.email,
-                  phone: booking.userId.phone,
+                  _id: userData._id,
+                  name: userData.fullName,
+                  email: userData.email,
+                  phone: userData.phone,
                 }
               : null,
           });
