@@ -31,6 +31,7 @@ export default [
 
   // Staff pages
   route("staff-dashboard", "pages/staff/StaffDashboard.jsx"),
+  route("staff-dashboard/bookings", "pages/staff/StaffBookingsPage.jsx"),
   route("staff-dashboard/checkin", "pages/staff/StaffCheckinPage.jsx"),
   route("staff-dashboard/tables", "pages/staff/StaffSeatMapPage.jsx"),
   route("staff-dashboard/orders", "pages/staff/StaffOrderManagementPage.jsx"),

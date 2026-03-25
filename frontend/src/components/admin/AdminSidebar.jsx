@@ -88,8 +88,13 @@ export default function AdminSidebar({ user, onLogout }) {
       ],
     },
     {
-      title: "CHECK-IN / CHECK-OUT",
+      title: "CHECK-IN / TÌNH TRẠNG",
       items: [
+        {
+          path: "/staff-dashboard/bookings",
+          icon: "bi-calendar-check",
+          label: "Danh sách Booking",
+        },
         {
           path: "/staff-dashboard/checkin",
           icon: "bi-clipboard-check",

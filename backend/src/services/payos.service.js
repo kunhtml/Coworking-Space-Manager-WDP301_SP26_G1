@@ -854,14 +854,14 @@ export async function createCounterOrderPayment({
       // Danh sách mặt hàng hiển thị trên QR code và trang thanh toán
       items: [
         {
-          name: `Thanh toán đơn ${booking.bookingCode} + Order`, // Tên mặt hàng hiển thị cho khách
+          name: `Thanh toán đơn ${booking.bookingCode} + Order`.slice(0, 25), // Tên mặt hàng hiển thị cho khách
           quantity: 1, // Số lượng
           price: amount, // Giá (bằng tổng tiền)
         },
       ],
       // Thông tin người mua (hiển thị trên trang thanh toán)
       buyerName: buyer?.name || "Guest",
-      buyerPhone: buyer?.phone || "",
+      ...(buyer?.phone && { buyerPhone: buyer.phone }),
     });
 
     // Lưu thông tin thanh toán vào database
