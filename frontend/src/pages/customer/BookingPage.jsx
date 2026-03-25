@@ -80,6 +80,28 @@ export default function BookingPage() {
     setSelectedDate(today);
   }, []);
 
+  // Auto-adjust end time minimum 1 hour after start time
+  useEffect(() => {
+    if (selectedTimeStart) {
+      const [sh, sm] = selectedTimeStart.split(":").map(Number);
+      let eh = sh + 1;
+      let em = sm;
+      if (eh > 23) eh = 23; // Cap at 23:xx
+      
+      const defaultEnd = `${eh.toString().padStart(2, "0")}:${em.toString().padStart(2, "0")}`;
+      
+      if (!selectedTimeEnd) {
+        setSelectedTimeEnd(defaultEnd);
+      } else {
+        const [ceh, cem] = selectedTimeEnd.split(":").map(Number);
+        const diffMinutes = (ceh * 60 + cem) - (sh * 60 + sm);
+        if (diffMinutes < 60 && sh !== 23) {
+          setSelectedTimeEnd(defaultEnd);
+        }
+      }
+    }
+  }, [selectedTimeStart]); // ONLY run when start time changes
+
   useEffect(() => {
     const loadWorkspaceTypes = async () => {
       setLoadingTypes(true);
@@ -144,6 +166,13 @@ export default function BookingPage() {
       !selectedTimeEnd
     ) {
       setError("Vui lòng chọn đầy đủ thông tin để tìm chỗ ngồi");
+      return;
+    }
+
+    const startDateTime = new Date(`${selectedDate}T${selectedTimeStart}:00`);
+    const now = new Date();
+    if (startDateTime.getTime() - now.getTime() < 10 * 60 * 1000) {
+      setError("Giờ bắt đầu đặt bàn phải diễn ra sau thời điểm hiện tại ít nhất 10 phút.");
       return;
     }
 

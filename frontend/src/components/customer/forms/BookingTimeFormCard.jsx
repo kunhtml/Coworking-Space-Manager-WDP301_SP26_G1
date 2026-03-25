@@ -47,7 +47,29 @@ export default function BookingTimeFormCard({
               <Form.Control
                 type="time"
                 value={selectedTimeEnd}
-                onChange={(e) => setSelectedTimeEnd(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (selectedTimeStart && val) {
+                    const [sh, sm] = selectedTimeStart.split(":").map(Number);
+                    const [eh, em] = val.split(":").map(Number);
+                    if (!isNaN(eh) && !isNaN(em)) {
+                      if (eh * 60 + em < sh * 60 + sm + 60 && sh !== 23) {
+                        let minH = sh + 1;
+                        if (minH > 23) minH = 23;
+                        setSelectedTimeEnd(`${minH.toString().padStart(2, "0")}:${sm.toString().padStart(2, "0")}`);
+                        return;
+                      }
+                    }
+                  }
+                  setSelectedTimeEnd(val);
+                }}
+                min={(() => {
+                  if (!selectedTimeStart) return undefined;
+                  const [sh, sm] = selectedTimeStart.split(":").map(Number);
+                  let minH = sh + 1;
+                  if (minH > 23) minH = 23;
+                  return `${minH.toString().padStart(2, "0")}:${sm.toString().padStart(2, "0")}`;
+                })()}
               />
             </Form.Group>
           </Col>

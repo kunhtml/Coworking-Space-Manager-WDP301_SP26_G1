@@ -168,7 +168,13 @@ export default function MenuPage() {
 
       try {
         const rows = await getBookings();
-        const active = (rows || []).filter((b) => b.status !== "Cancelled");
+        const nowMs = new Date().getTime();
+        const active = (rows || []).filter(
+          (b) => 
+            b.status !== "Cancelled" && 
+            b.status !== "Pending" && 
+            new Date(b.endTime).getTime() >= nowMs
+        );
         setMyBookings(active);
         setSelectedBookingId((prev) => prev || String(active[0]?.id || ""));
       } catch {

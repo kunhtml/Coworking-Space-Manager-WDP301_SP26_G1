@@ -99,6 +99,11 @@ export default function Dashboard() {
     if (status === "CANCELED") return "CANCELLED";
     return status;
   };
+  const normalizeBookingStatus = (rawStatus) => {
+    const status = String(rawStatus || "").trim();
+    if (status === "Awaiting_Payment") return "Pending";
+    return status;
+  };
   const canEditOrder = (status) =>
     !["CONFIRMED", "CANCELLED", "COMPLETED"].includes(
       normalizeOrderStatus(status),
@@ -113,7 +118,10 @@ export default function Dashboard() {
         getMyOrders(),
         apiClient.get("/menu/items"),
       ]);
-      setBookings(bookingRows || []);
+      const normalizedBookings = Array.isArray(bookingRows)
+        ? bookingRows.map((b) => ({ ...b, status: normalizeBookingStatus(b.status) }))
+        : [];
+      setBookings(normalizedBookings);
       const normalizedOrders = Array.isArray(orderRows)
         ? orderRows.map((order) => ({
             ...order,
@@ -373,8 +381,8 @@ export default function Dashboard() {
   };
 
   const total = bookings.length;
-  const pendingCount = bookings.filter((b) =>
-    ["Pending", "Awaiting_Payment"].includes(b.status),
+  const pendingCount = bookings.filter(
+    (b) => b.status === "Pending",
   ).length;
   const completedCount = bookings.filter(
     (b) => b.status === "Completed",
