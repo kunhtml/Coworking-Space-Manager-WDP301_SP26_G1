@@ -27,7 +27,14 @@ export default function AdminSpaceTable({
         if (col.key === "name")
           return <span className="fw-medium">{table.name}</span>;
         if (col.key === "tableType")
-          return <span className="text-muted">{table.tableType || "-"}</span>;
+          return (
+            <div className="d-flex align-items-center gap-2">
+              <span className="text-muted">{table.tableType || "-"}</span>
+              {table.tableType && table.tableTypeHidden ? (
+                <Badge bg="secondary">Dang an</Badge>
+              ) : null}
+            </div>
+          );
         if (col.key === "capacity") return `${table.capacity} nguoi`;
         if (col.key === "pricePerHour")
           return (

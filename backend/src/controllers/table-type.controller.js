@@ -11,6 +11,7 @@ export const getTableTypes = async (req, res) => {
         name: t.name,
         description: t.description || "",
         capacity: t.capacity || 1,
+        isHidden: Boolean(t.isHidden),
         createdAt: t.createdAt,
       })),
     );
@@ -23,7 +24,7 @@ export const getTableTypes = async (req, res) => {
 
 export const createTableType = async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, isHidden } = req.body;
     if (!name?.trim()) {
       return res
         .status(400)
@@ -37,6 +38,7 @@ export const createTableType = async (req, res) => {
       name: name.trim(),
       description: description?.trim() || "",
       capacity: Number(req.body.capacity) || 1,
+      isHidden: Boolean(isHidden),
     });
     res.status(201).json({ message: "Thêm loại bàn thành công!", tableType });
   } catch (err) {
@@ -49,7 +51,7 @@ export const createTableType = async (req, res) => {
 
 export const updateTableType = async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, isHidden } = req.body;
     if (!name?.trim()) {
       return res
         .status(400)
@@ -68,6 +70,7 @@ export const updateTableType = async (req, res) => {
         name: name.trim(),
         description: description?.trim() || "",
         capacity: Number(req.body.capacity) || 1,
+        isHidden: Boolean(isHidden),
       },
       { returnDocument: "after", runValidators: true },
     );

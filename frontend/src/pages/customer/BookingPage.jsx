@@ -101,7 +101,7 @@ export default function BookingPage() {
     setLoading(true);
     setError("");
     try {
-      const rows = await apiClient.get("/tables");
+      const rows = await apiClient.get("/tables?excludeHiddenTypes=true");
       setAllTables(Array.isArray(rows) ? rows : []);
     } catch (err) {
       setError(err.message || "Không thể tải sơ đồ bàn.");
