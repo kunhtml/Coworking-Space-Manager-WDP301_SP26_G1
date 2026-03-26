@@ -7,7 +7,7 @@
     "tableId": { "$oid": "65e6e0000000000000000002" },
     "startTime": { "$date": "2026-03-05T13:00:00.000Z" },
     "endTime": { "$date": "2026-03-05T15:00:00.000Z" },
-    "status": "In_Use",
+    "status": "In Use",
     "depositAmount": 150000,
     "createdAt": { "$date": "2026-03-04T10:00:00.000Z" },
     "__v": 0
@@ -50,7 +50,7 @@
     "tableId": { "$oid": "65e6e0000000000000000002" },
     "startTime": { "$date": "2026-03-23T09:00:00.000Z" },
     "endTime": { "$date": "2026-03-23T12:00:00.000Z" },
-    "status": "In_Use",
+    "status": "In Use",
     "depositAmount": 150000,
     "createdAt": { "$date": "2026-03-22T16:00:00.000Z" },
     "__v": 0
@@ -93,7 +93,7 @@
     "tableId": { "$oid": "65e6e0000000000000000002" },
     "startTime": { "$date": "2026-03-23T14:00:00.000Z" },
     "endTime": { "$date": "2026-03-23T18:00:00.000Z" },
-    "status": "In_Use",
+    "status": "In Use",
     "depositAmount": 150000,
     "createdAt": { "$date": "2026-03-22T19:00:00.000Z" },
     "__v": 0
@@ -132,7 +132,7 @@
     "tableId": { "$oid": "65e6e0000000000000000008" },
     "startTime": { "$date": "2026-03-21T13:00:00.000Z" },
     "endTime": { "$date": "2026-03-21T16:00:00.000Z" },
-    "status": "In_Use",
+    "status": "In Use",
     "depositAmount": 200000,
     "createdAt": { "$date": "2026-03-20T15:30:00.000Z" },
     "__v": 0
@@ -188,7 +188,7 @@
     "tableId": { "$oid": "65e6e0000000000000000005" },
     "startTime": { "$date": "2026-03-24T07:00:00.000Z" },
     "endTime": { "$date": "2026-03-24T09:00:00.000Z" },
-    "status": "Awaiting_Payment",
+    "status": "Awaiting Payment",
     "depositAmount": 85000,
     "createdAt": { "$date": "2026-03-23T12:00:00.000Z" },
     "__v": 0
@@ -495,9 +495,10 @@
     "tableId": { "$oid": "65e6e0000000000000000008" },
     "startTime": { "$date": "2026-03-23T02:00:00.000Z" },
     "endTime": { "$date": "2026-03-23T05:00:00.000Z" },
-    "status": "In_Use",
+    "status": "In Use",
     "depositAmount": 220000,
     "createdAt": { "$date": "2026-03-22T11:00:00.000Z" },
     "__v": 0
   }
 ]
+
