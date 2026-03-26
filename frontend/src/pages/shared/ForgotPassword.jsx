@@ -7,6 +7,9 @@ import {
   resetForgotPasswordApi,
 } from "../../services/api";
 
+const STRICT_EMAIL_REGEX =
+  /^[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*@[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)+$/;
+
 export function meta() {
   return [
     { title: "Quên mật khẩu | Coworking Space" },
@@ -28,6 +31,9 @@ export default function ForgotPassword() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [otpCooldown, setOtpCooldown] = useState(0);
+  const isEmailFormatValid = STRICT_EMAIL_REGEX.test(
+    email.trim().toLowerCase(),
+  );
 
   useEffect(() => {
     if (otpCooldown <= 0) return;
@@ -43,6 +49,10 @@ export default function ForgotPassword() {
 
     if (!email.trim()) {
       setError("Vui lòng nhập email.");
+      return false;
+    }
+    if (!STRICT_EMAIL_REGEX.test(email.trim().toLowerCase())) {
+      setError("Email không đúng định dạng.");
       return false;
     }
 
@@ -75,6 +85,10 @@ export default function ForgotPassword() {
       setError("OTP phải gồm 6 chữ số.");
       return;
     }
+    if (!STRICT_EMAIL_REGEX.test(email.trim().toLowerCase())) {
+      setError("Email không đúng định dạng.");
+      return;
+    }
 
     try {
       setLoading(true);
@@ -99,6 +113,10 @@ export default function ForgotPassword() {
     }
     if (newPassword !== confirmPassword) {
       setError("Mật khẩu xác nhận không khớp.");
+      return;
+    }
+    if (!STRICT_EMAIL_REGEX.test(email.trim().toLowerCase())) {
+      setError("Email không đúng định dạng.");
       return;
     }
 
@@ -159,7 +177,13 @@ export default function ForgotPassword() {
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={step !== "send-otp"}
                   required
+                  isInvalid={email.trim().length > 0 && !isEmailFormatValid}
                 />
+                {email.trim().length > 0 && !isEmailFormatValid ? (
+                  <Form.Text className="text-danger">
+                    Email không đúng định dạng.
+                  </Form.Text>
+                ) : null}
               </Form.Group>
 
               {step === "verify-otp" ? (
@@ -210,7 +234,10 @@ export default function ForgotPassword() {
                 <Button
                   type="submit"
                   className="w-100 mb-3"
-                  disabled={loading || (step === "send-otp" && otpCooldown > 0)}
+                  disabled={
+                    loading ||
+                    (step === "send-otp" && (otpCooldown > 0 || !isEmailFormatValid))
+                  }
                 >
                   {step === "send-otp"
                     ? otpCooldown > 0

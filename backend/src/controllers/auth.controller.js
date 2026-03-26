@@ -182,7 +182,7 @@ export const register = async (req, res) => {
     }
 
     // Validate email format
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!STRICT_EMAIL_REGEX.test(String(email).trim().toLowerCase())) {
       return res.status(400).json({ message: "Email không đúng định dạng." });
     }
 
@@ -568,7 +568,7 @@ export const sendRegisterOtp = async (req, res) => {
     if (!email) {
       return res.status(400).json({ message: "Email là bắt buộc." });
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!STRICT_EMAIL_REGEX.test(email)) {
       return res.status(400).json({ message: "Email không đúng định dạng." });
     }
 
@@ -607,7 +607,7 @@ export const verifyRegisterOtp = async (req, res) => {
       .toLowerCase();
     const code = String(req.body?.otp || "").trim();
 
-    if (!email || !/^\d{6}$/.test(code)) {
+    if (!email || !/^\d{6}$/.test(code) || !STRICT_EMAIL_REGEX.test(email)) {
       return res.status(400).json({ message: "Thông tin OTP không hợp lệ." });
     }
 
@@ -646,7 +646,7 @@ export const sendForgotPasswordOtp = async (req, res) => {
     if (!email) {
       return res.status(400).json({ message: "Email là bắt buộc." });
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!STRICT_EMAIL_REGEX.test(email)) {
       return res.status(400).json({ message: "Email không đúng định dạng." });
     }
 
@@ -683,7 +683,7 @@ export const verifyForgotPasswordOtp = async (req, res) => {
       .toLowerCase();
     const code = String(req.body?.otp || "").trim();
 
-    if (!email || !/^\d{6}$/.test(code)) {
+    if (!email || !/^\d{6}$/.test(code) || !STRICT_EMAIL_REGEX.test(email)) {
       return res.status(400).json({ message: "Thông tin OTP không hợp lệ." });
     }
 
@@ -726,6 +726,9 @@ export const resetForgotPassword = async (req, res) => {
       return res
         .status(400)
         .json({ message: "Vui lòng điền đầy đủ thông tin." });
+    }
+    if (!STRICT_EMAIL_REGEX.test(email)) {
+      return res.status(400).json({ message: "Email không đúng định dạng." });
     }
     if (newPassword.length < 6) {
       return res

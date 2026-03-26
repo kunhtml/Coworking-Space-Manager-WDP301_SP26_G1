@@ -19,6 +19,9 @@ import {
 import { saveAuth } from "../../store/authSlice";
 import GuestCustomerNavbar from "../../components/common/GuestCustomerNavbar";
 
+const STRICT_EMAIL_REGEX =
+  /^[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*@[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)+$/;
+
 export function meta() {
   return [
     { title: "Đăng ký | Coworking Space" },
@@ -41,6 +44,9 @@ export default function Register() {
   const [otpSent, setOtpSent] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
+  const isEmailFormatValid = STRICT_EMAIL_REGEX.test(
+    email.trim().toLowerCase(),
+  );
 
   useEffect(() => {
     animate(".register-card", {
@@ -74,7 +80,7 @@ export default function Register() {
       return false;
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!STRICT_EMAIL_REGEX.test(email.trim().toLowerCase())) {
       setError("Email không đúng định dạng.");
       return false;
     }
@@ -101,7 +107,7 @@ export default function Register() {
     setError("");
     setSuccess("");
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    if (!STRICT_EMAIL_REGEX.test(email.trim().toLowerCase())) {
       setError("Vui lòng nhập email hợp lệ trước khi gửi OTP.");
       return;
     }
@@ -126,6 +132,11 @@ export default function Register() {
 
     if (!otpSent) {
       setError("Vui lòng gửi OTP trước.");
+      return;
+    }
+
+    if (!STRICT_EMAIL_REGEX.test(email.trim().toLowerCase())) {
+      setError("Email không đúng định dạng.");
       return;
     }
 
@@ -291,7 +302,13 @@ export default function Register() {
                           setOtpCode("");
                         }}
                         disabled={loading || otpLoading}
+                        isInvalid={email.trim().length > 0 && !isEmailFormatValid}
                       />
+                      {email.trim().length > 0 && !isEmailFormatValid && (
+                        <Form.Text className="text-danger">
+                          Email không đúng định dạng.
+                        </Form.Text>
+                      )}
 
                       <div className="d-flex gap-2 mt-2">
                         <Button
@@ -299,7 +316,7 @@ export default function Register() {
                           variant="outline-primary"
                           className="rounded-3"
                           onClick={handleSendOtp}
-                          disabled={loading || otpLoading}
+                          disabled={loading || otpLoading || !isEmailFormatValid}
                         >
                           {otpLoading
                             ? "Đang gửi..."
