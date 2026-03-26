@@ -458,6 +458,22 @@ export const createCounterOrder = async (req, res) => {
       const start = new Date();
       const hrs = Math.max(1, Number(durationHours || 2));
       const end = new Date(start.getTime() + hrs * 3600000);
+
+      // Prevent overlapping with existing bookings
+      const overlapping = await Booking.findOne({
+        tableId,
+        status: { $in: ["Pending", "Awaiting_Payment", "Confirmed", "CheckedIn"] },
+        $or: [
+          { startTime: { $lt: end }, endTime: { $gt: start } },
+        ],
+      });
+
+      if (overlapping) {
+        return res.status(400).json({
+          message: `Không thể chọn ${hrs} giờ vì trùng với lịch đặt trước (từ ${new Date(overlapping.startTime).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}). Vui lòng giảm số giờ thuê.`,
+        });
+      }
+
       const bookingCode = `WALK-${Date.now().toString().slice(-6)}`;
 
       const pricePerHour = Number(table.pricePerHour || 0);

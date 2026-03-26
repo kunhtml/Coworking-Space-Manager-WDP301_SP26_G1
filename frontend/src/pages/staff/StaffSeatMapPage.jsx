@@ -82,11 +82,10 @@ const STATUS_LEGEND = [
   { status: "Available",   label: "Trống",         dotClass: "staff-dot-green"  },
   { status: "Occupied",    label: "Đang sử dụng",  dotClass: "staff-dot-red"    },
   { status: "Reserved",    label: "Đã đặt trước",  dotClass: "staff-dot-yellow" },
-  { status: "Cleaning",    label: "Đang dọn",      dotClass: "staff-dot-blue"   },
   { status: "Maintenance", label: "Bảo trì",       dotClass: "staff-dot-gray"   },
 ];
 
-const ALL_STATUSES = Object.keys(STATUS_CONFIG);
+const ALL_STATUSES = Object.keys(STATUS_CONFIG).filter(s => s !== "Cleaning");
 
 // Booking status badge
 const BOOKING_STATUS_LABEL = {
