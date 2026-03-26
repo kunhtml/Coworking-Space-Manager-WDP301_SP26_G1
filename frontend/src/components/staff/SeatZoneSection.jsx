@@ -7,7 +7,6 @@ export default function SeatZoneSection({
   hoveredId,
   setHoveredId,
   onOpen,
-  getSeatIcon,
   formatTime,
   bookingStatusLabel,
   colProps = { xl: 2, lg: 3, md: 4, sm: 6 } // Default for full page
@@ -27,7 +26,6 @@ export default function SeatZoneSection({
           const cfg = getCfg(table.status);
           const id = table.id || table._id;
           const isHover = hoveredId === id;
-          const iconName = getSeatIcon(table.tableType);
           return (
             <Col {...colProps} key={String(id)}>
               <Card
@@ -47,9 +45,6 @@ export default function SeatZoneSection({
                 onMouseLeave={() => setHoveredId(null)}
               >
                 <Card.Body className="text-center px-2 py-3">
-                  <div className="staff-seat-icon mx-auto mb-3" style={{ background: isHover ? cfg.badgeBg : "#f1f5f9", color: isHover ? cfg.badgeColor : "#64748b", transition: "all 0.22s" }}>
-                    <i className={`bi ${iconName}`} />
-                  </div>
                   <h5 className="fw-bold mb-1 text-truncate" style={{ fontSize: "0.95rem", lineHeight: 1.3 }} title={table.name}>{table.name}</h5>
                   <div className="text-secondary fw-semibold mb-1" style={{ fontSize: "0.76rem" }}>{table.tableType || "Cho ngoi"}</div>
                   <div className="fw-semibold mb-2" style={{ fontSize: "0.76rem", color: "#64748b" }}>
@@ -58,7 +53,7 @@ export default function SeatZoneSection({
                     {table.pricePerHour ? `${Number(table.pricePerHour).toLocaleString("vi-VN")}d/h` : ""}
                   </div>
                   <span className="rounded-pill px-3 py-1 fw-bold d-inline-block mb-2" style={{ background: cfg.badgeBg, color: cfg.badgeColor, fontSize: "0.73rem", letterSpacing: "0.02em" }}>
-                    {cfg.emoji} {cfg.label}
+                    {cfg.label}
                   </span>
                   {table.activeBooking && (
                     <div className="mt-1 rounded-3 px-2 py-1" style={{ background: "#fef9c3", fontSize: "0.7rem" }}>

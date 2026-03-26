@@ -627,7 +627,7 @@ export default function StaffOrderManagementPage() {
                           <div
                             style={{ color: "#64748b", fontSize: "0.78rem" }}
                           >
-                            📞 {order.customerPhone}
+                            {order.customerPhone}
                           </div>
                         )}
                       </td>
@@ -1190,7 +1190,7 @@ export default function StaffOrderManagementPage() {
                 {[
                   ["📋 Mã order", invoiceData.order?.orderCode],
                   ["👤 Khách hàng", invoiceData.customer?.name || "Khách lẻ"],
-                  ["📞 SĐT", invoiceData.customer?.phone || "--"],
+                  ["SĐT", invoiceData.customer?.phone || "--"],
                   ["🪑 Bàn", invoiceData.table?.name || "--"],
                 ].map(([label, val]) => (
                   <div

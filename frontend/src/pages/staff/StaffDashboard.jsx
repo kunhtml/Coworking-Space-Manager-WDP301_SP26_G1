@@ -14,12 +14,12 @@ export function meta() {
 }
 
 const ORDER_STATUS_UI = {
-  PENDING:   { label: "Chờ xử lý", cls: "bg-warning-subtle text-warning", icon: "bi-hourglass-split" },
-  CONFIRMED: { label: "Đã xác nhận", cls: "bg-primary-subtle text-primary", icon: "bi-check-circle" },
-  PREPARING: { label: "Đang chuẩn bị", cls: "bg-info-subtle text-info", icon: "bi-fire" },
-  SERVED:    { label: "Đã phục vụ", cls: "bg-success-subtle text-success", icon: "bi-cup-hot" },
-  COMPLETED: { label: "Hoàn tất", cls: "bg-secondary-subtle text-secondary", icon: "bi-trophy" },
-  CANCELLED: { label: "Đã hủy", cls: "bg-danger-subtle text-danger", icon: "bi-x-circle" },
+  PENDING:   { label: "Chờ xử lý", cls: "bg-warning-subtle text-warning" },
+  CONFIRMED: { label: "Đã xác nhận", cls: "bg-primary-subtle text-primary" },
+  PREPARING: { label: "Đang chuẩn bị", cls: "bg-info-subtle text-info" },
+  SERVED:    { label: "Đã phục vụ", cls: "bg-success-subtle text-success" },
+  COMPLETED: { label: "Hoàn tất", cls: "bg-secondary-subtle text-secondary" },
+  CANCELLED: { label: "Đã hủy", cls: "bg-danger-subtle text-danger" },
 };
 
 function fmtCur(v) {
@@ -58,7 +58,6 @@ export default function StaffDashboard() {
   const statCards = stats
     ? [
         {
-          icon: "bi-receipt-cutoff",
           iconWrap: "staff-stat-icon bg-info-subtle text-info",
           value: String(stats.orders.total),
           label: "Đơn hàng hôm nay",
@@ -66,7 +65,6 @@ export default function StaffDashboard() {
           trendClass: stats.orders.COMPLETED > 0 ? "text-success" : "text-secondary",
         },
         {
-          icon: "bi-hourglass-split",
           iconWrap: "staff-stat-icon bg-warning-subtle text-warning",
           value: String(stats.orders.PENDING),
           label: "Đơn chờ xử lý",
@@ -74,7 +72,6 @@ export default function StaffDashboard() {
           trendClass: stats.orders.PENDING > 0 ? "text-danger" : "text-success",
         },
         {
-          icon: "bi-shop",
           iconWrap: "staff-stat-icon bg-success-subtle text-success",
           value: `${stats.tables.occupied}/${stats.tables.total}`,
           label: "Bàn đang sử dụng",
@@ -82,7 +79,6 @@ export default function StaffDashboard() {
           trendClass: stats.tables.available > 0 ? "text-success" : "text-danger",
         },
         {
-          icon: "bi-trophy",
           iconWrap: "staff-stat-icon bg-primary-subtle text-primary",
           value: String(stats.orders.COMPLETED),
           label: "Đơn hoàn thành",
@@ -113,7 +109,6 @@ export default function StaffDashboard() {
           onClick={fetchStats}
           disabled={loading}
         >
-          <i className={`bi ${loading ? "bi-arrow-clockwise" : "bi-arrow-clockwise"}`} />
           {loading ? "Đang tải..." : "Làm mới"}
         </Button>
       </div>
@@ -128,9 +123,6 @@ export default function StaffDashboard() {
               <Col xl={3} md={6} key={card.label}>
                 <Card className="border-0 shadow-sm staff-panel-card h-100">
                   <Card.Body>
-                    <div className={card.iconWrap}>
-                      <i className={`bi ${card.icon}`}></i>
-                    </div>
                     <h3 className="fw-bold mb-1 mt-3">{card.value}</h3>
                     <div className="text-secondary fw-semibold mb-2">{card.label}</div>
                     <small className={`${card.trendClass} fw-semibold`}>{card.trend}</small>
@@ -145,7 +137,6 @@ export default function StaffDashboard() {
               <Card className="border-0 shadow-sm staff-panel-card">
                 <Card.Header className="bg-white border-bottom d-flex align-items-center justify-content-between">
                   <h5 className="mb-0 fw-bold">
-                    <i className="bi bi-list-ul me-2 text-primary"></i>
                     Hoạt động gần đây (10 đơn mới nhất)
                   </h5>
                   <Button
@@ -172,7 +163,6 @@ export default function StaffDashboard() {
               <Card className="border-0 shadow-sm staff-panel-card h-100">
                 <Card.Header className="bg-white border-bottom">
                   <h5 className="mb-0 fw-bold">
-                    <i className="bi bi-bar-chart-fill me-2 text-primary"></i>
                     Thống kê đơn hàng hôm nay
                   </h5>
                 </Card.Header>
@@ -180,21 +170,19 @@ export default function StaffDashboard() {
                   {stats ? (
                     <div className="d-flex flex-column gap-3 mt-1">
                       {[
-                        { key: "PENDING", label: "Chờ xử lý", cls: "bg-warning-subtle text-warning", icon: "bi-hourglass-split" },
-                        { key: "CONFIRMED", label: "Đã xác nhận", cls: "bg-primary-subtle text-primary", icon: "bi-check-circle" },
-                        { key: "PREPARING", label: "Đang chuẩn bị", cls: "bg-info-subtle text-info", icon: "bi-fire" },
-                        { key: "SERVED", label: "Đã phục vụ", cls: "bg-success-subtle text-success", icon: "bi-cup-hot" },
-                        { key: "COMPLETED", label: "Hoàn tất", cls: "bg-secondary-subtle text-secondary", icon: "bi-trophy" },
-                        { key: "CANCELLED", label: "Đã hủy", cls: "bg-danger-subtle text-danger", icon: "bi-x-circle" },
-                      ].map(({ key, label, cls, icon }) => {
+                        { key: "PENDING", label: "Chờ xử lý", cls: "bg-warning-subtle text-warning" },
+                        { key: "CONFIRMED", label: "Đã xác nhận", cls: "bg-primary-subtle text-primary" },
+                        { key: "PREPARING", label: "Đang chuẩn bị", cls: "bg-info-subtle text-info" },
+                        { key: "SERVED", label: "Đã phục vụ", cls: "bg-success-subtle text-success" },
+                        { key: "COMPLETED", label: "Hoàn tất", cls: "bg-secondary-subtle text-secondary" },
+                        { key: "CANCELLED", label: "Đã hủy", cls: "bg-danger-subtle text-danger" },
+                      ].map(({ key, label, cls }) => {
                         const count = stats.orders[key] || 0;
                         const pct   = stats.orders.total > 0 ? Math.round((count / stats.orders.total) * 100) : 0;
                         return (
                           <div key={key}>
                             <div className="d-flex justify-content-between mb-1">
-                              <span className="fw-semibold small d-flex align-items-center gap-1">
-                                <i className={`bi ${icon}`} /> {label}
-                              </span>
+                              <span className="fw-semibold small d-flex align-items-center gap-1">{label}</span>
                               <span className={`fw-bold small rounded-pill px-2 ${cls}`}>{count}</span>
                             </div>
                             <div className="progress" style={{ height: 6, borderRadius: 8 }}>
@@ -219,9 +207,7 @@ export default function StaffDashboard() {
 
                       <hr className="my-1" />
                       <div className="d-flex justify-content-between align-items-center">
-                        <span className="fw-semibold small">
-                          <i className="bi bi-shop me-1 text-success" />Bàn trống
-                        </span>
+                        <span className="fw-semibold small">Bàn trống</span>
                         <span className="fw-bold" style={{ color: "#22c55e" }}>
                           {stats.tables.available}/{stats.tables.total}
                         </span>
@@ -232,7 +218,6 @@ export default function StaffDashboard() {
                         style={{ background: "#6366f1", border: "none" }}
                         onClick={() => navigate("/staff-dashboard/orders")}
                       >
-                        <i className="bi bi-receipt-cutoff me-2" />
                         Quản lý đơn hàng
                       </Button>
                     </div>

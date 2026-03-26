@@ -30,7 +30,6 @@ const STATUS_CONFIG = {
     iconBg: "#f0fdf4",
     borderColor: "#10b981",
     glowColor: "rgba(16,185,129,0.15)",
-    emoji: "✅",
   },
   Occupied: {
     label: "Đang sử dụng",
@@ -41,7 +40,6 @@ const STATUS_CONFIG = {
     iconBg: "#fff1f2",
     borderColor: "#ef4444",
     glowColor: "rgba(239,68,68,0.15)",
-    emoji: "🔴",
   },
   Reserved: {
     label: "Đã đặt trước",
@@ -52,7 +50,6 @@ const STATUS_CONFIG = {
     iconBg: "#fefce8",
     borderColor: "#f59e0b",
     glowColor: "rgba(245,158,11,0.15)",
-    emoji: "📌",
   },
   Cleaning: {
     label: "Đang dọn",
@@ -63,7 +60,6 @@ const STATUS_CONFIG = {
     iconBg: "#eff6ff",
     borderColor: "#3b82f6",
     glowColor: "rgba(59,130,246,0.15)",
-    emoji: "🧹",
   },
   Maintenance: {
     label: "Bảo trì",
@@ -74,7 +70,6 @@ const STATUS_CONFIG = {
     iconBg: "#f8fafc",
     borderColor: "#94a3b8",
     glowColor: "rgba(100,116,139,0.12)",
-    emoji: "🔧",
   },
 };
 
@@ -100,15 +95,6 @@ const BOOKING_STATUS_LABEL = {
 function formatTime(date) {
   if (!date) return "--";
   return new Date(date).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
-}
-
-function getSeatIcon(type) {
-  if (!type) return "bi-shop";
-  const t = type.toLowerCase();
-  if (t.includes("vip") || t.includes("phòng") || t.includes("private")) return "bi-door-closed";
-  if (t.includes("nhóm") || t.includes("group")) return "bi-people";
-  if (t.includes("họp") || t.includes("meeting")) return "bi-camera-video";
-  return "bi-person-workspace";
 }
 
 function groupByType(tables) {
@@ -218,7 +204,7 @@ export default function StaffSeatMapPage() {
     try {
       setUpdating(true);
       await updateStaffTableStatus(selected.id || selected._id, newStatus);
-      setSuccessMsg(`✅ Đã cập nhật trạng thái "${selected.name}" thành công!`);
+      setSuccessMsg(`Đã cập nhật trạng thái "${selected.name}" thành công!`);
       setShowModal(false);
       setSelected(null);
       fetchTables();
@@ -250,7 +236,6 @@ export default function StaffSeatMapPage() {
           onClick={fetchTables}
           disabled={loading}
         >
-          <i className="bi bi-arrow-clockwise" />
           {loading ? "Đang tải..." : "Làm mới"}
         </Button>
       </div>
@@ -296,9 +281,7 @@ export default function StaffSeatMapPage() {
               <div
                 className="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
                 style={{ width: 40, height: 40, background: s.badgeBg, fontSize: 18 }}
-              >
-                {s.emoji}
-              </div>
+              />
               <div>
                 <div
                   className="fw-bold lh-1"
@@ -310,12 +293,6 @@ export default function StaffSeatMapPage() {
                   {s.label}
                 </div>
               </div>
-              {filterStatus === s.status && (
-                <i
-                  className="bi bi-funnel-fill ms-auto"
-                  style={{ color: s.badgeColor, fontSize: "0.75rem" }}
-                />
-              )}
             </div>
           </Col>
         ))}
@@ -334,9 +311,7 @@ export default function StaffSeatMapPage() {
             <div
               className="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
               style={{ width: 40, height: 40, background: "#f1f5f9", fontSize: 18 }}
-            >
-              🪑
-            </div>
+            />
             <div>
               <div className="fw-bold lh-1" style={{ color: "#1e293b", fontSize: "1.35rem" }}>
                 {tables.length}
@@ -345,12 +320,6 @@ export default function StaffSeatMapPage() {
                 Tổng số bàn
               </div>
             </div>
-            {filterStatus === "all" && (
-              <i
-                className="bi bi-funnel-fill ms-auto"
-                style={{ color: "#6366f1", fontSize: "0.75rem" }}
-              />
-            )}
           </div>
         </Col>
       </Row>
@@ -406,7 +375,6 @@ export default function StaffSeatMapPage() {
       ) : displayed.length === 0 ? (
         <div>
           <EmptyState
-            icon="🪑"
             title={tables.length === 0 ? "Chưa có dữ liệu bàn" : "Không tìm thấy bàn phù hợp"}
           />
           {tables.length > 0 && (
@@ -431,7 +399,6 @@ export default function StaffSeatMapPage() {
             hoveredId={hoveredId}
             setHoveredId={setHoveredId}
             onOpen={handleOpenModal}
-            getSeatIcon={getSeatIcon}
             formatTime={formatTime}
             bookingStatusLabel={BOOKING_STATUS_LABEL}
           />

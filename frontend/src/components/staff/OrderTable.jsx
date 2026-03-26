@@ -36,7 +36,7 @@ export default function OrderTable({
             <td>
               <div className="fw-semibold" style={{ color: "#0f172a" }}>{order.customerName || "Khách lẻ"}</div>
               {order.customerPhone && (
-                <div style={{ color: "#64748b", fontSize: "0.78rem" }}>📞 {order.customerPhone}</div>
+                <div style={{ color: "#64748b", fontSize: "0.78rem" }}>{order.customerPhone}</div>
               )}
             </td>
             <td className="fw-semibold">{order.tableName || "--"}</td>

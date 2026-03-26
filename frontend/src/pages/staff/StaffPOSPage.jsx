@@ -21,11 +21,11 @@ import SeatZoneSection from "../../components/staff/SeatZoneSection";
 
 // ── Table status config ─────────────────────────────────────────────────────
 const STATUS_CONFIG = {
-  Available:   { label: "Trống",         bg: "#dcfce7", color: "#16a34a", border: "#10b981", emoji: "✅" },
-  Occupied:    { label: "Đang sử dụng", bg: "#fee2e2", color: "#dc2626", border: "#ef4444", emoji: "🔴" },
-  Reserved:    { label: "Đã đặt trước", bg: "#fef9c3", color: "#ca8a04", border: "#f59e0b", emoji: "📌" },
-  Cleaning:    { label: "Đang dọn",     bg: "#dbeafe", color: "#1d4ed8", border: "#3b82f6", emoji: "🧹" },
-  Maintenance: { label: "Bảo trì",      bg: "#f1f5f9", color: "#64748b", border: "#94a3b8", emoji: "🔧" },
+  Available:   { label: "Trống",         bg: "#dcfce7", color: "#16a34a", border: "#10b981" },
+  Occupied:    { label: "Đang sử dụng", bg: "#fee2e2", color: "#dc2626", border: "#ef4444" },
+  Reserved:    { label: "Đã đặt trước", bg: "#fef9c3", color: "#ca8a04", border: "#f59e0b" },
+  Cleaning:    { label: "Đang dọn",     bg: "#dbeafe", color: "#1d4ed8", border: "#3b82f6" },
+  Maintenance: { label: "Bảo trì",      bg: "#f1f5f9", color: "#64748b", border: "#94a3b8" },
 };
 
 function getCfg(status) {
@@ -42,15 +42,6 @@ function normalizeMenuStatus(item) {
   if (["OUT_OF_STOCK", "UNAVAILABLE", "OUTOFSTOCK"].includes(availability)) return "OUT_OF_STOCK";
   if (["IN_STOCK", "AVAILABLE"].includes(availability)) return stock > 0 ? "AVAILABLE" : "OUT_OF_STOCK";
   return stock > 0 ? "AVAILABLE" : "OUT_OF_STOCK";
-}
-
-function getSeatIcon(type) {
-  if (!type) return "bi-shop";
-  const t = type.toLowerCase();
-  if (t.includes("vip") || t.includes("phòng") || t.includes("private")) return "bi-door-closed";
-  if (t.includes("nhóm") || t.includes("group")) return "bi-people";
-  if (t.includes("họp") || t.includes("meeting")) return "bi-camera-video";
-  return "bi-person-workspace";
 }
 
 // ── Booking Status Labels ──
@@ -266,9 +257,9 @@ export default function StaffPOSPage() {
       if (payMethod === "CASH" && orderId) {
         try {
           await processCounterPayment(orderId, "CASH");
-          setSuccess(`✅ Thanh toán tiền mặt thành công: ${result.orderCode} — ${fmtCur(totalAmt)}`);
+          setSuccess(`Thanh toán tiền mặt thành công: ${result.orderCode} — ${fmtCur(totalAmt)}`);
         } catch (payErr) {
-          setSuccess(`✅ Tạo đơn thành công: ${result.orderCode}. Lỗi thanh toán: ${payErr.message}`);
+          setSuccess(`Tạo đơn thành công: ${result.orderCode}. Lỗi thanh toán: ${payErr.message}`);
         }
       } else if (payMethod === "QR_PAYOS" && orderId) {
         try {
@@ -277,16 +268,16 @@ export default function StaffPOSPage() {
           if (checkoutUrl) {
             window.open(checkoutUrl, "_blank");
           }
-          setSuccess(`✅ Tạo đơn thành công: ${result.orderCode} — Đang chờ thanh toán QR`);
+          setSuccess(`Tạo đơn thành công: ${result.orderCode} — Đang chờ thanh toán QR`);
         } catch (payErr) {
           // Fallback: try checkout URL from createCounterOrder result
           if (result.payment?.checkoutUrl) {
             window.open(result.payment.checkoutUrl, "_blank");
           }
-          setSuccess(`✅ Tạo đơn: ${result.orderCode}. Mở link thanh toán QR...`);
+          setSuccess(`Tạo đơn: ${result.orderCode}. Mở link thanh toán QR...`);
         }
       } else {
-        setSuccess(`✅ Tạo đơn thành công: ${result.orderCode} — ${fmtCur(totalAmt)}`);
+        setSuccess(`Tạo đơn thành công: ${result.orderCode} — ${fmtCur(totalAmt)}`);
       }
 
       setCart([]);
@@ -308,7 +299,6 @@ export default function StaffPOSPage() {
       <div className="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
         <div>
           <h2 className="fw-bold mb-1">
-            <i className="bi bi-shop me-2" style={{ color: "#6366f1" }} />
             POS — Tạo đơn tại quầy
           </h2>
           <p className="text-secondary fw-semibold small mb-0">
@@ -322,7 +312,6 @@ export default function StaffPOSPage() {
           onClick={() => { fetchTables(); fetchMenu(); }}
           disabled={loadingTables}
         >
-          <i className="bi bi-arrow-clockwise" />
           {loadingTables ? "Đang tải..." : "Làm mới"}
         </Button>
       </div>
@@ -345,7 +334,7 @@ export default function StaffPOSPage() {
           <Card className="border-0 shadow-sm" style={{ borderRadius: 16 }}>
             <Card.Header className="bg-white border-bottom d-flex align-items-center justify-content-between py-3" style={{ borderRadius: "16px 16px 0 0" }}>
               <h5 className="mb-0 fw-bold">
-                <i className="bi bi-grid-3x3-gap me-2 text-primary" />Sơ đồ chỗ ngồi
+                Sơ đồ chỗ ngồi
               </h5>
               <small className="text-muted fw-semibold">{tableStats.total} bàn</small>
             </Card.Header>
@@ -396,7 +385,6 @@ export default function StaffPOSPage() {
                 </Col>
                 <Col xs={6}>
                   <div className="staff-search-wrap" style={{ borderRadius: 6, padding: "2px 8px" }}>
-                    <i className="bi bi-search" style={{ fontSize: "0.8rem" }} />
                     <input
                       style={{ fontSize: "0.8rem" }}
                       value={tableSearch}
@@ -434,7 +422,6 @@ export default function StaffPOSPage() {
                       hoveredId={hoveredId}
                       setHoveredId={setHoveredId}
                       onOpen={(t) => setSelectedTable(selectedTable && (selectedTable.id || selectedTable._id) === (t.id || t._id) ? null : t)}
-                      getSeatIcon={getSeatIcon}
                       formatTime={formatTime}
                       bookingStatusLabel={BOOKING_STATUS_LABEL}
                       colProps={{ xs: 6, xl: 6 }}
@@ -451,10 +438,10 @@ export default function StaffPOSPage() {
               <Card.Body className="py-3">
                 <div className="d-flex justify-content-between align-items-center mb-2">
                   <h6 className="fw-bold mb-0">
-                    <i className="bi bi-pin-map me-1 text-primary" />{selectedTable.name}
+                    {selectedTable.name}
                   </h6>
                   <Badge className="rounded-pill" style={{ background: getCfg(selectedTable.status).bg, color: getCfg(selectedTable.status).color, border: "none" }}>
-                    {getCfg(selectedTable.status).emoji} {getCfg(selectedTable.status).label}
+                    {getCfg(selectedTable.status).label}
                   </Badge>
                 </div>
                 <div style={{ fontSize: "0.82rem", color: "#64748b" }}>
@@ -498,7 +485,7 @@ export default function StaffPOSPage() {
                 {selectedTable.upcomingBookings && selectedTable.upcomingBookings.length > 0 && (
                   <div className="mt-3 pt-2 border-top">
                     <div className="fw-bold mb-2" style={{ fontSize: "0.76rem", color: "#64748b" }}>
-                      <i className="bi bi-calendar-event me-1" />Lịch đặt sắp tới ({selectedTable.upcomingBookings.length})
+                      Lịch đặt sắp tới ({selectedTable.upcomingBookings.length})
                     </div>
                     {selectedTable.upcomingBookings.map((b) => {
                       const start = new Date(b.startTime);
@@ -539,7 +526,7 @@ export default function StaffPOSPage() {
                 {/* No upcoming bookings */}
                 {(!selectedTable.upcomingBookings || selectedTable.upcomingBookings.length === 0) && (
                   <div className="mt-2 pt-2 border-top text-center" style={{ fontSize: "0.72rem", color: "#16a34a", fontWeight: 600 }}>
-                    <i className="bi bi-check-circle me-1" />Không có lịch đặt — bàn trống hoàn toàn
+                    Không có lịch đặt — bàn trống hoàn toàn
                   </div>
                 )}
               </Card.Body>
@@ -556,7 +543,7 @@ export default function StaffPOSPage() {
                 <Card.Header className="bg-white border-bottom py-3" style={{ borderRadius: "16px 16px 0 0" }}>
                   <div className="d-flex align-items-center justify-content-between mb-2">
                     <h5 className="mb-0 fw-bold">
-                      <i className="bi bi-cup-hot me-2 text-success" />Dịch vụ & Thực đơn
+                      Dịch vụ & Thực đơn
                     </h5>
                     <small className="text-muted fw-semibold">{availableMenu.length} món</small>
                   </div>
@@ -592,7 +579,6 @@ export default function StaffPOSPage() {
                       </Col>
                       <Col xs={4}>
                         <div className="staff-search-wrap" style={{ borderRadius: 6, padding: "2px 8px" }}>
-                          <i className="bi bi-search" style={{ fontSize: "0.8rem" }} />
                           <input
                             style={{ fontSize: "0.8rem" }}
                             value={menuSearch}
@@ -629,7 +615,7 @@ export default function StaffPOSPage() {
                                 Còn: {Number(item.stockQuantity || 0)}
                               </span>
                               <span className="rounded-pill px-2" style={{ background: "#eef2ff", color: "#6366f1", fontSize: "0.68rem", fontWeight: 700 }}>
-                                <i className="bi bi-plus" /> Thêm
+                                Thêm
                               </span>
                             </div>
                           </div>
@@ -649,7 +635,7 @@ export default function StaffPOSPage() {
               <Card className="border-0 shadow-sm" style={{ borderRadius: 16, position: "sticky", top: 16 }}>
                 <Card.Header className="bg-white border-bottom py-3 d-flex justify-content-between align-items-center" style={{ borderRadius: "16px 16px 0 0" }}>
                   <h5 className="mb-0 fw-bold">
-                    <i className="bi bi-receipt me-2" style={{ color: "#6366f1" }} />Hoá đơn
+                    Hoá đơn
                   </h5>
                   {selectedTable ? (
                     <Badge pill style={{ background: "#6366f1", border: "none", fontSize: "0.78rem" }}>
@@ -664,7 +650,6 @@ export default function StaffPOSPage() {
                 <Card.Body style={{ maxHeight: "calc(100vh - 420px)", overflowY: "auto" }}>
                   {!selectedTable && cart.length === 0 ? (
                     <div className="text-center py-4">
-                      <div style={{ fontSize: 36 }}>📋</div>
                       <div className="text-muted fw-semibold small mt-1">Hoá đơn trống</div>
                       <div className="text-muted" style={{ fontSize: "0.72rem" }}>Chọn bàn hoặc thêm món từ menu</div>
                     </div>
@@ -676,14 +661,14 @@ export default function StaffPOSPage() {
                           <div className="d-flex justify-content-between align-items-start">
                             <div>
                               <div className="fw-bold d-flex align-items-center" style={{ fontSize: "0.84rem", color: "#6366f1" }}>
-                                <i className="bi bi-building me-2" />{selectedTable.name}
+                                {selectedTable.name}
                                 <button
                                   type="button"
                                   className="btn btn-sm p-0 ms-2"
                                   style={{ color: "#ef4444", fontSize: "0.78rem" }}
                                   onClick={() => setSelectedTable(null)}
                                 >
-                                  <i className="bi bi-x-lg" />
+                                  ×
                                 </button>
                               </div>
                               <div className="d-flex align-items-center gap-2 mt-1">
@@ -696,7 +681,7 @@ export default function StaffPOSPage() {
                                     style={{ width: 24, height: 24 }}
                                     onClick={() => setDurationHours(Math.max(1, durationHours - 1))}
                                   >
-                                    <i className="bi bi-dash" />
+                                    -
                                   </button>
                                   <div className="fw-bold text-center" style={{ fontSize: "0.75rem", width: 20, color: "#334155" }}>
                                     {durationHours}
@@ -706,7 +691,7 @@ export default function StaffPOSPage() {
                                     style={{ width: 24, height: 24 }}
                                     onClick={() => setDurationHours(durationHours + 1)}
                                   >
-                                    <i className="bi bi-plus" />
+                                    +
                                   </button>
                                 </div>
                                 <span className="text-muted fw-semibold" style={{ fontSize: "0.72rem" }}>giờ</span>
@@ -735,7 +720,7 @@ export default function StaffPOSPage() {
                               style={{ color: "#ef4444", fontSize: "0.78rem" }}
                               onClick={() => removeFromCart(item.menuItemId)}
                             >
-                              <i className="bi bi-x-lg" />
+                              ×
                             </button>
                           </div>
                           <div className="d-flex justify-content-between align-items-center mt-1">
@@ -769,7 +754,7 @@ export default function StaffPOSPage() {
 
                       {selectedTable && cart.length === 0 && (
                         <div className="text-center py-2 text-muted" style={{ fontSize: "0.72rem" }}>
-                          <i className="bi bi-cup-hot me-1" />(Tuỳ chọn) Thêm đồ ăn/uống từ menu
+                          (Tuỳ chọn) Thêm đồ ăn/uống từ menu
                         </div>
                       )}
                     </>
@@ -818,7 +803,7 @@ export default function StaffPOSPage() {
                           {creating ? (
                             <><Spinner size="sm" /> .....</>
                           ) : (
-                            <><i className="bi bi-cash-coin" /> Tiền mặt</>
+                            <>Tiền mặt</>
                           )}
                         </Button>
                         <Button
@@ -835,7 +820,7 @@ export default function StaffPOSPage() {
                           {creating ? (
                             <><Spinner size="sm" /> .....</>
                           ) : (
-                            <><i className="bi bi-qr-code" /> QR PayOS</>
+                            <>QR PayOS</>
                           )}
                         </Button>
                       </div>
