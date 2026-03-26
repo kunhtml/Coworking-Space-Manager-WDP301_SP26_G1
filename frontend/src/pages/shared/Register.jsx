@@ -302,7 +302,9 @@ export default function Register() {
                           setOtpCode("");
                         }}
                         disabled={loading || otpLoading}
-                        isInvalid={email.trim().length > 0 && !isEmailFormatValid}
+                        isInvalid={
+                          email.trim().length > 0 && !isEmailFormatValid
+                        }
                       />
                       {email.trim().length > 0 && !isEmailFormatValid && (
                         <Form.Text className="text-danger">
@@ -316,7 +318,9 @@ export default function Register() {
                           variant="outline-primary"
                           className="rounded-3"
                           onClick={handleSendOtp}
-                          disabled={loading || otpLoading || !isEmailFormatValid}
+                          disabled={
+                            loading || otpLoading || !isEmailFormatValid
+                          }
                         >
                           {otpLoading
                             ? "Đang gửi..."

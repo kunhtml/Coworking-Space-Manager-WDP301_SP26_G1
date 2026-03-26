@@ -1,20 +1,17 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
-  Container,
-  Row,
-  Col,
+  Badge,
   Button,
+  Card,
+  Col,
+  Container,
+  Form,
+  Row,
 } from "react-bootstrap";
 import { useNavigate } from "react-router";
 import { useAuth } from "../../hooks/useAuth";
 import GuestCustomerNavbar from "../../components/common/GuestCustomerNavbar";
-import BookingHeroSection from "../../components/customer/cards/BookingHeroSection";
-import WorkspaceTypeSelectorCard from "../../components/customer/cards/WorkspaceTypeSelectorCard";
-import BookingTimeFormCard from "../../components/customer/forms/BookingTimeFormCard";
-import AvailableTablesCard from "../../components/customer/cards/AvailableTablesCard";
-import BookingSummaryCard from "../../components/customer/cards/BookingSummaryCard";
-import BookingConfirmationModal from "../../components/customer/modals/BookingConfirmationModal";
 import {
   searchAvailableTables,
   createBookingApi,
@@ -32,174 +29,233 @@ export function meta() {
   ];
 }
 
-const TYPE_COLORS = [
-  { color: "rgba(99, 102, 241, 0.1)", borderColor: "#6366f1" },
-  { color: "rgba(34, 197, 94, 0.1)", borderColor: "#22c55e" },
-  { color: "rgba(59, 130, 246, 0.1)", borderColor: "#3b82f6" },
-  { color: "rgba(251, 191, 36, 0.1)", borderColor: "#fbbf24" },
-  { color: "rgba(244, 63, 94, 0.1)", borderColor: "#f43f5e" },
-];
+const STATUS_CONFIG = {
+  Available: {
+    label: "Trống",
+    borderColor: "#10b981",
+    badgeBg: "#dcfce7",
+    badgeColor: "#16a34a",
+    dot: "#16a34a",
+  },
+  Occupied: {
+    label: "Đang sử dụng",
+    borderColor: "#ef4444",
+    badgeBg: "#fee2e2",
+    badgeColor: "#dc2626",
+    dot: "#dc2626",
+  },
+  Reserved: {
+    label: "Đã đặt trước",
+    borderColor: "#f59e0b",
+    badgeBg: "#fef9c3",
+    badgeColor: "#ca8a04",
+    dot: "#ca8a04",
+  },
+  Maintenance: {
+    label: "Bảo trì",
+    borderColor: "#94a3b8",
+    badgeBg: "#f1f5f9",
+    badgeColor: "#64748b",
+    dot: "#64748b",
+  },
+};
 
-function formatTypeTitle(type) {
-  if (!type) return "Không xác định";
-  return String(type)
-    .replace(/_/g, " ")
-    .toLowerCase()
-    .replace(/\b\w/g, (ch) => ch.toUpperCase());
+function toTypeName(table) {
+  const fromObject = String(table?.tableType?.name || "").trim();
+  if (fromObject) return fromObject;
+  const fromString =
+    typeof table?.tableType === "string" ? table.tableType.trim() : "";
+  if (fromString) return fromString;
+  return "Khác";
 }
 
-function pickIcon(type) {
-  const t = String(type || "").toLowerCase();
-  if (t.includes("meeting") || t.includes("room")) return "bi-easel";
-  if (t.includes("group")) return "bi-people-fill";
-  if (t.includes("vip") || t.includes("private")) return "bi-gem";
-  return "bi-person-workspace";
+function startOfTodayIso() {
+  return new Date().toISOString().slice(0, 10);
 }
 
 export default function BookingPage() {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  const [selectedType, setSelectedType] = useState("");
-  const [selectedDate, setSelectedDate] = useState("");
-  const [selectedTimeStart, setSelectedTimeStart] = useState("");
-  const [selectedTimeEnd, setSelectedTimeEnd] = useState("");
-  const [workspaceTypes, setWorkspaceTypes] = useState([]);
-  const [loadingTypes, setLoadingTypes] = useState(true);
-  const [availableTables, setAvailableTables] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(startOfTodayIso());
+  const [selectedTimeStart, setSelectedTimeStart] = useState("08:00");
+  const [selectedTimeEnd, setSelectedTimeEnd] = useState("10:00");
+  const [allTables, setAllTables] = useState([]);
+  const [availableIds, setAvailableIds] = useState(new Set());
+
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [search, setSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [priceMin, setPriceMin] = useState("");
+  const [priceMax, setPriceMax] = useState("");
+
   const [selectedTable, setSelectedTable] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [refreshTick, setRefreshTick] = useState(0);
 
-  // Initialize date to today
-  useEffect(() => {
-    const today = new Date().toISOString().split("T")[0];
-    setSelectedDate(today);
-  }, []);
-
-  // Auto-adjust end time minimum 1 hour after start time
-  useEffect(() => {
-    if (selectedTimeStart) {
-      const [sh, sm] = selectedTimeStart.split(":").map(Number);
-      let eh = sh + 1;
-      let em = sm;
-      if (eh > 23) eh = 23; // Cap at 23:xx
-      
-      const defaultEnd = `${eh.toString().padStart(2, "0")}:${em.toString().padStart(2, "0")}`;
-      
-      if (!selectedTimeEnd) {
-        setSelectedTimeEnd(defaultEnd);
-      } else {
-        const [ceh, cem] = selectedTimeEnd.split(":").map(Number);
-        const diffMinutes = (ceh * 60 + cem) - (sh * 60 + sm);
-        if (diffMinutes < 60 && sh !== 23) {
-          setSelectedTimeEnd(defaultEnd);
-        }
-      }
-    }
-  }, [selectedTimeStart]); // ONLY run when start time changes
-
-  useEffect(() => {
-    const loadWorkspaceTypes = async () => {
-      setLoadingTypes(true);
-      try {
-        const tables = await apiClient.get("/tables");
-        const grouped = new Map();
-
-        for (const t of tables || []) {
-          const typeKey = String(t.tableType || "Khác");
-          const existing = grouped.get(typeKey) || {
-            id: typeKey,
-            title: formatTypeTitle(typeKey),
-            description: `Loại chỗ: ${formatTypeTitle(typeKey)}`,
-            price: Number.POSITIVE_INFINITY,
-            capacity: 0,
-            features: ["Wi-Fi", "Ổ cắm"],
-            icon: pickIcon(typeKey),
-            color: TYPE_COLORS[grouped.size % TYPE_COLORS.length].color,
-            borderColor:
-              TYPE_COLORS[grouped.size % TYPE_COLORS.length].borderColor,
-            popular: false,
-            count: 0,
-          };
-
-          existing.price = Math.min(
-            existing.price,
-            Number(t.pricePerHour || 0),
-          );
-          existing.capacity = Math.max(
-            existing.capacity,
-            Number(t.capacity || 0),
-          );
-          existing.count += 1;
-          grouped.set(typeKey, existing);
-        }
-
-        const rows = Array.from(grouped.values())
-          .sort((a, b) => b.count - a.count)
-          .map((t, idx) => ({
-            ...t,
-            popular: idx === 0,
-            capacity: `${t.capacity || 1} chỗ`,
-            price: Number.isFinite(t.price) ? t.price : 0,
-          }));
-
-        setWorkspaceTypes(rows);
-      } catch (err) {
-        setError(err.message || "Không thể tải loại chỗ ngồi từ hệ thống.");
-      } finally {
-        setLoadingTypes(false);
-      }
-    };
-
-    loadWorkspaceTypes();
-  }, []);
-
-  const handleSearch = async () => {
-    if (
-      !selectedType ||
-      !selectedDate ||
-      !selectedTimeStart ||
-      !selectedTimeEnd
-    ) {
-      setError("Vui lòng chọn đầy đủ thông tin để tìm chỗ ngồi");
-      return;
-    }
-
-    const startDateTime = new Date(`${selectedDate}T${selectedTimeStart}:00`);
-    const now = new Date();
-    if (startDateTime.getTime() - now.getTime() < 10 * 60 * 1000) {
-      setError("Giờ bắt đầu đặt bàn phải diễn ra sau thời điểm hiện tại ít nhất 10 phút.");
-      return;
-    }
-
+  const loadAllTables = useCallback(async () => {
     setLoading(true);
     setError("");
-
     try {
-      const searchParams = {
-        date: selectedDate,
-        startTime: selectedTimeStart,
-        endTime: selectedTimeEnd,
-        tableType: selectedType,
-      };
-
-      const tables = await searchAvailableTables(searchParams);
-      setAvailableTables(tables);
-
-      if (tables.length === 0) {
-        setError(
-          "Không tìm thấy chỗ ngồi trống trong thời gian này. Vui lòng chọn thời gian khác.",
-        );
-      }
+      const rows = await apiClient.get("/tables");
+      setAllTables(Array.isArray(rows) ? rows : []);
     } catch (err) {
-      setError(err.message || "Lỗi khi tìm kiếm chỗ ngồi");
+      setError(err.message || "Không thể tải sơ đồ bàn.");
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    loadAllTables();
+  }, [loadAllTables]);
+
+  useEffect(() => {
+    if (!selectedDate || !selectedTimeStart || !selectedTimeEnd) return;
+
+    const run = async () => {
+      setCheckingAvailability(true);
+      setError("");
+      try {
+        const available = await searchAvailableTables({
+          date: selectedDate,
+          startTime: selectedTimeStart,
+          endTime: selectedTimeEnd,
+        });
+        const ids = new Set(
+          (available || []).map((t) => String(t._id || t.sourceId || t.id)),
+        );
+        setAvailableIds(ids);
+      } catch (err) {
+        setAvailableIds(new Set());
+        setError(err.message || "Không thể lọc bàn theo thời gian đã chọn.");
+      } finally {
+        setCheckingAvailability(false);
+      }
+    };
+
+    run();
+  }, [selectedDate, selectedTimeStart, selectedTimeEnd, refreshTick]);
+
+  const effectiveTables = useMemo(
+    () =>
+      allTables.map((table) => {
+        const id = String(table._id || table.sourceId || table.id);
+        const typeName = toTypeName(table);
+        const baseStatus = String(table.status || "Available");
+
+        let displayStatus = baseStatus;
+        if (baseStatus !== "Maintenance") {
+          displayStatus = availableIds.has(id)
+            ? "Available"
+            : baseStatus === "Occupied"
+              ? "Occupied"
+              : "Reserved";
+        }
+
+        return {
+          ...table,
+          id,
+          typeName,
+          displayStatus,
+          pricePerHour: Number(table.pricePerHour || 0),
+          capacity: Number(table.capacity || 0),
+        };
+      }),
+    [allTables, availableIds],
+  );
+
+  const categoryOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          effectiveTables
+            .map((t) => String(t.typeName || "").trim())
+            .filter(Boolean),
+        ),
+      ).sort(),
+    [effectiveTables],
+  );
+
+  const stats = useMemo(() => {
+    const count = (status) =>
+      effectiveTables.filter((t) => t.displayStatus === status).length;
+    return {
+      Available: count("Available"),
+      Occupied: count("Occupied"),
+      Reserved: count("Reserved"),
+      Maintenance: count("Maintenance"),
+      total: effectiveTables.length,
+    };
+  }, [effectiveTables]);
+
+  const filteredTables = useMemo(() => {
+    let rows = effectiveTables.filter(
+      (t) => !["Reserved", "Maintenance"].includes(t.displayStatus),
+    );
+
+    if (filterStatus !== "all") {
+      rows = rows.filter((t) => t.displayStatus === filterStatus);
+    }
+
+    if (selectedCategory !== "all") {
+      rows = rows.filter((t) => t.typeName === selectedCategory);
+    }
+
+    const min = Number(priceMin || 0);
+    const max = Number(priceMax || 0);
+    if (priceMin) {
+      rows = rows.filter((t) => t.pricePerHour >= min);
+    }
+    if (priceMax) {
+      rows = rows.filter((t) => t.pricePerHour <= max);
+    }
+
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      rows = rows.filter(
+        (t) =>
+          String(t.name || "")
+            .toLowerCase()
+            .includes(q) ||
+          String(t.typeName || "")
+            .toLowerCase()
+            .includes(q),
+      );
+    }
+
+    return rows;
+  }, [
+    effectiveTables,
+    filterStatus,
+    selectedCategory,
+    priceMin,
+    priceMax,
+    search,
+  ]);
+
+  const groupedTables = useMemo(() => {
+    const map = new Map();
+    filteredTables.forEach((t) => {
+      const key = t.typeName || "Khác";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(t);
+    });
+    return Array.from(map.entries());
+  }, [filteredTables]);
+
+  useEffect(() => {
+    if (["Reserved", "Maintenance"].includes(filterStatus)) {
+      setFilterStatus("all");
+    }
+  }, [filterStatus]);
+
+  const toggleCategory = (name) => {
+    setSelectedCategory((prev) => (prev === name ? "all" : name));
   };
 
   const handleBooking = async () => {
@@ -218,18 +274,17 @@ export default function BookingPage() {
 
     try {
       const bookingData = {
-        tableId: selectedTable._id,
+        tableId: selectedTable.id,
         date: selectedDate,
         startTime: selectedTimeStart,
         endTime: selectedTimeEnd,
         pricePerHour: selectedTable.pricePerHour,
-        notes: `Đặt ${selectedTable.name} - ${selectedTable.tableType?.name || "N/A"}`,
+        notes: `Đặt ${selectedTable.name} - ${selectedTable.typeName || "N/A"}`,
       };
 
       const result = await createBookingApi(bookingData);
 
       setSuccess("Đặt chỗ thành công!");
-      setShowConfirmModal(false);
 
       // Redirect to payment page
       setTimeout(() => {
@@ -246,10 +301,6 @@ export default function BookingPage() {
     return new Intl.NumberFormat("vi-VN").format(Math.round(price)) + "đ";
   };
 
-  const getSelectedTypeInfo = () => {
-    return workspaceTypes.find((type) => type.id === selectedType);
-  };
-
   const calculateDuration = () => {
     if (!selectedTimeStart || !selectedTimeEnd) return 0;
     const start = new Date(`2000-01-01T${selectedTimeStart}`);
@@ -258,20 +309,24 @@ export default function BookingPage() {
   };
 
   const calculateTotalPrice = () => {
-    // Use selected table's actual price if available, otherwise fall back to type price
     const duration = calculateDuration();
     if (selectedTable && duration > 0) {
       return Math.round(Number(selectedTable.pricePerHour || 0) * duration);
     }
-    const typeInfo = getSelectedTypeInfo();
-    return typeInfo && duration > 0 ? Math.round(typeInfo.price * duration) : 0;
+    return 0;
+  };
+
+  const handleClearFilters = () => {
+    setFilterStatus("all");
+    setSearch("");
+    setSelectedCategory("all");
+    setPriceMin("");
+    setPriceMax("");
   };
 
   return (
     <div className="min-vh-100 bg-light">
       <GuestCustomerNavbar activeItem="booking" />
-      <BookingHeroSection />
-
       <section className="py-5">
         <Container>
           {error && (
@@ -297,65 +352,310 @@ export default function BookingPage() {
             </Alert>
           )}
 
-          <Row className="g-4">
+          <div className="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-3">
+            <div>
+              <h2 className="fw-bold mb-1">Sơ đồ chỗ ngồi</h2>
+              <p className="text-secondary fw-semibold small mb-0">
+                Chọn thời gian để xem bàn khả dụng theo thời gian thực
+              </p>
+            </div>
+            <Button
+              variant="outline-secondary"
+              className="fw-semibold rounded-3"
+              onClick={() => {
+                loadAllTables();
+                setRefreshTick((v) => v + 1);
+              }}
+              disabled={loading || checkingAvailability}
+            >
+              {loading || checkingAvailability ? "Đang tải..." : "Làm mới"}
+            </Button>
+          </div>
+
+          <Row className="g-3 mb-4">
+            {["Available", "Occupied"].map((statusKey) => {
+              const cfg = STATUS_CONFIG[statusKey];
+              return (
+                <Col xs={6} md={3} lg={2} key={statusKey}>
+                  <div
+                    className="rounded-4 p-3 d-flex align-items-center gap-2"
+                    style={{
+                      background: cfg.badgeBg,
+                      border: `1px solid ${cfg.borderColor}55`,
+                      cursor: "pointer",
+                    }}
+                    onClick={() =>
+                      setFilterStatus(
+                        filterStatus === statusKey ? "all" : statusKey,
+                      )
+                    }
+                  >
+                    <div
+                      style={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: "50%",
+                        background: cfg.dot,
+                      }}
+                    />
+                    <div>
+                      <div
+                        className="fw-bold"
+                        style={{ color: cfg.badgeColor }}
+                      >
+                        {stats[statusKey]}
+                      </div>
+                      <div className="small text-secondary">{cfg.label}</div>
+                    </div>
+                  </div>
+                </Col>
+              );
+            })}
+          </Row>
+
+          <Card className="border-0 shadow-sm rounded-4 mb-4">
+            <Card.Body>
+              <Row className="g-3 mb-3">
+                <Col md={3}>
+                  <Form.Label className="fw-semibold">Ngày đặt</Form.Label>
+                  <Form.Control
+                    type="date"
+                    value={selectedDate}
+                    min={startOfTodayIso()}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                  />
+                </Col>
+                <Col md={2}>
+                  <Form.Label className="fw-semibold">Bắt đầu</Form.Label>
+                  <Form.Control
+                    type="time"
+                    value={selectedTimeStart}
+                    onChange={(e) => setSelectedTimeStart(e.target.value)}
+                  />
+                </Col>
+                <Col md={2}>
+                  <Form.Label className="fw-semibold">Kết thúc</Form.Label>
+                  <Form.Control
+                    type="time"
+                    value={selectedTimeEnd}
+                    onChange={(e) => setSelectedTimeEnd(e.target.value)}
+                  />
+                </Col>
+                <Col md={5}>
+                  <Form.Label className="fw-semibold">Tìm kiếm</Form.Label>
+                  <Form.Control
+                    type="text"
+                    placeholder="Tìm tên bàn, loại bàn..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </Col>
+              </Row>
+
+              <Row className="g-3 align-items-end">
+                <Col md={3}>
+                  <Form.Label className="fw-semibold">Trạng thái</Form.Label>
+                  <Form.Select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                  >
+                    <option value="all">Tất cả trạng thái</option>
+                    <option value="Available">Trống</option>
+                    <option value="Occupied">Đang sử dụng</option>
+                  </Form.Select>
+                </Col>
+                <Col md={2}>
+                  <Form.Label className="fw-semibold">Giá từ (đ/h)</Form.Label>
+                  <Form.Control
+                    type="number"
+                    min="0"
+                    value={priceMin}
+                    onChange={(e) => setPriceMin(e.target.value)}
+                  />
+                </Col>
+                <Col md={2}>
+                  <Form.Label className="fw-semibold">Giá đến (đ/h)</Form.Label>
+                  <Form.Control
+                    type="number"
+                    min="0"
+                    value={priceMax}
+                    onChange={(e) => setPriceMax(e.target.value)}
+                  />
+                </Col>
+                <Col md={5} className="d-flex justify-content-md-end">
+                  <Button
+                    variant="outline-secondary"
+                    onClick={handleClearFilters}
+                  >
+                    Xóa bộ lọc
+                  </Button>
+                </Col>
+              </Row>
+
+              <div className="mt-3">
+                <div className="fw-semibold small text-secondary mb-2">
+                  Lọc theo category:
+                </div>
+                <div className="d-flex flex-wrap gap-3">
+                  <Form.Check
+                    type="checkbox"
+                    label="All"
+                    checked={selectedCategory === "all"}
+                    onChange={() => setSelectedCategory("all")}
+                  />
+                  {categoryOptions.map((cat) => (
+                    <Form.Check
+                      key={cat}
+                      type="checkbox"
+                      label={cat}
+                      checked={selectedCategory === cat}
+                      onChange={() => toggleCategory(cat)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </Card.Body>
+          </Card>
+
+          <Row className="g-4 align-items-start">
             <Col lg={8}>
-              <WorkspaceTypeSelectorCard
-                loadingTypes={loadingTypes}
-                workspaceTypes={workspaceTypes}
-                selectedType={selectedType}
-                setSelectedType={setSelectedType}
-                formatPrice={formatPrice}
-              />
+              {loading ? (
+                <div className="text-center py-5 text-muted">
+                  Đang tải dữ liệu bàn...
+                </div>
+              ) : groupedTables.length === 0 ? (
+                <div className="text-center py-5 text-muted">
+                  Không có bàn phù hợp với bộ lọc hiện tại.
+                </div>
+              ) : (
+                groupedTables.map(([zone, tables]) => (
+                  <div key={zone} className="mb-5">
+                    <div className="d-flex align-items-center gap-3 mb-3">
+                      <h5 className="fw-bold text-secondary mb-0">{zone}</h5>
+                      <span
+                        className="rounded-pill px-3 py-1 small fw-bold"
+                        style={{ background: "#f1f5f9", color: "#475569" }}
+                      >
+                        {tables.length} bàn
+                      </span>
+                      <div
+                        style={{ flex: 1, height: 1, background: "#e2e8f0" }}
+                      />
+                    </div>
 
-              <BookingTimeFormCard
-                selectedDate={selectedDate}
-                setSelectedDate={setSelectedDate}
-                selectedTimeStart={selectedTimeStart}
-                setSelectedTimeStart={setSelectedTimeStart}
-                selectedTimeEnd={selectedTimeEnd}
-                setSelectedTimeEnd={setSelectedTimeEnd}
-                handleSearch={handleSearch}
-                loading={loading}
-              />
-
-              <AvailableTablesCard
-                availableTables={availableTables}
-                selectedTable={selectedTable}
-                setSelectedTable={setSelectedTable}
-                setShowConfirmModal={setShowConfirmModal}
-              />
+                    <Row className="g-3">
+                      {tables.map((table) => {
+                        const cfg =
+                          STATUS_CONFIG[table.displayStatus] ||
+                          STATUS_CONFIG.Available;
+                        const isSelected = selectedTable?.id === table.id;
+                        return (
+                          <Col xl={4} lg={6} md={6} sm={6} key={table.id}>
+                            <Card
+                              className="border-2"
+                              style={{
+                                cursor:
+                                  table.displayStatus === "Available"
+                                    ? "pointer"
+                                    : "not-allowed",
+                                borderColor: isSelected
+                                  ? "#2563eb"
+                                  : cfg.borderColor,
+                                boxShadow: isSelected
+                                  ? "0 10px 24px rgba(37,99,235,0.25)"
+                                  : "0 2px 8px rgba(0,0,0,0.05)",
+                                opacity:
+                                  table.displayStatus === "Available"
+                                    ? 1
+                                    : 0.86,
+                              }}
+                              onClick={() => {
+                                if (table.displayStatus !== "Available") return;
+                                setSelectedTable(table);
+                                setError("");
+                              }}
+                            >
+                              <Card.Body className="text-center px-2 py-3">
+                                <h6
+                                  className="fw-bold mb-1 text-truncate"
+                                  title={table.name}
+                                >
+                                  {table.name}
+                                </h6>
+                                <div
+                                  className="text-secondary fw-semibold mb-1"
+                                  style={{ fontSize: "0.76rem" }}
+                                >
+                                  {table.typeName}
+                                </div>
+                                <div
+                                  className="fw-semibold mb-2"
+                                  style={{
+                                    fontSize: "0.76rem",
+                                    color: "#64748b",
+                                  }}
+                                >
+                                  {table.capacity
+                                    ? `${table.capacity} chỗ`
+                                    : ""}
+                                  {table.capacity && table.pricePerHour
+                                    ? " · "
+                                    : ""}
+                                  {table.pricePerHour
+                                    ? `${formatPrice(table.pricePerHour)}/h`
+                                    : ""}
+                                </div>
+                                <Badge
+                                  pill
+                                  style={{
+                                    background: cfg.badgeBg,
+                                    color: cfg.badgeColor,
+                                  }}
+                                >
+                                  {cfg.label}
+                                </Badge>
+                              </Card.Body>
+                            </Card>
+                          </Col>
+                        );
+                      })}
+                    </Row>
+                  </div>
+                ))
+              )}
             </Col>
 
             <Col lg={4}>
-              <BookingSummaryCard
-                selectedType={selectedType}
-                getSelectedTypeInfo={getSelectedTypeInfo}
-                selectedDate={selectedDate}
-                selectedTimeStart={selectedTimeStart}
-                selectedTimeEnd={selectedTimeEnd}
-                calculateDuration={calculateDuration}
-                selectedTable={selectedTable}
-                formatPrice={formatPrice}
-                calculateTotalPrice={calculateTotalPrice}
-              />
+              <Card
+                className="border-0 shadow-sm rounded-4 position-sticky"
+                style={{ top: "96px" }}
+              >
+                <Card.Body className="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                  <div>
+                    <div className="fw-semibold">Bàn đã chọn</div>
+                    <div className="text-secondary small">
+                      {selectedTable
+                        ? `${selectedTable.name} · ${selectedTable.typeName} · ${formatPrice(selectedTable.pricePerHour)}/h`
+                        : "Chưa chọn bàn"}
+                    </div>
+                    <div className="text-secondary small">
+                      {selectedDate} · {selectedTimeStart} - {selectedTimeEnd} ·
+                      Tổng tạm tính: {formatPrice(calculateTotalPrice())}
+                    </div>
+                  </div>
+                  <Button
+                    variant="primary"
+                    disabled={!selectedTable || bookingLoading}
+                    onClick={handleBooking}
+                  >
+                    {bookingLoading ? "Đang đặt..." : "Xác nhận đặt bàn"}
+                  </Button>
+                </Card.Body>
+              </Card>
             </Col>
           </Row>
         </Container>
       </section>
-
-      <BookingConfirmationModal
-        show={showConfirmModal}
-        onHide={() => setShowConfirmModal(false)}
-        selectedTable={selectedTable}
-        getSelectedTypeInfo={getSelectedTypeInfo}
-        selectedDate={selectedDate}
-        selectedTimeStart={selectedTimeStart}
-        selectedTimeEnd={selectedTimeEnd}
-        formatPrice={formatPrice}
-        calculateTotalPrice={calculateTotalPrice}
-        onConfirm={handleBooking}
-        bookingLoading={bookingLoading}
-      />
     </div>
   );
 }

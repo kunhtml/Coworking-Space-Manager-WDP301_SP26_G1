@@ -248,33 +248,6 @@ export default function Home() {
                   onClick={() => navigate("/menu")}
                   style={{ cursor: "pointer" }}
                 >
-                  <div
-                    className="card-header border-0 p-4 position-relative text-center"
-                    style={{ backgroundColor: item.color }}
-                  >
-                    <Badge
-                      bg="light"
-                      text="primary"
-                      className="position-absolute top-0 start-0 m-3 px-2 py-1 small"
-                    >
-                      {item.category}
-                    </Badge>
-
-                    <div
-                      className="menu-icon mb-3 mt-3"
-                      style={{ fontSize: "4rem" }}
-                    >
-                      <i className={item.icon}></i>
-                    </div>
-
-                    <div className="price-badge position-absolute top-0 end-0 m-3">
-                      <Badge bg="primary" className="px-3 py-2 fw-bold">
-                        {formatPrice(item.price)}
-                        {item.unit || ""}
-                      </Badge>
-                    </div>
-                  </div>
-
                   <Card.Body className="p-4 d-flex flex-column text-center">
                     <h6 className="fw-bold mb-2">{item.name}</h6>
                     <p className="text-muted small mb-4 flex-grow-1">

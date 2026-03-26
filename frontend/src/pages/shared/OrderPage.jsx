@@ -30,11 +30,12 @@ export function meta() {
 }
 
 const getCategoryVisuals = (categoryName) => {
+  const unifiedColor = "rgba(99, 102, 241, 0.1)";
   const name = categoryName.toLowerCase();
 
   // Nhóm Cà phê
   if (name.includes("cà phê") || name.includes("coffee")) {
-    return { icon: "bi-cup-hot", color: "rgba(139, 92, 246, 0.1)" }; // Tím nhạt
+    return { icon: "bi bi-cup-hot", color: unifiedColor };
   }
   // Nhóm Bánh / Đồ ăn nhẹ
   if (
@@ -42,7 +43,7 @@ const getCategoryVisuals = (categoryName) => {
     name.includes("bánh") ||
     name.includes("muffin")
   ) {
-    return { icon: "bi-basket", color: "rgba(251, 191, 36, 0.1)" }; // Vàng nhạt
+    return { icon: "bi bi-cup-hot", color: unifiedColor };
   }
   // Nhóm Trà & Trái cây
   if (
@@ -50,7 +51,7 @@ const getCategoryVisuals = (categoryName) => {
     name.includes("trái cây") ||
     name.includes("nước ép")
   ) {
-    return { icon: "bi-cup-straw", color: "rgba(34, 197, 94, 0.1)" }; // Xanh lá nhạt
+    return { icon: "bi bi-cup-hot", color: unifiedColor };
   }
   // Nhóm Đá xay / Sinh tố
   if (
@@ -58,7 +59,7 @@ const getCategoryVisuals = (categoryName) => {
     name.includes("frappuccino") ||
     name.includes("sinh tố")
   ) {
-    return { icon: "bi-cup", color: "rgba(59, 130, 246, 0.1)" }; // Xanh dương nhạt (cảm giác lạnh)
+    return { icon: "bi bi-cup-hot", color: unifiedColor };
   }
   // Nhóm Dịch vụ / Khác (In ấn, văn phòng phẩm...)
   if (
@@ -66,11 +67,11 @@ const getCategoryVisuals = (categoryName) => {
     name.includes("in ấn") ||
     name.includes("thiết bị")
   ) {
-    return { icon: "bi-printer", color: "rgba(99, 102, 241, 0.1)" }; // Chàm
+    return { icon: "bi bi-cup-hot", color: unifiedColor };
   }
 
   // Mặc định nếu không khớp nhóm nào
-  return { icon: "bi-tag", color: "rgba(108, 117, 125, 0.1)" }; // Xám
+  return { icon: "bi bi-cup-hot", color: unifiedColor };
 };
 
 function normalizeMenuStatus(item) {
@@ -212,7 +213,7 @@ export default function MenuPage() {
       base.push({
         id,
         label: category.name || "Khác",
-        icon: "bi-tag",
+        icon: "bi bi-cup-hot",
         count: menuItems.filter((item) => item.categoryId === id).length,
       });
     }

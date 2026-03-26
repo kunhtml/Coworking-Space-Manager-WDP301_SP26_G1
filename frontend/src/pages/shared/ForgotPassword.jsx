@@ -236,7 +236,8 @@ export default function ForgotPassword() {
                   className="w-100 mb-3"
                   disabled={
                     loading ||
-                    (step === "send-otp" && (otpCooldown > 0 || !isEmailFormatValid))
+                    (step === "send-otp" &&
+                      (otpCooldown > 0 || !isEmailFormatValid))
                   }
                 >
                   {step === "send-otp"
