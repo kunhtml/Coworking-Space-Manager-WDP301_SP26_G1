@@ -162,9 +162,14 @@ export default function AdminOccupancyPage() {
                   </p>
                   <p
                     className="mb-0"
-                    style={{ fontSize: "13px", color: "#475569", fontWeight: 600 }}
+                    style={{
+                      fontSize: "13px",
+                      color: "#475569",
+                      fontWeight: 600,
+                    }}
                   >
-                    Tong so ban tren he thong: {Number(totalTables || 0).toLocaleString("vi-VN")}
+                    Tong so ban tren he thong:{" "}
+                    {Number(totalTables || 0).toLocaleString("vi-VN")}
                   </p>
                 </div>
               </div>
@@ -203,7 +208,8 @@ export default function AdminOccupancyPage() {
                       textAlign: "center",
                     }}
                   >
-                    {monthNames[currentDate.getMonth()]}, {currentDate.getFullYear()}
+                    {monthNames[currentDate.getMonth()]},{" "}
+                    {currentDate.getFullYear()}
                   </div>
 
                   <Button

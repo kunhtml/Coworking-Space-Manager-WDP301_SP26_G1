@@ -1,5 +1,8 @@
 import { Alert, Button, Col, Form, Modal, Row, Spinner } from "react-bootstrap";
 
+const STRICT_EMAIL_REGEX =
+  /^[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*@[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)+$/;
+
 function FieldGroup({ label, required, error, children }) {
   return (
     <Form.Group>
@@ -27,6 +30,15 @@ export default function UserFormModal({
   onField,
   onClearFieldError,
 }) {
+  const normalizedEmail = String(formData.email || "")
+    .trim()
+    .toLowerCase();
+  const emailFormatInvalid =
+    normalizedEmail.length > 0 && !STRICT_EMAIL_REGEX.test(normalizedEmail);
+  const emailError =
+    fieldErrors.email ||
+    (emailFormatInvalid ? "Email không đúng định dạng." : "");
+
   return (
     <Modal show={show} onHide={onHide} size="lg" centered>
       <Modal.Header closeButton className="border-0 pb-0">
@@ -35,14 +47,23 @@ export default function UserFormModal({
       <Form onSubmit={onSubmit} noValidate>
         <Modal.Body className="px-4">
           {error ? (
-            <Alert variant="danger" dismissible onClose={clearError} className="py-2">
+            <Alert
+              variant="danger"
+              dismissible
+              onClose={clearError}
+              className="py-2"
+            >
               {error}
             </Alert>
           ) : null}
 
           <Row className="g-3">
             <Col md={6}>
-              <FieldGroup label="Ho va ten" required error={fieldErrors.fullName}>
+              <FieldGroup
+                label="Ho va ten"
+                required
+                error={fieldErrors.fullName}
+              >
                 <Form.Control
                   type="text"
                   value={formData.fullName}
@@ -55,11 +76,11 @@ export default function UserFormModal({
               </FieldGroup>
             </Col>
             <Col md={6}>
-              <FieldGroup label="Email" required error={fieldErrors.email}>
+              <FieldGroup label="Email" required error={emailError}>
                 <Form.Control
                   type="email"
                   value={formData.email}
-                  isInvalid={!!fieldErrors.email}
+                  isInvalid={!!emailError}
                   onChange={(e) => {
                     onField("email", e.target.value);
                     onClearFieldError("email");
@@ -71,7 +92,11 @@ export default function UserFormModal({
             {mode === "add" ? (
               <>
                 <Col md={6}>
-                  <FieldGroup label="Mat khau" required error={fieldErrors.password}>
+                  <FieldGroup
+                    label="Mat khau"
+                    required
+                    error={fieldErrors.password}
+                  >
                     <Form.Control
                       type="password"
                       value={formData.password}
@@ -85,7 +110,11 @@ export default function UserFormModal({
                   </FieldGroup>
                 </Col>
                 <Col md={6}>
-                  <FieldGroup label="Xac nhan mat khau" required error={fieldErrors.confirmPassword}>
+                  <FieldGroup
+                    label="Xac nhan mat khau"
+                    required
+                    error={fieldErrors.confirmPassword}
+                  >
                     <Form.Control
                       type="password"
                       value={formData.confirmPassword}
@@ -116,7 +145,10 @@ export default function UserFormModal({
             </Col>
             <Col md={6}>
               <FieldGroup label="Vai tro">
-                <Form.Select value={formData.role} onChange={(e) => onField("role", e.target.value)}>
+                <Form.Select
+                  value={formData.role}
+                  onChange={(e) => onField("role", e.target.value)}
+                >
                   <option value="Customer">Khach hang</option>
                   <option value="Staff">Nhan vien</option>
                   <option value="Admin">Quan tri vien</option>
@@ -125,7 +157,10 @@ export default function UserFormModal({
             </Col>
             <Col md={6}>
               <FieldGroup label="Trang thai">
-                <Form.Select value={formData.membershipStatus} onChange={(e) => onField("membershipStatus", e.target.value)}>
+                <Form.Select
+                  value={formData.membershipStatus}
+                  onChange={(e) => onField("membershipStatus", e.target.value)}
+                >
                   <option value="Active">Hoat dong</option>
                   <option value="Suspended">Tam khoa</option>
                 </Form.Select>
@@ -135,14 +170,27 @@ export default function UserFormModal({
 
           {mode === "edit" ? (
             <Alert variant="info" className="mt-3 mb-0 py-2">
-              De thay doi mat khau, nguoi dung can dung chuc nang doi mat khau trong ho so cua ho.
+              De thay doi mat khau, nguoi dung can dung chuc nang doi mat khau
+              trong ho so cua ho.
             </Alert>
           ) : null}
         </Modal.Body>
         <Modal.Footer className="border-0 pt-0">
-          <Button variant="outline-secondary" onClick={onHide} disabled={formLoading}>Huy</Button>
-          <Button variant={mode === "add" ? "success" : "primary"} type="submit" disabled={formLoading}>
-            {formLoading ? <Spinner size="sm" animation="border" className="me-1" /> : null}
+          <Button
+            variant="outline-secondary"
+            onClick={onHide}
+            disabled={formLoading}
+          >
+            Huy
+          </Button>
+          <Button
+            variant={mode === "add" ? "success" : "primary"}
+            type="submit"
+            disabled={formLoading}
+          >
+            {formLoading ? (
+              <Spinner size="sm" animation="border" className="me-1" />
+            ) : null}
             {submitText}
           </Button>
         </Modal.Footer>

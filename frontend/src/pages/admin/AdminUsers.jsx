@@ -50,6 +50,9 @@ const EMPTY_FORM = {
   membershipStatus: "Active",
 };
 
+const STRICT_EMAIL_REGEX =
+  /^[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*@[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)+$/;
+
 // ─── Validation ───────────────────────────────────────────────────────────────
 const validateAddForm = (form) => {
   const errors = {};
@@ -60,7 +63,7 @@ const validateAddForm = (form) => {
 
   if (!form.email.trim()) {
     errors.email = "Email không được để trống.";
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(form.email.trim())) {
+  } else if (!STRICT_EMAIL_REGEX.test(form.email.trim().toLowerCase())) {
     errors.email = "Email không đúng định dạng.";
   }
 
@@ -94,7 +97,7 @@ const validateEditForm = (form) => {
 
   if (!form.email.trim()) {
     errors.email = "Email không được để trống.";
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(form.email.trim())) {
+  } else if (!STRICT_EMAIL_REGEX.test(form.email.trim().toLowerCase())) {
     errors.email = "Email không đúng định dạng.";
   }
 
@@ -124,7 +127,7 @@ export default function AdminUsers() {
   // ─── Modals ──────────────────────────────────────
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showLockModal, setShowLockModal] = useState(false);   // Khóa tài khoản
+  const [showLockModal, setShowLockModal] = useState(false); // Khóa tài khoản
   const [showUnlockModal, setShowUnlockModal] = useState(false); // Mở khóa
 
   // ─── Form ────────────────────────────────────────
@@ -174,11 +177,15 @@ export default function AdminUsers() {
 
   const stats = {
     total: allUsers.length,
-    admin: allUsers.filter((u) => (u.role || "").toLowerCase() === "admin").length,
-    staff: allUsers.filter((u) => (u.role || "").toLowerCase() === "staff").length,
-    customer: allUsers.filter((u) => (u.role || "").toLowerCase() === "customer").length,
+    admin: allUsers.filter((u) => (u.role || "").toLowerCase() === "admin")
+      .length,
+    staff: allUsers.filter((u) => (u.role || "").toLowerCase() === "staff")
+      .length,
+    customer: allUsers.filter(
+      (u) => (u.role || "").toLowerCase() === "customer",
+    ).length,
     suspended: allUsers.filter(
-      (u) => (u.membershipStatus || "").toLowerCase() === "suspended"
+      (u) => (u.membershipStatus || "").toLowerCase() === "suspended",
     ).length,
   };
 
@@ -317,7 +324,10 @@ export default function AdminUsers() {
         role: targetUser.role,
         membershipStatus: "Suspended",
       });
-      showSuccess(res.message || `Đã khóa tài khoản ${targetUser.fullName || targetUser.email}.`);
+      showSuccess(
+        res.message ||
+          `Đã khóa tài khoản ${targetUser.fullName || targetUser.email}.`,
+      );
       setShowLockModal(false);
       setTargetUser(null);
       loadUsers();
@@ -346,7 +356,10 @@ export default function AdminUsers() {
         role: targetUser.role,
         membershipStatus: "Active",
       });
-      showSuccess(res.message || `Đã mở khóa tài khoản ${targetUser.fullName || targetUser.email}.`);
+      showSuccess(
+        res.message ||
+          `Đã mở khóa tài khoản ${targetUser.fullName || targetUser.email}.`,
+      );
       setShowUnlockModal(false);
       setTargetUser(null);
       loadUsers();
@@ -401,11 +414,46 @@ export default function AdminUsers() {
 
       {/* Stat Cards */}
       <Row className="mb-4 g-3">
-        <Col md={3}><SummaryCard label="Tổng tài khoản" value={stats.total} icon="bi-people" color="primary" /></Col>
-        <Col md={3}><SummaryCard label="Quản trị viên" value={stats.admin} icon="bi-shield-fill" color="danger" /></Col>
-        <Col md={3}><SummaryCard label="Nhân viên" value={stats.staff} icon="bi-person-badge" color="info" /></Col>
-        <Col md={3}><SummaryCard label="Khách hàng" value={stats.customer} icon="bi-person-check" color="success" /></Col>
-        <Col md={12}><SummaryCard label="Đang bị khóa" value={stats.suspended} icon="bi-lock-fill" color="warning" /></Col>
+        <Col md={3}>
+          <SummaryCard
+            label="Tổng tài khoản"
+            value={stats.total}
+            icon="bi-people"
+            color="primary"
+          />
+        </Col>
+        <Col md={3}>
+          <SummaryCard
+            label="Quản trị viên"
+            value={stats.admin}
+            icon="bi-shield-fill"
+            color="danger"
+          />
+        </Col>
+        <Col md={3}>
+          <SummaryCard
+            label="Nhân viên"
+            value={stats.staff}
+            icon="bi-person-badge"
+            color="info"
+          />
+        </Col>
+        <Col md={3}>
+          <SummaryCard
+            label="Khách hàng"
+            value={stats.customer}
+            icon="bi-person-check"
+            color="success"
+          />
+        </Col>
+        <Col md={12}>
+          <SummaryCard
+            label="Đang bị khóa"
+            value={stats.suspended}
+            icon="bi-lock-fill"
+            color="warning"
+          />
+        </Col>
       </Row>
 
       {/* Search & Filter */}
@@ -420,7 +468,10 @@ export default function AdminUsers() {
               />
             </Col>
             <Col md={3}>
-              <Form.Select value={filterRole} onChange={(e) => setFilterRole(e.target.value)}>
+              <Form.Select
+                value={filterRole}
+                onChange={(e) => setFilterRole(e.target.value)}
+              >
                 <option value="Tất cả">Tất cả vai trò</option>
                 <option value="Admin">Quản trị viên</option>
                 <option value="Staff">Nhân viên</option>
@@ -428,7 +479,10 @@ export default function AdminUsers() {
               </Form.Select>
             </Col>
             <Col md={3}>
-              <Form.Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+              <Form.Select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+              >
                 <option value="Tất cả">Tất cả trạng thái</option>
                 <option value="Active">Hoạt động</option>
                 <option value="Suspended">Tạm khóa</option>
@@ -470,9 +524,15 @@ export default function AdminUsers() {
             <div className="text-center py-4">
               <EmptyState
                 icon="📭"
-                title={search || filterRole !== "Tất cả" || filterStatus !== "Tất cả" ? "Không tìm thấy tài khoản phù hợp." : "Chưa có tài khoản nào."}
+                title={
+                  search || filterRole !== "Tất cả" || filterStatus !== "Tất cả"
+                    ? "Không tìm thấy tài khoản phù hợp."
+                    : "Chưa có tài khoản nào."
+                }
               />
-              <Button variant="primary" onClick={openAdd}>Thêm tài khoản đầu tiên</Button>
+              <Button variant="primary" onClick={openAdd}>
+                Thêm tài khoản đầu tiên
+              </Button>
             </div>
           ) : (
             <AdminUserTable
