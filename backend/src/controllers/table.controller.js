@@ -57,19 +57,25 @@ export const getTables = async (req, res) => {
     const tableTypeMap = await buildTableTypeMap(tables);
 
     res.json(
-      tables.map((t) => ({
-        _id: t._id.toString(),
-        sourceId: t._id.toString(),
-        name: t.name,
-        tableTypeId: toObjectIdString(t.tableTypeId),
-        tableType:
-          tableTypeMap.get(toObjectIdString(t.tableTypeId))?.name || "",
-        capacity: resolveCapacityFromTypeMap(t, tableTypeMap),
-        status: t.status,
-        description: t.description || "",
-        pricePerHour: t.pricePerHour || 0,
-        pricePerDay: t.pricePerDay || 0,
-      })),
+      tables.map((t) => {
+        const hasValidType = Boolean(
+          tableTypeMap.get(toObjectIdString(t.tableTypeId)),
+        );
+
+        return {
+          _id: t._id.toString(),
+          sourceId: t._id.toString(),
+          name: t.name,
+          tableTypeId: toObjectIdString(t.tableTypeId),
+          tableType:
+            tableTypeMap.get(toObjectIdString(t.tableTypeId))?.name || "",
+          capacity: resolveCapacityFromTypeMap(t, tableTypeMap),
+          status: hasValidType ? t.status : "Maintenance",
+          description: t.description || "",
+          pricePerHour: t.pricePerHour || 0,
+          pricePerDay: t.pricePerDay || 0,
+        };
+      }),
     );
   } catch (err) {
     console.error("getTables error:", err);

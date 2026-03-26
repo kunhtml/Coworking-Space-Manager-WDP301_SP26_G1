@@ -1,4 +1,5 @@
 import TableType from "../models/tableType.js";
+import Table from "../models/table.js";
 
 export const getTableTypes = async (req, res) => {
   try {
@@ -83,10 +84,25 @@ export const updateTableType = async (req, res) => {
 
 export const deleteTableType = async (req, res) => {
   try {
-    const tableType = await TableType.findByIdAndDelete(req.params.id);
+    const tableType = await TableType.findById(req.params.id).lean();
     if (!tableType)
       return res.status(404).json({ message: "Không tìm thấy loại bàn." });
-    res.json({ message: "Xóa loại bàn thành công!" });
+
+    // Any table losing its type is moved to maintenance and unlinked from type.
+    await Table.updateMany(
+      { tableTypeId: tableType._id },
+      {
+        $set: { status: "Maintenance" },
+        $unset: { tableTypeId: "" },
+      },
+    );
+
+    await TableType.findByIdAndDelete(req.params.id);
+
+    res.json({
+      message:
+        "Xóa loại bàn thành công! Các bàn thuộc loại này đã chuyển sang trạng thái Bảo trì.",
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Lỗi khi xóa loại bàn." });
