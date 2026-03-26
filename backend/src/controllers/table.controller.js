@@ -59,27 +59,29 @@ export const getTables = async (req, res) => {
     const tableTypeMap = await buildTableTypeMap(tables);
 
     res.json(
-      tables.map((t) => {
-        const mappedType = tableTypeMap.get(toObjectIdString(t.tableTypeId));
-        const hasValidType = Boolean(mappedType);
-        if (excludeHiddenTypes && mappedType?.isHidden) {
-          return null;
-        }
+      tables
+        .map((t) => {
+          const mappedType = tableTypeMap.get(toObjectIdString(t.tableTypeId));
+          const hasValidType = Boolean(mappedType);
+          if (excludeHiddenTypes && mappedType?.isHidden) {
+            return null;
+          }
 
-        return {
-          _id: t._id.toString(),
-          sourceId: t._id.toString(),
-          name: t.name,
-          tableTypeId: toObjectIdString(t.tableTypeId),
-          tableType: mappedType?.name || "",
-          tableTypeHidden: Boolean(mappedType?.isHidden),
-          capacity: resolveCapacityFromTypeMap(t, tableTypeMap),
-          status: hasValidType ? t.status : "Maintenance",
-          description: t.description || "",
-          pricePerHour: t.pricePerHour || 0,
-          pricePerDay: t.pricePerDay || 0,
-        };
-      }).filter(Boolean),
+          return {
+            _id: t._id.toString(),
+            sourceId: t._id.toString(),
+            name: t.name,
+            tableTypeId: toObjectIdString(t.tableTypeId),
+            tableType: mappedType?.name || "",
+            tableTypeHidden: Boolean(mappedType?.isHidden),
+            capacity: resolveCapacityFromTypeMap(t, tableTypeMap),
+            status: hasValidType ? t.status : "Maintenance",
+            description: t.description || "",
+            pricePerHour: t.pricePerHour || 0,
+            pricePerDay: t.pricePerDay || 0,
+          };
+        })
+        .filter(Boolean),
     );
   } catch (err) {
     console.error("getTables error:", err);

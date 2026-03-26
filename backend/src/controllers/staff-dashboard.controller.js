@@ -139,7 +139,9 @@ export const getStaffTableStatusList = async (req, res) => {
         .select("tableId")
         .lean();
       const activeSet = new Set(stillActive.map((b) => b.tableId?.toString()));
-      const toRelease = occupiedIds.filter((id) => !activeSet.has(id.toString()));
+      const toRelease = occupiedIds.filter(
+        (id) => !activeSet.has(id.toString()),
+      );
       if (toRelease.length > 0) {
         await Table.updateMany(
           { _id: { $in: toRelease } },
@@ -192,7 +194,9 @@ export const getStaffTableStatusList = async (req, res) => {
 
     const upcomingBookings = await Booking.find({
       tableId: { $in: tableIds },
-      status: { $in: ["Pending", "Awaiting_Payment", "Confirmed", "CheckedIn"] },
+      status: {
+        $in: ["Pending", "Awaiting_Payment", "Confirmed", "CheckedIn"],
+      },
       endTime: { $gt: now },
       startTime: { $lt: endOfTomorrow },
     })
@@ -214,7 +218,8 @@ export const getStaffTableStatusList = async (req, res) => {
       if (!upcomingMap.has(key)) upcomingMap.set(key, []);
       upcomingMap.get(key).push({
         id: b._id,
-        bookingCode: b.bookingCode || `#${String(b._id).slice(-6).toUpperCase()}`,
+        bookingCode:
+          b.bookingCode || `#${String(b._id).slice(-6).toUpperCase()}`,
         status: b.status,
         startTime: b.startTime,
         endTime: b.endTime,
@@ -322,11 +327,16 @@ export const getStaffOrders = async (req, res) => {
 
       // Release tables if no other active bookings
       const expiredBookingIds = [
-        ...new Set(expiredOrders.map((o) => o.bookingId?.toString()).filter(Boolean)),
+        ...new Set(
+          expiredOrders.map((o) => o.bookingId?.toString()).filter(Boolean),
+        ),
       ];
       if (expiredBookingIds.length > 0) {
         await Booking.updateMany(
-          { _id: { $in: expiredBookingIds }, status: { $in: ["Pending", "Awaiting_Payment"] } },
+          {
+            _id: { $in: expiredBookingIds },
+            status: { $in: ["Pending", "Awaiting_Payment"] },
+          },
           { $set: { status: "Cancelled" } },
         );
       }
@@ -434,7 +444,9 @@ export const createCounterOrder = async (req, res) => {
 
     // Must have either a table or menu items
     if (!hasTable && !hasMenuItems && !bookingId) {
-      return res.status(400).json({ message: "Vui lòng chọn bàn hoặc ít nhất 1 món." });
+      return res
+        .status(400)
+        .json({ message: "Vui lòng chọn bàn hoặc ít nhất 1 món." });
     }
 
     let booking = null;
@@ -462,10 +474,10 @@ export const createCounterOrder = async (req, res) => {
       // Prevent overlapping with existing bookings
       const overlapping = await Booking.findOne({
         tableId,
-        status: { $in: ["Pending", "Awaiting_Payment", "Confirmed", "CheckedIn"] },
-        $or: [
-          { startTime: { $lt: end }, endTime: { $gt: start } },
-        ],
+        status: {
+          $in: ["Pending", "Awaiting_Payment", "Confirmed", "CheckedIn"],
+        },
+        $or: [{ startTime: { $lt: end }, endTime: { $gt: start } }],
       });
 
       if (overlapping) {
@@ -593,7 +605,12 @@ export const createCounterOrder = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Lỗi tạo counter order: " + err.message, stack: err.stack });
+    res
+      .status(500)
+      .json({
+        message: "Lỗi tạo counter order: " + err.message,
+        stack: err.stack,
+      });
   }
 };
 

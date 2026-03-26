@@ -139,7 +139,8 @@ export default function BookingPage() {
 
   const startTimeOptions = TIME_SLOTS;
   const endTimeOptions = useMemo(
-    () => TIME_SLOTS.filter((slot) => slot.minutes > parseHHMM(selectedTimeStart)),
+    () =>
+      TIME_SLOTS.filter((slot) => slot.minutes > parseHHMM(selectedTimeStart)),
     [selectedTimeStart],
   );
 
@@ -524,7 +525,8 @@ export default function BookingPage() {
               <Row className="g-3 align-items-center mt-1">
                 <Col md={12} className="d-flex justify-content-md-end">
                   <Badge bg="light" text="dark" className="px-3 py-2 border">
-                    Khung giờ: {format12hLabel(selectedTimeStart)} - {format12hLabel(selectedTimeEnd)}
+                    Khung giờ: {format12hLabel(selectedTimeStart)} -{" "}
+                    {format12hLabel(selectedTimeEnd)}
                   </Badge>
                 </Col>
               </Row>
