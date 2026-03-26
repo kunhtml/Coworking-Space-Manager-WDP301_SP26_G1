@@ -21,11 +21,36 @@ import SeatZoneSection from "../../components/staff/SeatZoneSection";
 
 // ── Table status config ─────────────────────────────────────────────────────
 const STATUS_CONFIG = {
-  Available:   { label: "Trống",         bg: "#dcfce7", color: "#16a34a", border: "#10b981" },
-  Occupied:    { label: "Đang sử dụng", bg: "#fee2e2", color: "#dc2626", border: "#ef4444" },
-  Reserved:    { label: "Đã đặt trước", bg: "#fef9c3", color: "#ca8a04", border: "#f59e0b" },
-  Cleaning:    { label: "Đang dọn",     bg: "#dbeafe", color: "#1d4ed8", border: "#3b82f6" },
-  Maintenance: { label: "Bảo trì",      bg: "#f1f5f9", color: "#64748b", border: "#94a3b8" },
+  Available: {
+    label: "Trống",
+    bg: "#dcfce7",
+    color: "#16a34a",
+    border: "#10b981",
+  },
+  Occupied: {
+    label: "Đang sử dụng",
+    bg: "#fee2e2",
+    color: "#dc2626",
+    border: "#ef4444",
+  },
+  Reserved: {
+    label: "Đã đặt trước",
+    bg: "#fef9c3",
+    color: "#ca8a04",
+    border: "#f59e0b",
+  },
+  Cleaning: {
+    label: "Đang dọn",
+    bg: "#dbeafe",
+    color: "#1d4ed8",
+    border: "#3b82f6",
+  },
+  Maintenance: {
+    label: "Bảo trì",
+    bg: "#f1f5f9",
+    color: "#64748b",
+    border: "#94a3b8",
+  },
 };
 
 function getCfg(status) {
@@ -37,10 +62,16 @@ function fmtCur(v) {
 }
 
 function normalizeMenuStatus(item) {
-  const availability = String(item?.availabilityStatus || "").trim().toUpperCase();
+  const availability = String(item?.availabilityStatus || "")
+    .trim()
+    .toUpperCase();
   const stock = Number(item?.stockQuantity || 0);
-  if (["OUT_OF_STOCK", "UNAVAILABLE", "OUTOFSTOCK"].includes(availability)) return "OUT_OF_STOCK";
-  if (["IN_STOCK", "AVAILABLE"].includes(availability)) return stock > 0 ? "AVAILABLE" : "OUT_OF_STOCK";
+  if (["UNAVAILABLE", "DISCONTINUED"].includes(availability))
+    return "UNAVAILABLE";
+  if (["OUT_OF_STOCK", "OUTOFSTOCK"].includes(availability))
+    return "OUT_OF_STOCK";
+  if (["IN_STOCK", "AVAILABLE"].includes(availability))
+    return stock > 0 ? "AVAILABLE" : "OUT_OF_STOCK";
   return stock > 0 ? "AVAILABLE" : "OUT_OF_STOCK";
 }
 
@@ -56,7 +87,10 @@ const BOOKING_STATUS_LABEL = {
 
 function formatTime(d) {
   if (!d) return "";
-  return new Date(d).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+  return new Date(d).toLocaleTimeString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export default function StaffPOSPage() {
@@ -136,12 +170,16 @@ export default function StaffPOSPage() {
   // ── Table filtering ──
   const displayedTables = useMemo(() => {
     let rows = tables;
-    if (tableStatusFilter !== "all") rows = rows.filter((t) => t.status === tableStatusFilter);
-    if (tableTypeFilter !== "all") rows = rows.filter((t) => (t.tableType || "") === tableTypeFilter);
+    if (tableStatusFilter !== "all")
+      rows = rows.filter((t) => t.status === tableStatusFilter);
+    if (tableTypeFilter !== "all")
+      rows = rows.filter((t) => (t.tableType || "") === tableTypeFilter);
     if (tableSearch.trim()) {
       const q = tableSearch.trim().toLowerCase();
-      rows = rows.filter((t) =>
-        (t.name || "").toLowerCase().includes(q) || (t.tableType || "").toLowerCase().includes(q),
+      rows = rows.filter(
+        (t) =>
+          (t.name || "").toLowerCase().includes(q) ||
+          (t.tableType || "").toLowerCase().includes(q),
       );
     }
     return rows;
@@ -149,7 +187,9 @@ export default function StaffPOSPage() {
 
   // ── Unique table types ──
   const tableTypes = useMemo(() => {
-    const types = [...new Set(tables.map((t) => t.tableType || "").filter(Boolean))];
+    const types = [
+      ...new Set(tables.map((t) => t.tableType || "").filter(Boolean)),
+    ];
     return types.sort();
   }, [tables]);
 
@@ -173,16 +213,19 @@ export default function StaffPOSPage() {
     }
     if (menuStockFilter !== "all") {
       items = items.filter((item) => {
-        const isAvailable = normalizeMenuStatus(item) === "AVAILABLE";
-        if (menuStockFilter === "AVAILABLE") return isAvailable;
-        if (menuStockFilter === "OUT_OF_STOCK") return !isAvailable;
+        const status = normalizeMenuStatus(item);
+        if (menuStockFilter === "AVAILABLE") return status === "AVAILABLE";
+        if (menuStockFilter === "OUT_OF_STOCK") return status === "OUT_OF_STOCK";
+        if (menuStockFilter === "UNAVAILABLE") return status === "UNAVAILABLE";
         return true;
       });
     }
     if (menuSearch.trim()) {
       const q = menuSearch.trim().toLowerCase();
-      items = items.filter((item) =>
-        (item.name || "").toLowerCase().includes(q) || (item.description || "").toLowerCase().includes(q),
+      items = items.filter(
+        (item) =>
+          (item.name || "").toLowerCase().includes(q) ||
+          (item.description || "").toLowerCase().includes(q),
       );
     }
     return items;
@@ -190,13 +233,20 @@ export default function StaffPOSPage() {
 
   // ── Cart logic ──
   const cartTotal = useMemo(
-    () => cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0),
+    () =>
+      cart.reduce(
+        (sum, item) =>
+          sum + Number(item.price || 0) * Number(item.quantity || 0),
+        0,
+      ),
     [cart],
   );
 
   const addToCart = (menuItem) => {
     setCart((prev) => {
-      const found = prev.find((item) => String(item.menuItemId) === String(menuItem._id));
+      const found = prev.find(
+        (item) => String(item.menuItemId) === String(menuItem._id),
+      );
       if (found) {
         return prev.map((item) =>
           String(item.menuItemId) === String(menuItem._id)
@@ -204,29 +254,46 @@ export default function StaffPOSPage() {
             : item,
         );
       }
-      return [...prev, { menuItemId: menuItem._id, name: menuItem.name, price: Number(menuItem.price || 0), quantity: 1 }];
+      return [
+        ...prev,
+        {
+          menuItemId: menuItem._id,
+          name: menuItem.name,
+          price: Number(menuItem.price || 0),
+          quantity: 1,
+        },
+      ];
     });
   };
 
   const updateQty = (menuItemId, qty) => {
     const nextQty = Number(qty || 0);
     if (nextQty <= 0) {
-      setCart((prev) => prev.filter((item) => String(item.menuItemId) !== String(menuItemId)));
+      setCart((prev) =>
+        prev.filter((item) => String(item.menuItemId) !== String(menuItemId)),
+      );
       return;
     }
     setCart((prev) =>
-      prev.map((item) => (String(item.menuItemId) === String(menuItemId) ? { ...item, quantity: nextQty } : item)),
+      prev.map((item) =>
+        String(item.menuItemId) === String(menuItemId)
+          ? { ...item, quantity: nextQty }
+          : item,
+      ),
     );
   };
 
   const removeFromCart = (menuItemId) => {
-    setCart((prev) => prev.filter((item) => String(item.menuItemId) !== String(menuItemId)));
+    setCart((prev) =>
+      prev.filter((item) => String(item.menuItemId) !== String(menuItemId)),
+    );
   };
 
   // ── Submit order ──
   const submitOrder = async (payMethod) => {
     if (!selectedTable && !cart.length) {
-      setError("Vui lòng chọn bàn hoặc thêm món vào hoá đơn."); return;
+      setError("Vui lòng chọn bàn hoặc thêm món vào hoá đơn.");
+      return;
     }
 
     setCreating(true);
@@ -257,18 +324,25 @@ export default function StaffPOSPage() {
       if (payMethod === "CASH" && orderId) {
         try {
           await processCounterPayment(orderId, "CASH");
-          setSuccess(`Thanh toán tiền mặt thành công: ${result.orderCode} — ${fmtCur(totalAmt)}`);
+          setSuccess(
+            `Thanh toán tiền mặt thành công: ${result.orderCode} — ${fmtCur(totalAmt)}`,
+          );
         } catch (payErr) {
-          setSuccess(`Tạo đơn thành công: ${result.orderCode}. Lỗi thanh toán: ${payErr.message}`);
+          setSuccess(
+            `Tạo đơn thành công: ${result.orderCode}. Lỗi thanh toán: ${payErr.message}`,
+          );
         }
       } else if (payMethod === "QR_PAYOS" && orderId) {
         try {
           const payResult = await processCounterPayment(orderId, "QR_PAYOS");
-          const checkoutUrl = payResult.checkoutUrl || payResult.payment?.payos?.checkoutUrl;
+          const checkoutUrl =
+            payResult.checkoutUrl || payResult.payment?.payos?.checkoutUrl;
           if (checkoutUrl) {
             window.open(checkoutUrl, "_blank");
           }
-          setSuccess(`Tạo đơn thành công: ${result.orderCode} — Đang chờ thanh toán QR`);
+          setSuccess(
+            `Tạo đơn thành công: ${result.orderCode} — Đang chờ thanh toán QR`,
+          );
         } catch (payErr) {
           // Fallback: try checkout URL from createCounterOrder result
           if (result.payment?.checkoutUrl) {
@@ -277,7 +351,9 @@ export default function StaffPOSPage() {
           setSuccess(`Tạo đơn: ${result.orderCode}. Mở link thanh toán QR...`);
         }
       } else {
-        setSuccess(`Tạo đơn thành công: ${result.orderCode} — ${fmtCur(totalAmt)}`);
+        setSuccess(
+          `Tạo đơn thành công: ${result.orderCode} — ${fmtCur(totalAmt)}`,
+        );
       }
 
       setCart([]);
@@ -298,9 +374,7 @@ export default function StaffPOSPage() {
       {/* Header */}
       <div className="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
         <div>
-          <h2 className="fw-bold mb-1">
-            POS — Tạo đơn tại quầy
-          </h2>
+          <h2 className="fw-bold mb-1">POS — Tạo đơn tại quầy</h2>
           <p className="text-secondary fw-semibold small mb-0">
             Chọn bàn → chọn dịch vụ → tạo đơn
           </p>
@@ -309,7 +383,10 @@ export default function StaffPOSPage() {
           variant="outline-secondary"
           className="fw-semibold rounded-3 d-flex align-items-center gap-2"
           style={{ border: "1.5px solid #cbd5e1", padding: "8px 18px" }}
-          onClick={() => { fetchTables(); fetchMenu(); }}
+          onClick={() => {
+            fetchTables();
+            fetchMenu();
+          }}
           disabled={loadingTables}
         >
           {loadingTables ? "Đang tải..." : "Làm mới"}
@@ -318,12 +395,20 @@ export default function StaffPOSPage() {
 
       {/* Alerts */}
       {success && (
-        <Alert className="border-0 rounded-3 mb-3" style={{ background: "#dcfce7", color: "#15803d" }}>
+        <Alert
+          className="border-0 rounded-3 mb-3"
+          style={{ background: "#dcfce7", color: "#15803d" }}
+        >
           {success}
         </Alert>
       )}
       {error && (
-        <Alert variant="danger" className="rounded-3 mb-3" dismissible onClose={() => setError("")}>
+        <Alert
+          variant="danger"
+          className="rounded-3 mb-3"
+          dismissible
+          onClose={() => setError("")}
+        >
           {error}
         </Alert>
       )}
@@ -332,27 +417,41 @@ export default function StaffPOSPage() {
         {/* ════════  LEFT: Seat Map  ════════ */}
         <Col lg={5} xl={4}>
           <Card className="border-0 shadow-sm" style={{ borderRadius: 16 }}>
-            <Card.Header className="bg-white border-bottom d-flex align-items-center justify-content-between py-3" style={{ borderRadius: "16px 16px 0 0" }}>
-              <h5 className="mb-0 fw-bold">
-                Sơ đồ chỗ ngồi
-              </h5>
-              <small className="text-muted fw-semibold">{tableStats.total} bàn</small>
+            <Card.Header
+              className="bg-white border-bottom d-flex align-items-center justify-content-between py-3"
+              style={{ borderRadius: "16px 16px 0 0" }}
+            >
+              <h5 className="mb-0 fw-bold">Sơ đồ chỗ ngồi</h5>
+              <small className="text-muted fw-semibold">
+                {tableStats.total} bàn
+              </small>
             </Card.Header>
 
             {/* Mini stat chips */}
             <div className="px-3 pt-3">
               <div className="d-flex flex-wrap gap-2 mb-2">
                 {[
-                  { key: "all", label: "Tất cả", count: tableStats.total, bg: "#f1f5f9", color: "#475569" },
+                  {
+                    key: "all",
+                    label: "Tất cả",
+                    count: tableStats.total,
+                    bg: "#f1f5f9",
+                    color: "#475569",
+                  },
                   ...Object.entries(STATUS_CONFIG).map(([key, cfg]) => ({
-                    key, label: cfg.label, count: tableStats[key] || 0, bg: cfg.bg, color: cfg.color,
+                    key,
+                    label: cfg.label,
+                    count: tableStats[key] || 0,
+                    bg: cfg.bg,
+                    color: cfg.color,
                   })),
                 ].map((s) => (
                   <span
                     key={s.key}
                     className="rounded-pill px-2 py-1 fw-bold d-inline-flex align-items-center gap-1"
                     style={{
-                      background: tableStatusFilter === s.key ? s.bg : "#f8fafc",
+                      background:
+                        tableStatusFilter === s.key ? s.bg : "#f8fafc",
                       color: s.color,
                       fontSize: "0.7rem",
                       cursor: "pointer",
@@ -379,12 +478,17 @@ export default function StaffPOSPage() {
                   >
                     <option value="all">Tất cả loại bàn</option>
                     {tableTypes.map((type) => (
-                      <option key={type} value={type}>{type}</option>
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
                     ))}
                   </Form.Select>
                 </Col>
                 <Col xs={6}>
-                  <div className="staff-search-wrap" style={{ borderRadius: 6, padding: "2px 8px" }}>
+                  <div
+                    className="staff-search-wrap"
+                    style={{ borderRadius: 6, padding: "2px 8px" }}
+                  >
                     <input
                       style={{ fontSize: "0.8rem" }}
                       value={tableSearch}
@@ -397,13 +501,26 @@ export default function StaffPOSPage() {
             </div>
 
             {/* Table grid */}
-            <Card.Body className="p-3" style={{ maxHeight: "calc(100vh - 380px)", overflowY: "auto", background: "#f8fafc" }}>
+            <Card.Body
+              className="p-3"
+              style={{
+                maxHeight: "calc(100vh - 380px)",
+                overflowY: "auto",
+                background: "#f8fafc",
+              }}
+            >
               {loadingTables ? (
                 <div className="text-center py-4">
-                  <Spinner animation="border" size="sm" style={{ color: "#6366f1" }} />
+                  <Spinner
+                    animation="border"
+                    size="sm"
+                    style={{ color: "#6366f1" }}
+                  />
                 </div>
               ) : displayedTables.length === 0 ? (
-                <div className="text-center py-4 text-muted small fw-semibold">Không có bàn phù hợp</div>
+                <div className="text-center py-4 text-muted small fw-semibold">
+                  Không có bàn phù hợp
+                </div>
               ) : (
                 (() => {
                   const groupedMap = {};
@@ -421,7 +538,15 @@ export default function StaffPOSPage() {
                       getCfg={getCfg}
                       hoveredId={hoveredId}
                       setHoveredId={setHoveredId}
-                      onOpen={(t) => setSelectedTable(selectedTable && (selectedTable.id || selectedTable._id) === (t.id || t._id) ? null : t)}
+                      onOpen={(t) =>
+                        setSelectedTable(
+                          selectedTable &&
+                            (selectedTable.id || selectedTable._id) ===
+                              (t.id || t._id)
+                            ? null
+                            : t,
+                        )
+                      }
                       formatTime={formatTime}
                       bookingStatusLabel={BOOKING_STATUS_LABEL}
                       colProps={{ xs: 6, xl: 6 }}
@@ -434,18 +559,27 @@ export default function StaffPOSPage() {
 
           {/* Selected table info */}
           {selectedTable && (
-            <Card className="border-0 shadow-sm mt-3" style={{ borderRadius: 16, borderLeft: "4px solid #6366f1" }}>
+            <Card
+              className="border-0 shadow-sm mt-3"
+              style={{ borderRadius: 16, borderLeft: "4px solid #6366f1" }}
+            >
               <Card.Body className="py-3">
                 <div className="d-flex justify-content-between align-items-center mb-2">
-                  <h6 className="fw-bold mb-0">
-                    {selectedTable.name}
-                  </h6>
-                  <Badge className="rounded-pill" style={{ background: getCfg(selectedTable.status).bg, color: getCfg(selectedTable.status).color, border: "none" }}>
+                  <h6 className="fw-bold mb-0">{selectedTable.name}</h6>
+                  <Badge
+                    className="rounded-pill"
+                    style={{
+                      background: getCfg(selectedTable.status).bg,
+                      color: getCfg(selectedTable.status).color,
+                      border: "none",
+                    }}
+                  >
                     {getCfg(selectedTable.status).label}
                   </Badge>
                 </div>
                 <div style={{ fontSize: "0.82rem", color: "#64748b" }}>
-                  {selectedTable.tableType} · {selectedTable.capacity} chỗ · {fmtCur(selectedTable.pricePerHour)}/h
+                  {selectedTable.tableType} · {selectedTable.capacity} chỗ ·{" "}
+                  {fmtCur(selectedTable.pricePerHour)}/h
                 </div>
                 <Row className="g-2 mt-2">
                   <Col xs={6}>
@@ -475,57 +609,102 @@ export default function StaffPOSPage() {
                     />
                   </Col>
                   <Col xs={6}>
-                    <div className="fw-bold text-end" style={{ color: "#6366f1", fontSize: "0.85rem", lineHeight: "31px" }}>
-                      Thuê: {fmtCur(Number(selectedTable.pricePerHour || 0) * Number(durationHours || 0))}
+                    <div
+                      className="fw-bold text-end"
+                      style={{
+                        color: "#6366f1",
+                        fontSize: "0.85rem",
+                        lineHeight: "31px",
+                      }}
+                    >
+                      Thuê:{" "}
+                      {fmtCur(
+                        Number(selectedTable.pricePerHour || 0) *
+                          Number(durationHours || 0),
+                      )}
                     </div>
                   </Col>
                 </Row>
 
                 {/* Upcoming bookings timeline */}
-                {selectedTable.upcomingBookings && selectedTable.upcomingBookings.length > 0 && (
-                  <div className="mt-3 pt-2 border-top">
-                    <div className="fw-bold mb-2" style={{ fontSize: "0.76rem", color: "#64748b" }}>
-                      Lịch đặt sắp tới ({selectedTable.upcomingBookings.length})
-                    </div>
-                    {selectedTable.upcomingBookings.map((b) => {
-                      const start = new Date(b.startTime);
-                      const end = new Date(b.endTime);
-                      const fmtT = (d) => d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
-                      const fmtD = (d) => d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
-                      const isNow = start <= new Date() && end >= new Date();
-                      return (
-                        <div
-                          key={String(b.id)}
-                          className="d-flex align-items-center gap-2 mb-1 rounded-2 px-2 py-1"
-                          style={{
-                            background: isNow ? "#fef2f2" : "#f8fafc",
-                            border: isNow ? "1px solid #fca5a5" : "1px solid #e2e8f0",
-                            fontSize: "0.72rem",
-                          }}
-                        >
-                          <span style={{ color: isNow ? "#dc2626" : "#6366f1", fontWeight: 700, minWidth: 85 }}>
-                            {fmtT(start)} – {fmtT(end)}
-                          </span>
-                          <span className="text-muted" style={{ fontSize: "0.65rem" }}>{fmtD(start)}</span>
-                          <span
-                            className="rounded-pill px-2 ms-auto fw-bold"
+                {selectedTable.upcomingBookings &&
+                  selectedTable.upcomingBookings.length > 0 && (
+                    <div className="mt-3 pt-2 border-top">
+                      <div
+                        className="fw-bold mb-2"
+                        style={{ fontSize: "0.76rem", color: "#64748b" }}
+                      >
+                        Lịch đặt sắp tới (
+                        {selectedTable.upcomingBookings.length})
+                      </div>
+                      {selectedTable.upcomingBookings.map((b) => {
+                        const start = new Date(b.startTime);
+                        const end = new Date(b.endTime);
+                        const fmtT = (d) =>
+                          d.toLocaleTimeString("vi-VN", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          });
+                        const fmtD = (d) =>
+                          d.toLocaleDateString("vi-VN", {
+                            day: "2-digit",
+                            month: "2-digit",
+                          });
+                        const isNow = start <= new Date() && end >= new Date();
+                        return (
+                          <div
+                            key={String(b.id)}
+                            className="d-flex align-items-center gap-2 mb-1 rounded-2 px-2 py-1"
                             style={{
-                              fontSize: "0.6rem",
-                              background: isNow ? "#fee2e2" : "#dbeafe",
-                              color: isNow ? "#dc2626" : "#1d4ed8",
+                              background: isNow ? "#fef2f2" : "#f8fafc",
+                              border: isNow
+                                ? "1px solid #fca5a5"
+                                : "1px solid #e2e8f0",
+                              fontSize: "0.72rem",
                             }}
                           >
-                            {isNow ? "Đang dùng" : b.status}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                            <span
+                              style={{
+                                color: isNow ? "#dc2626" : "#6366f1",
+                                fontWeight: 700,
+                                minWidth: 85,
+                              }}
+                            >
+                              {fmtT(start)} – {fmtT(end)}
+                            </span>
+                            <span
+                              className="text-muted"
+                              style={{ fontSize: "0.65rem" }}
+                            >
+                              {fmtD(start)}
+                            </span>
+                            <span
+                              className="rounded-pill px-2 ms-auto fw-bold"
+                              style={{
+                                fontSize: "0.6rem",
+                                background: isNow ? "#fee2e2" : "#dbeafe",
+                                color: isNow ? "#dc2626" : "#1d4ed8",
+                              }}
+                            >
+                              {isNow ? "Đang dùng" : b.status}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
 
                 {/* No upcoming bookings */}
-                {(!selectedTable.upcomingBookings || selectedTable.upcomingBookings.length === 0) && (
-                  <div className="mt-2 pt-2 border-top text-center" style={{ fontSize: "0.72rem", color: "#16a34a", fontWeight: 600 }}>
+                {(!selectedTable.upcomingBookings ||
+                  selectedTable.upcomingBookings.length === 0) && (
+                  <div
+                    className="mt-2 pt-2 border-top text-center"
+                    style={{
+                      fontSize: "0.72rem",
+                      color: "#16a34a",
+                      fontWeight: 600,
+                    }}
+                  >
                     Không có lịch đặt — bàn trống hoàn toàn
                   </div>
                 )}
@@ -540,12 +719,15 @@ export default function StaffPOSPage() {
             {/* Menu items */}
             <Col xl={8}>
               <Card className="border-0 shadow-sm" style={{ borderRadius: 16 }}>
-                <Card.Header className="bg-white border-bottom py-3" style={{ borderRadius: "16px 16px 0 0" }}>
+                <Card.Header
+                  className="bg-white border-bottom py-3"
+                  style={{ borderRadius: "16px 16px 0 0" }}
+                >
                   <div className="d-flex align-items-center justify-content-between mb-2">
-                    <h5 className="mb-0 fw-bold">
-                      Dịch vụ & Thực đơn
-                    </h5>
-                    <small className="text-muted fw-semibold">{availableMenu.length} món</small>
+                    <h5 className="mb-0 fw-bold">Dịch vụ & Thực đơn</h5>
+                    <small className="text-muted fw-semibold">
+                      {availableMenu.length} món
+                    </small>
                   </div>
                   {/* Category & Stock filters */}
                   <div className="px-1 mt-3">
@@ -559,7 +741,10 @@ export default function StaffPOSPage() {
                         >
                           <option value="all">Tất cả danh mục</option>
                           {categories.map((cat) => (
-                            <option key={String(cat._id)} value={String(cat._id)}>
+                            <option
+                              key={String(cat._id)}
+                              value={String(cat._id)}
+                            >
                               {cat.name}
                             </option>
                           ))}
@@ -575,10 +760,14 @@ export default function StaffPOSPage() {
                           <option value="all">Mọi trạng thái</option>
                           <option value="AVAILABLE">Còn hàng</option>
                           <option value="OUT_OF_STOCK">Tạm hết</option>
+                          <option value="UNAVAILABLE">Hết hàng</option>
                         </Form.Select>
                       </Col>
                       <Col xs={4}>
-                        <div className="staff-search-wrap" style={{ borderRadius: 6, padding: "2px 8px" }}>
+                        <div
+                          className="staff-search-wrap"
+                          style={{ borderRadius: 6, padding: "2px 8px" }}
+                        >
                           <input
                             style={{ fontSize: "0.8rem" }}
                             value={menuSearch}
@@ -590,7 +779,12 @@ export default function StaffPOSPage() {
                     </Row>
                   </div>
                 </Card.Header>
-                <Card.Body style={{ maxHeight: "calc(100vh - 340px)", overflowY: "auto" }}>
+                <Card.Body
+                  style={{
+                    maxHeight: "calc(100vh - 340px)",
+                    overflowY: "auto",
+                  }}
+                >
                   <Row className="g-2">
                     {availableMenu.map((item) => (
                       <Col md={6} xl={4} key={String(item._id)}>
@@ -603,18 +797,56 @@ export default function StaffPOSPage() {
                             transition: "all 0.15s",
                           }}
                           onClick={() => addToCart(item)}
-                          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#6366f1"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(99,102,241,0.12)"; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.boxShadow = "none"; }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = "#6366f1";
+                            e.currentTarget.style.boxShadow =
+                              "0 4px 12px rgba(99,102,241,0.12)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = "#e2e8f0";
+                            e.currentTarget.style.boxShadow = "none";
+                          }}
                         >
-                          <div className="fw-bold" style={{ fontSize: "0.85rem", color: "#0f172a" }}>{item.name}</div>
-                          <div className="text-muted" style={{ fontSize: "0.72rem", flex: 1 }}>{item.description || "--"}</div>
+                          <div
+                            className="fw-bold"
+                            style={{ fontSize: "0.85rem", color: "#0f172a" }}
+                          >
+                            {item.name}
+                          </div>
+                          <div
+                            className="text-muted"
+                            style={{ fontSize: "0.72rem", flex: 1 }}
+                          >
+                            {item.description || "--"}
+                          </div>
                           <div className="d-flex justify-content-between align-items-center mt-1">
-                            <span className="fw-bold" style={{ color: "#15803d", fontSize: "0.85rem" }}>{fmtCur(item.price)}</span>
+                            <span
+                              className="fw-bold"
+                              style={{ color: "#15803d", fontSize: "0.85rem" }}
+                            >
+                              {fmtCur(item.price)}
+                            </span>
                             <div className="d-flex align-items-center gap-1">
-                              <span className="rounded-pill px-2" style={{ background: "#fef9c3", color: "#92400e", fontSize: "0.62rem", fontWeight: 700 }}>
+                              <span
+                                className="rounded-pill px-2"
+                                style={{
+                                  background: "#fef9c3",
+                                  color: "#92400e",
+                                  fontSize: "0.62rem",
+                                  fontWeight: 700,
+                                }}
+                              >
                                 Còn: {Number(item.stockQuantity || 0)}
                               </span>
-                              <span className="rounded-pill px-2" style={{ background: "#eef2ff", color: "#6366f1", fontSize: "0.68rem", fontWeight: 700 }}>
+                              <span
+                                className="rounded-pill px-2"
+                                style={{
+                                  background: "#eef2ff",
+                                  color: "#6366f1",
+                                  fontSize: "0.68rem",
+                                  fontWeight: 700,
+                                }}
+                              >
                                 Thêm
                               </span>
                             </div>
@@ -623,7 +855,9 @@ export default function StaffPOSPage() {
                       </Col>
                     ))}
                     {availableMenu.length === 0 && (
-                      <div className="text-center py-4 text-muted small fw-semibold">Không có món phù hợp</div>
+                      <div className="text-center py-4 text-muted small fw-semibold">
+                        Không có món phù hợp
+                      </div>
                     )}
                   </Row>
                 </Card.Body>
@@ -632,26 +866,56 @@ export default function StaffPOSPage() {
 
             {/* Hoá đơn */}
             <Col xl={4}>
-              <Card className="border-0 shadow-sm" style={{ borderRadius: 16, position: "sticky", top: 16 }}>
-                <Card.Header className="bg-white border-bottom py-3 d-flex justify-content-between align-items-center" style={{ borderRadius: "16px 16px 0 0" }}>
-                  <h5 className="mb-0 fw-bold">
-                    Hoá đơn
-                  </h5>
+              <Card
+                className="border-0 shadow-sm"
+                style={{ borderRadius: 16, position: "sticky", top: 16 }}
+              >
+                <Card.Header
+                  className="bg-white border-bottom py-3 d-flex justify-content-between align-items-center"
+                  style={{ borderRadius: "16px 16px 0 0" }}
+                >
+                  <h5 className="mb-0 fw-bold">Hoá đơn</h5>
                   {selectedTable ? (
-                    <Badge pill style={{ background: "#6366f1", border: "none", fontSize: "0.78rem" }}>
+                    <Badge
+                      pill
+                      style={{
+                        background: "#6366f1",
+                        border: "none",
+                        fontSize: "0.78rem",
+                      }}
+                    >
                       {selectedTable.name}
                     </Badge>
                   ) : cart.length > 0 ? (
-                    <Badge pill style={{ background: "#f59e0b", border: "none", fontSize: "0.78rem" }}>
+                    <Badge
+                      pill
+                      style={{
+                        background: "#f59e0b",
+                        border: "none",
+                        fontSize: "0.78rem",
+                      }}
+                    >
                       Mua mang đi
                     </Badge>
                   ) : null}
                 </Card.Header>
-                <Card.Body style={{ maxHeight: "calc(100vh - 420px)", overflowY: "auto" }}>
+                <Card.Body
+                  style={{
+                    maxHeight: "calc(100vh - 420px)",
+                    overflowY: "auto",
+                  }}
+                >
                   {!selectedTable && cart.length === 0 ? (
                     <div className="text-center py-4">
-                      <div className="text-muted fw-semibold small mt-1">Hoá đơn trống</div>
-                      <div className="text-muted" style={{ fontSize: "0.72rem" }}>Chọn bàn hoặc thêm món từ menu</div>
+                      <div className="text-muted fw-semibold small mt-1">
+                        Hoá đơn trống
+                      </div>
+                      <div
+                        className="text-muted"
+                        style={{ fontSize: "0.72rem" }}
+                      >
+                        Chọn bàn hoặc thêm món từ menu
+                      </div>
                     </div>
                   ) : (
                     <>
@@ -660,45 +924,88 @@ export default function StaffPOSPage() {
                         <div className="mb-2 pb-2 border-bottom">
                           <div className="d-flex justify-content-between align-items-start">
                             <div>
-                              <div className="fw-bold d-flex align-items-center" style={{ fontSize: "0.84rem", color: "#6366f1" }}>
+                              <div
+                                className="fw-bold d-flex align-items-center"
+                                style={{
+                                  fontSize: "0.84rem",
+                                  color: "#6366f1",
+                                }}
+                              >
                                 {selectedTable.name}
                                 <button
                                   type="button"
                                   className="btn btn-sm p-0 ms-2"
-                                  style={{ color: "#ef4444", fontSize: "0.78rem" }}
+                                  style={{
+                                    color: "#ef4444",
+                                    fontSize: "0.78rem",
+                                  }}
                                   onClick={() => setSelectedTable(null)}
                                 >
                                   ×
                                 </button>
                               </div>
                               <div className="d-flex align-items-center gap-2 mt-1">
-                                <span className="text-muted" style={{ fontSize: "0.72rem" }}>
-                                  {selectedTable.tableType} · {fmtCur(selectedTable.pricePerHour)}/h
+                                <span
+                                  className="text-muted"
+                                  style={{ fontSize: "0.72rem" }}
+                                >
+                                  {selectedTable.tableType} ·{" "}
+                                  {fmtCur(selectedTable.pricePerHour)}/h
                                 </span>
-                                <div className="d-flex align-items-center rounded" style={{ background: "#f8fafc", border: "1px solid #cbd5e1" }}>
+                                <div
+                                  className="d-flex align-items-center rounded"
+                                  style={{
+                                    background: "#f8fafc",
+                                    border: "1px solid #cbd5e1",
+                                  }}
+                                >
                                   <button
                                     className="btn btn-sm p-0 text-secondary d-flex align-items-center justify-content-center hover-bg-light"
                                     style={{ width: 24, height: 24 }}
-                                    onClick={() => setDurationHours(Math.max(1, durationHours - 1))}
+                                    onClick={() =>
+                                      setDurationHours(
+                                        Math.max(1, durationHours - 1),
+                                      )
+                                    }
                                   >
                                     -
                                   </button>
-                                  <div className="fw-bold text-center" style={{ fontSize: "0.75rem", width: 20, color: "#334155" }}>
+                                  <div
+                                    className="fw-bold text-center"
+                                    style={{
+                                      fontSize: "0.75rem",
+                                      width: 20,
+                                      color: "#334155",
+                                    }}
+                                  >
                                     {durationHours}
                                   </div>
                                   <button
                                     className="btn btn-sm p-0 text-secondary d-flex align-items-center justify-content-center hover-bg-light"
                                     style={{ width: 24, height: 24 }}
-                                    onClick={() => setDurationHours(durationHours + 1)}
+                                    onClick={() =>
+                                      setDurationHours(durationHours + 1)
+                                    }
                                   >
                                     +
                                   </button>
                                 </div>
-                                <span className="text-muted fw-semibold" style={{ fontSize: "0.72rem" }}>giờ</span>
+                                <span
+                                  className="text-muted fw-semibold"
+                                  style={{ fontSize: "0.72rem" }}
+                                >
+                                  giờ
+                                </span>
                               </div>
                             </div>
-                            <span className="fw-bold" style={{ color: "#15803d", fontSize: "0.85rem" }}>
-                              {fmtCur(Number(selectedTable.pricePerHour || 0) * Number(durationHours || 0))}
+                            <span
+                              className="fw-bold"
+                              style={{ color: "#15803d", fontSize: "0.85rem" }}
+                            >
+                              {fmtCur(
+                                Number(selectedTable.pricePerHour || 0) *
+                                  Number(durationHours || 0),
+                              )}
                             </span>
                           </div>
                         </div>
@@ -706,14 +1013,31 @@ export default function StaffPOSPage() {
 
                       {/* Menu items */}
                       {cart.length > 0 && (
-                        <div className="mb-1" style={{ fontSize: "0.68rem", color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                        <div
+                          className="mb-1"
+                          style={{
+                            fontSize: "0.68rem",
+                            color: "#64748b",
+                            fontWeight: 700,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
+                          }}
+                        >
                           Dịch vụ & Thực đơn
                         </div>
                       )}
                       {cart.map((item) => (
-                        <div key={String(item.menuItemId)} className="mb-2 pb-2 border-bottom">
+                        <div
+                          key={String(item.menuItemId)}
+                          className="mb-2 pb-2 border-bottom"
+                        >
                           <div className="d-flex justify-content-between align-items-start">
-                            <div className="fw-semibold" style={{ fontSize: "0.84rem" }}>{item.name}</div>
+                            <div
+                              className="fw-semibold"
+                              style={{ fontSize: "0.84rem" }}
+                            >
+                              {item.name}
+                            </div>
                             <button
                               type="button"
                               className="btn btn-sm p-0"
@@ -728,32 +1052,67 @@ export default function StaffPOSPage() {
                               <button
                                 type="button"
                                 className="btn btn-sm rounded-circle"
-                                style={{ width: 26, height: 26, background: "#f1f5f9", border: "none", fontSize: "0.72rem", fontWeight: 700 }}
-                                onClick={() => updateQty(item.menuItemId, item.quantity - 1)}
+                                style={{
+                                  width: 26,
+                                  height: 26,
+                                  background: "#f1f5f9",
+                                  border: "none",
+                                  fontSize: "0.72rem",
+                                  fontWeight: 700,
+                                }}
+                                onClick={() =>
+                                  updateQty(item.menuItemId, item.quantity - 1)
+                                }
                               >
                                 −
                               </button>
-                              <span className="fw-bold px-1" style={{ fontSize: "0.85rem", minWidth: 20, textAlign: "center" }}>
+                              <span
+                                className="fw-bold px-1"
+                                style={{
+                                  fontSize: "0.85rem",
+                                  minWidth: 20,
+                                  textAlign: "center",
+                                }}
+                              >
                                 {item.quantity}
                               </span>
                               <button
                                 type="button"
                                 className="btn btn-sm rounded-circle"
-                                style={{ width: 26, height: 26, background: "#eef2ff", border: "none", color: "#6366f1", fontSize: "0.72rem", fontWeight: 700 }}
-                                onClick={() => updateQty(item.menuItemId, item.quantity + 1)}
+                                style={{
+                                  width: 26,
+                                  height: 26,
+                                  background: "#eef2ff",
+                                  border: "none",
+                                  color: "#6366f1",
+                                  fontSize: "0.72rem",
+                                  fontWeight: 700,
+                                }}
+                                onClick={() =>
+                                  updateQty(item.menuItemId, item.quantity + 1)
+                                }
                               >
                                 +
                               </button>
                             </div>
-                            <span className="fw-bold" style={{ color: "#15803d", fontSize: "0.82rem" }}>
-                              {fmtCur(Number(item.price || 0) * Number(item.quantity || 0))}
+                            <span
+                              className="fw-bold"
+                              style={{ color: "#15803d", fontSize: "0.82rem" }}
+                            >
+                              {fmtCur(
+                                Number(item.price || 0) *
+                                  Number(item.quantity || 0),
+                              )}
                             </span>
                           </div>
                         </div>
                       ))}
 
                       {selectedTable && cart.length === 0 && (
-                        <div className="text-center py-2 text-muted" style={{ fontSize: "0.72rem" }}>
+                        <div
+                          className="text-center py-2 text-muted"
+                          style={{ fontSize: "0.72rem" }}
+                        >
                           (Tuỳ chọn) Thêm đồ ăn/uống từ menu
                         </div>
                       )}
@@ -765,11 +1124,21 @@ export default function StaffPOSPage() {
                 <div className="px-3 pb-3">
                   {(selectedTable || cart.length > 0) && (
                     <>
-                      <div className="rounded-3 p-2 mb-2" style={{ background: "#f8fafc", fontSize: "0.8rem" }}>
+                      <div
+                        className="rounded-3 p-2 mb-2"
+                        style={{ background: "#f8fafc", fontSize: "0.8rem" }}
+                      >
                         {selectedTable && (
                           <div className="d-flex justify-content-between">
-                            <span style={{ color: "#64748b" }}>Thuê bàn ({durationHours}h)</span>
-                            <strong>{fmtCur(Number(selectedTable.pricePerHour || 0) * Number(durationHours || 0))}</strong>
+                            <span style={{ color: "#64748b" }}>
+                              Thuê bàn ({durationHours}h)
+                            </span>
+                            <strong>
+                              {fmtCur(
+                                Number(selectedTable.pricePerHour || 0) *
+                                  Number(durationHours || 0),
+                              )}
+                            </strong>
                           </div>
                         )}
                         {cartTotal > 0 && (
@@ -781,8 +1150,16 @@ export default function StaffPOSPage() {
                         <hr className="my-1" />
                         <div className="d-flex justify-content-between">
                           <strong>Tổng cộng</strong>
-                          <strong style={{ color: "#6366f1", fontSize: "1.1rem" }}>
-                            {fmtCur(cartTotal + (selectedTable ? Number(selectedTable.pricePerHour || 0) * Number(durationHours || 0) : 0))}
+                          <strong
+                            style={{ color: "#6366f1", fontSize: "1.1rem" }}
+                          >
+                            {fmtCur(
+                              cartTotal +
+                                (selectedTable
+                                  ? Number(selectedTable.pricePerHour || 0) *
+                                    Number(durationHours || 0)
+                                  : 0),
+                            )}
                           </strong>
                         </div>
                       </div>
@@ -801,7 +1178,9 @@ export default function StaffPOSPage() {
                           onClick={() => submitOrder("CASH")}
                         >
                           {creating ? (
-                            <><Spinner size="sm" /> .....</>
+                            <>
+                              <Spinner size="sm" /> .....
+                            </>
                           ) : (
                             <>Tiền mặt</>
                           )}
@@ -818,7 +1197,9 @@ export default function StaffPOSPage() {
                           onClick={() => submitOrder("QR_PAYOS")}
                         >
                           {creating ? (
-                            <><Spinner size="sm" /> .....</>
+                            <>
+                              <Spinner size="sm" /> .....
+                            </>
                           ) : (
                             <>QR PayOS</>
                           )}

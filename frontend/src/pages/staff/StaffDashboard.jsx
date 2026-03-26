@@ -14,10 +14,10 @@ export function meta() {
 }
 
 const ORDER_STATUS_UI = {
-  PENDING:   { label: "Chờ xử lý", cls: "bg-warning-subtle text-warning" },
+  PENDING: { label: "Chờ xử lý", cls: "bg-warning-subtle text-warning" },
   CONFIRMED: { label: "Đã xác nhận", cls: "bg-primary-subtle text-primary" },
   PREPARING: { label: "Đang chuẩn bị", cls: "bg-info-subtle text-info" },
-  SERVED:    { label: "Đã phục vụ", cls: "bg-success-subtle text-success" },
+  SERVED: { label: "Đã phục vụ", cls: "bg-success-subtle text-success" },
   COMPLETED: { label: "Hoàn tất", cls: "bg-secondary-subtle text-secondary" },
   CANCELLED: { label: "Đã hủy", cls: "bg-danger-subtle text-danger" },
 };
@@ -27,12 +27,15 @@ function fmtCur(v) {
 }
 function toTime(v) {
   if (!v) return "--";
-  return new Date(v).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+  return new Date(v).toLocaleTimeString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export default function StaffDashboard() {
   const navigate = useNavigate();
-  const [stats, setStats]     = useState(null);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(null);
 
@@ -62,13 +65,15 @@ export default function StaffDashboard() {
           value: String(stats.orders.total),
           label: "Đơn hàng hôm nay",
           trend: `${stats.orders.COMPLETED} hoàn tất`,
-          trendClass: stats.orders.COMPLETED > 0 ? "text-success" : "text-secondary",
+          trendClass:
+            stats.orders.COMPLETED > 0 ? "text-success" : "text-secondary",
         },
         {
           iconWrap: "staff-stat-icon bg-warning-subtle text-warning",
           value: String(stats.orders.PENDING),
           label: "Đơn chờ xử lý",
-          trend: stats.orders.PENDING > 0 ? "Cần xử lý ngay" : "Không có đơn chờ",
+          trend:
+            stats.orders.PENDING > 0 ? "Cần xử lý ngay" : "Không có đơn chờ",
           trendClass: stats.orders.PENDING > 0 ? "text-danger" : "text-success",
         },
         {
@@ -76,7 +81,8 @@ export default function StaffDashboard() {
           value: `${stats.tables.occupied}/${stats.tables.total}`,
           label: "Bàn đang sử dụng",
           trend: `${stats.tables.available} bàn trống`,
-          trendClass: stats.tables.available > 0 ? "text-success" : "text-danger",
+          trendClass:
+            stats.tables.available > 0 ? "text-success" : "text-danger",
         },
         {
           iconWrap: "staff-stat-icon bg-primary-subtle text-primary",
@@ -124,8 +130,12 @@ export default function StaffDashboard() {
                 <Card className="border-0 shadow-sm staff-panel-card h-100">
                   <Card.Body>
                     <h3 className="fw-bold mb-1 mt-3">{card.value}</h3>
-                    <div className="text-secondary fw-semibold mb-2">{card.label}</div>
-                    <small className={`${card.trendClass} fw-semibold`}>{card.trend}</small>
+                    <div className="text-secondary fw-semibold mb-2">
+                      {card.label}
+                    </div>
+                    <small className={`${card.trendClass} fw-semibold`}>
+                      {card.trend}
+                    </small>
                   </Card.Body>
                 </Card>
               </Col>
@@ -162,40 +172,80 @@ export default function StaffDashboard() {
             <Col lg={4}>
               <Card className="border-0 shadow-sm staff-panel-card h-100">
                 <Card.Header className="bg-white border-bottom">
-                  <h5 className="mb-0 fw-bold">
-                    Thống kê đơn hàng hôm nay
-                  </h5>
+                  <h5 className="mb-0 fw-bold">Thống kê đơn hàng hôm nay</h5>
                 </Card.Header>
                 <Card.Body>
                   {stats ? (
                     <div className="d-flex flex-column gap-3 mt-1">
                       {[
-                        { key: "PENDING", label: "Chờ xử lý", cls: "bg-warning-subtle text-warning" },
-                        { key: "CONFIRMED", label: "Đã xác nhận", cls: "bg-primary-subtle text-primary" },
-                        { key: "PREPARING", label: "Đang chuẩn bị", cls: "bg-info-subtle text-info" },
-                        { key: "SERVED", label: "Đã phục vụ", cls: "bg-success-subtle text-success" },
-                        { key: "COMPLETED", label: "Hoàn tất", cls: "bg-secondary-subtle text-secondary" },
-                        { key: "CANCELLED", label: "Đã hủy", cls: "bg-danger-subtle text-danger" },
+                        {
+                          key: "PENDING",
+                          label: "Chờ xử lý",
+                          cls: "bg-warning-subtle text-warning",
+                        },
+                        {
+                          key: "CONFIRMED",
+                          label: "Đã xác nhận",
+                          cls: "bg-primary-subtle text-primary",
+                        },
+                        {
+                          key: "PREPARING",
+                          label: "Đang chuẩn bị",
+                          cls: "bg-info-subtle text-info",
+                        },
+                        {
+                          key: "SERVED",
+                          label: "Đã phục vụ",
+                          cls: "bg-success-subtle text-success",
+                        },
+                        {
+                          key: "COMPLETED",
+                          label: "Hoàn tất",
+                          cls: "bg-secondary-subtle text-secondary",
+                        },
+                        {
+                          key: "CANCELLED",
+                          label: "Đã hủy",
+                          cls: "bg-danger-subtle text-danger",
+                        },
                       ].map(({ key, label, cls }) => {
                         const count = stats.orders[key] || 0;
-                        const pct   = stats.orders.total > 0 ? Math.round((count / stats.orders.total) * 100) : 0;
+                        const pct =
+                          stats.orders.total > 0
+                            ? Math.round((count / stats.orders.total) * 100)
+                            : 0;
                         return (
                           <div key={key}>
                             <div className="d-flex justify-content-between mb-1">
-                              <span className="fw-semibold small d-flex align-items-center gap-1">{label}</span>
-                              <span className={`fw-bold small rounded-pill px-2 ${cls}`}>{count}</span>
+                              <span className="fw-semibold small d-flex align-items-center gap-1">
+                                {label}
+                              </span>
+                              <span
+                                className={`fw-bold small rounded-pill px-2 ${cls}`}
+                              >
+                                {count}
+                              </span>
                             </div>
-                            <div className="progress" style={{ height: 6, borderRadius: 8 }}>
+                            <div
+                              className="progress"
+                              style={{ height: 6, borderRadius: 8 }}
+                            >
                               <div
                                 className="progress-bar"
                                 style={{
                                   width: `${pct}%`,
-                                  background: key === "PENDING" ? "#f59e0b"
-                                    : key === "CONFIRMED" ? "#6366f1"
-                                    : key === "PREPARING" ? "#0284c7"
-                                    : key === "SERVED" ? "#22c55e"
-                                    : key === "COMPLETED" ? "#64748b"
-                                    : "#ef4444",
+                                  background:
+                                    key === "PENDING"
+                                      ? "#f59e0b"
+                                      : key === "CONFIRMED"
+                                        ? "#6366f1"
+                                        : key === "PREPARING"
+                                          ? "#0284c7"
+                                          : key === "SERVED"
+                                            ? "#22c55e"
+                                            : key === "COMPLETED"
+                                              ? "#64748b"
+                                              : "#ef4444",
                                   borderRadius: 8,
                                   transition: "width 0.5s ease",
                                 }}
@@ -222,7 +272,9 @@ export default function StaffDashboard() {
                       </Button>
                     </div>
                   ) : (
-                    <div className="text-center py-4 text-muted small">Không có dữ liệu</div>
+                    <div className="text-center py-4 text-muted small">
+                      Không có dữ liệu
+                    </div>
                   )}
                 </Card.Body>
               </Card>

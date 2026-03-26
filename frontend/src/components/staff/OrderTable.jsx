@@ -31,12 +31,18 @@ export default function OrderTable({
         {orders.map((order) => (
           <tr key={String(order.id)}>
             <td>
-              <span className="fw-bold" style={{ color: "#6366f1" }}>{order.orderCode}</span>
+              <span className="fw-bold" style={{ color: "#6366f1" }}>
+                {order.orderCode}
+              </span>
             </td>
             <td>
-              <div className="fw-semibold" style={{ color: "#0f172a" }}>{order.customerName || "Khách lẻ"}</div>
+              <div className="fw-semibold" style={{ color: "#0f172a" }}>
+                {order.customerName || "Khách lẻ"}
+              </div>
               {order.customerPhone && (
-                <div style={{ color: "#64748b", fontSize: "0.78rem" }}>{order.customerPhone}</div>
+                <div style={{ color: "#64748b", fontSize: "0.78rem" }}>
+                  {order.customerPhone}
+                </div>
               )}
             </td>
             <td className="fw-semibold">{order.tableName || "--"}</td>
@@ -44,17 +50,22 @@ export default function OrderTable({
               <div style={{ fontSize: "0.82rem", color: "#475569" }}>
                 {(order.items || []).slice(0, 2).map((it) => (
                   <div key={it.menuItemId || it.menuName}>
-                    {it.menuName} <span className="text-muted">x{it.quantity}</span>
+                    {it.menuName}{" "}
+                    <span className="text-muted">x{it.quantity}</span>
                   </div>
                 ))}
                 {(order.items || []).length > 2 && (
-                  <div style={{ color: "#94a3b8" }}>+{order.items.length - 2} món khác</div>
+                  <div style={{ color: "#94a3b8" }}>
+                    +{order.items.length - 2} món khác
+                  </div>
                 )}
                 {!(order.items || []).length && "--"}
               </div>
             </td>
             <td>
-              <span className="fw-bold" style={{ color: "#15803d" }}>{fmtCur(order.totalAmount)}</span>
+              <span className="fw-bold" style={{ color: "#15803d" }}>
+                {fmtCur(order.totalAmount)}
+              </span>
             </td>
             <td>
               <StatusBadge status={order.status} />

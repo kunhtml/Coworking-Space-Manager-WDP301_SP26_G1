@@ -33,7 +33,8 @@ export function meta() {
 // ─── Constants ────────────────────────────────────────────────────────────────
 const STATUS_OPTIONS = [
   { value: "AVAILABLE",   label: "Còn hàng", bg: "success" },
-  { value: "OUT_OF_STOCK",  label: "Tạm hết",  bg: "warning" },
+  { value: "OUT_OF_STOCK", label: "Tạm hết", bg: "warning" },
+  { value: "UNAVAILABLE", label: "Hết hàng", bg: "danger" },
 ];
 
 const STATUS_MAP = Object.fromEntries(STATUS_OPTIONS.map((s) => [s.value, s]));
@@ -53,7 +54,11 @@ function normalizeMenuStatus(item) {
   const availability = String(item?.availabilityStatus || "").trim().toUpperCase();
   const stock = Number(item?.stockQuantity || 0);
 
-  if (["OUT_OF_STOCK", "UNAVAILABLE", "OUTOFSTOCK"].includes(availability)) {
+  if (["UNAVAILABLE", "DISCONTINUED"].includes(availability)) {
+    return "UNAVAILABLE";
+  }
+
+  if (["OUT_OF_STOCK", "OUTOFSTOCK"].includes(availability)) {
     return "OUT_OF_STOCK";
   }
 
@@ -177,11 +182,10 @@ export default function AdminServiceListPage() {
   // ─── Stats ────────────────────────────────────────────────────────────────
   const statsAvailable = items.filter((i) => normalizeMenuStatus(i) === "AVAILABLE").length;
   const statsOutOfStock = items.filter((i) => normalizeMenuStatus(i) === "OUT_OF_STOCK").length;
+  const statsUnavailable = items.filter((i) => normalizeMenuStatus(i) === "UNAVAILABLE").length;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // ITEM CRUD
-  // ═══════════════════════════════════════════════════════════════════════════
-
   // Helper cập nhật 1 field + xoá lỗi của field đó
   const setItemField = (field, value) => {
     setItemForm((prev) => ({ ...prev, [field]: value }));
@@ -404,8 +408,9 @@ export default function AdminServiceListPage() {
         {[
           { label: "Tổng số món",  value: items.length,     icon: "bi-journal-text",         color: "#3b82f6", bg: "#eff6ff" },
           { label: "Còn hàng", value: statsAvailable, icon: "bi-check-circle", color: "#10b981", bg: "#ecfdf5" },
-          { label: "Hết hàng", value: statsOutOfStock, icon: "bi-x-circle", color: "#ef4444", bg: "#fee2e2" },
-          { label: "Danh mục",     value: categories.length,icon: "bi-tags",                 color: "#8b5cf6", bg: "#f5f3ff" },
+          { label: "Tạm hết", value: statsOutOfStock, icon: "bi-exclamation-circle", color: "#f59e0b", bg: "#fffbeb" },
+          { label: "Hết hàng", value: statsUnavailable, icon: "bi-x-circle", color: "#ef4444", bg: "#fee2e2" },
+          { label: "Danh mục", value: categories.length, icon: "bi-tags", color: "#8b5cf6", bg: "#f5f3ff" },
         ].map((s, i) => (
           <Col key={i} style={{ minWidth: 150 }}>
             <Card className="border-0 h-100" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08)", borderRadius: 12 }}>

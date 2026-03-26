@@ -7,13 +7,8 @@ import {
   Container,
   Row,
   Badge,
-  Alert,
 } from "react-bootstrap";
 import { Link, useNavigate } from "react-router";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, EffectCards } from "swiper/modules";
-import "swiper/css";
-import "swiper/css/effect-cards";
 import GuestCustomerNavbar from "../../components/common/GuestCustomerNavbar";
 import { apiClient } from "../../services/api";
 
@@ -172,17 +167,17 @@ export default function Home() {
 
       {/* Hero Section */}
       <section
-        className="hero-section py-5"
+        className="hero-section py-4"
         style={{
           background:
             "linear-gradient(135deg, #1e1b4b 0%, #3730a3 50%, #6366f1 100%)",
-          minHeight: "80vh",
+          minHeight: "68vh",
           color: "white",
         }}
       >
-        <Container className="py-5">
+        <Container className="py-4">
           <Row className="align-items-center min-vh-50">
-            <Col lg={7}>
+            <Col lg={12}>
               <div className="hero-content">
                 <h1 className="display-4 fw-bold mb-4">
                   Không gian học tập lý{" "}
@@ -217,109 +212,9 @@ export default function Home() {
                   </Button>
                 </div>
 
-                <Row className="text-center text-lg-start">
-                  <Col xs={4} lg={4}>
-                    <h3 className="fw-bold mb-1">{loadingData ? "-" : `${totalSeats}+`}</h3>
-                    <p className="small text-white-50 mb-0">Chỗ ngồi</p>
-                  </Col>
-                  <Col xs={4} lg={4}>
-                    <h3 className="fw-bold mb-1">{loadingData ? "-" : `${totalServices}+`}</h3>
-                    <p className="small text-white-50 mb-0">Dịch vụ</p>
-                  </Col>
-                  <Col xs={4} lg={4}>
-                    <h3 className="fw-bold mb-1">
-                      4.9<i className="bi bi-star-fill text-warning ms-1"></i>
-                    </h3>
-                    <p className="small text-white-50 mb-0">Đánh giá</p>
-                  </Col>
-                </Row>
-              </div>
-            </Col>
-
-            <Col lg={5}>
-              <div className="hero-card-preview">
-                <Swiper
-                  modules={[EffectCards, Autoplay]}
-                  effect="cards"
-                  grabCursor={true}
-                  autoplay={{
-                    delay: 3000,
-                    disableOnInteraction: false,
-                  }}
-                  loop={true}
-                  cardsEffect={{
-                    rotate: true,
-                    slideShadows: true,
-                  }}
-                  slidesPerView="auto"
-                  centeredSlides={true}
-                  className="workspace-swiper"
-                  style={{
-                    maxWidth: "400px",
-                    margin: "0 auto",
-                    height: "400px",
-                  }}
-                >
-                  {dataError && (
-                    <Alert variant="warning" className="mb-3">
-                      {dataError}
-                    </Alert>
-                  )}
-                  {workspaceOptions.map((workspace) => (
-                    <SwiperSlide key={workspace.id} className="workspace-slide">
-                      <Card
-                        className="border-0 rounded-4 overflow-hidden h-100 workspace-card"
-                        style={{
-                          maxWidth: "320px",
-                          backdropFilter: "blur(10px)",
-                          background: "rgba(255, 255, 255, 0.95)",
-                          border: "1px solid rgba(255, 255, 255, 0.3)",
-                          boxShadow: "0 10px 20px rgba(0, 0, 0, 0.3)",
-                        }}
-                      >
-                        <Card.Header className="border-0 p-3 bg-transparent">
-                          <div className="d-flex justify-content-between align-items-start">
-                            <Badge bg="success" className="px-3 py-2 fw-normal">
-                              {workspace.badge}
-                            </Badge>
-                            <Badge
-                              bg={workspace.statusColor}
-                              className="px-2 py-1"
-                            >
-                              {workspace.status}
-                            </Badge>
-                          </div>
-                        </Card.Header>
-
-                        <Card.Body className="text-center p-4">
-                          <div
-                            className="workspace-icon mb-3"
-                            style={{ fontSize: "3rem", color: "#6366f1" }}
-                          >
-                            <i className={workspace.icon}></i>
-                          </div>
-                          <h5 className="fw-bold mb-2 text-dark">
-                            {workspace.title}
-                          </h5>
-                          <p className="text-muted small mb-3">
-                            {workspace.description}
-                          </p>
-
-                          {workspace.price ? (
-                            <h4 className="fw-bold text-primary mb-0">
-                              {formatPrice(workspace.price)}
-                              <small>/giờ</small>
-                            </h4>
-                          ) : (
-                            <div className="mb-0">
-                              <span className="text-muted small">Hết chỗ</span>
-                            </div>
-                          )}
-                        </Card.Body>
-                      </Card>
-                    </SwiperSlide>
-                  ))}
-                </Swiper>
+                {dataError ? (
+                  <p className="small text-warning mt-3 mb-0">{dataError}</p>
+                ) : null}
               </div>
             </Col>
           </Row>

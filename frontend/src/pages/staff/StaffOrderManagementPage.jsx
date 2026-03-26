@@ -689,10 +689,19 @@ export default function StaffOrderManagementPage() {
                                 title="Thanh toán tiền mặt"
                                 disabled={payingOrderId === order.id}
                                 onClick={() => retryPayment(order, "CASH")}
-                                style={{ background: "#dcfce7", color: "#15803d", border: "1.5px solid #bbf7d0" }}
+                                style={{
+                                  background: "#dcfce7",
+                                  color: "#15803d",
+                                  border: "1.5px solid #bbf7d0",
+                                }}
                               >
                                 {payingOrderId === order.id ? (
-                                  <i className="bi bi-arrow-clockwise" style={{ animation: "spin 0.8s linear infinite" }} />
+                                  <i
+                                    className="bi bi-arrow-clockwise"
+                                    style={{
+                                      animation: "spin 0.8s linear infinite",
+                                    }}
+                                  />
                                 ) : (
                                   <i className="bi bi-cash-coin" />
                                 )}
@@ -703,21 +712,44 @@ export default function StaffOrderManagementPage() {
                                 title="Thanh toán QR PayOS"
                                 disabled={payingOrderId === order.id}
                                 onClick={() => retryPayment(order, "QR_PAYOS")}
-                                style={{ background: "#eef2ff", color: "#6366f1", border: "1.5px solid #c7d2fe" }}
+                                style={{
+                                  background: "#eef2ff",
+                                  color: "#6366f1",
+                                  border: "1.5px solid #c7d2fe",
+                                }}
                               >
                                 <i className="bi bi-qr-code" />
                               </button>
                               {(() => {
                                 const created = new Date(order.createdAt);
-                                const expiresAt = new Date(created.getTime() + 15 * 60 * 1000);
+                                const expiresAt = new Date(
+                                  created.getTime() + 15 * 60 * 1000,
+                                );
                                 const remainMs = expiresAt - Date.now();
-                                const remainMin = Math.max(0, Math.ceil(remainMs / 60000));
+                                const remainMin = Math.max(
+                                  0,
+                                  Math.ceil(remainMs / 60000),
+                                );
                                 return remainMin > 0 ? (
-                                  <span style={{ fontSize: "0.62rem", color: "#f59e0b", fontWeight: 700, alignSelf: "center" }}>
+                                  <span
+                                    style={{
+                                      fontSize: "0.62rem",
+                                      color: "#f59e0b",
+                                      fontWeight: 700,
+                                      alignSelf: "center",
+                                    }}
+                                  >
                                     ⏰ {remainMin}p
                                   </span>
                                 ) : (
-                                  <span style={{ fontSize: "0.62rem", color: "#dc2626", fontWeight: 700, alignSelf: "center" }}>
+                                  <span
+                                    style={{
+                                      fontSize: "0.62rem",
+                                      color: "#dc2626",
+                                      fontWeight: 700,
+                                      alignSelf: "center",
+                                    }}
+                                  >
                                     Hết hạn
                                   </span>
                                 );
@@ -740,7 +772,9 @@ export default function StaffOrderManagementPage() {
                               {completing === order.id ? (
                                 <i
                                   className="bi bi-arrow-clockwise"
-                                  style={{ animation: "spin 0.8s linear infinite" }}
+                                  style={{
+                                    animation: "spin 0.8s linear infinite",
+                                  }}
                                 />
                               ) : (
                                 <i className="bi bi-check-circle-fill" />
@@ -783,7 +817,9 @@ export default function StaffOrderManagementPage() {
                 ))}
                 <Pagination.Next
                   disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
                 />
               </Pagination>
             </div>

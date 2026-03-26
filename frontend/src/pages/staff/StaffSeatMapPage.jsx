@@ -1,12 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router";
-import {
-  Col,
-  Form,
-  Row,
-  Button,
-  Alert,
-} from "react-bootstrap";
+import { Col, Form, Row, Button, Alert } from "react-bootstrap";
 import AdminLayout from "../../components/admin/AdminLayout";
 import EmptyState from "../../components/common/EmptyState";
 import FilterBar from "../../components/common/FilterBar";
@@ -74,13 +68,13 @@ const STATUS_CONFIG = {
 };
 
 const STATUS_LEGEND = [
-  { status: "Available",   label: "Trống",         dotClass: "staff-dot-green"  },
-  { status: "Occupied",    label: "Đang sử dụng",  dotClass: "staff-dot-red"    },
-  { status: "Reserved",    label: "Đã đặt trước",  dotClass: "staff-dot-yellow" },
-  { status: "Maintenance", label: "Bảo trì",       dotClass: "staff-dot-gray"   },
+  { status: "Available", label: "Trống", dotClass: "staff-dot-green" },
+  { status: "Occupied", label: "Đang sử dụng", dotClass: "staff-dot-red" },
+  { status: "Reserved", label: "Đã đặt trước", dotClass: "staff-dot-yellow" },
+  { status: "Maintenance", label: "Bảo trì", dotClass: "staff-dot-gray" },
 ];
 
-const ALL_STATUSES = Object.keys(STATUS_CONFIG).filter(s => s !== "Cleaning");
+const ALL_STATUSES = Object.keys(STATUS_CONFIG).filter((s) => s !== "Cleaning");
 
 // Booking status badge
 const BOOKING_STATUS_LABEL = {
@@ -94,7 +88,10 @@ const BOOKING_STATUS_LABEL = {
 
 function formatTime(date) {
   if (!date) return "--";
-  return new Date(date).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+  return new Date(date).toLocaleTimeString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function groupByType(tables) {
@@ -114,23 +111,23 @@ function getCfg(status) {
 
 export default function StaffSeatMapPage() {
   const navigate = useNavigate();
-  const [tables, setTables]         = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState("");
+  const [tables, setTables] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
   // filters
   const [filterStatus, setFilterStatus] = useState("all");
-  const [search, setSearch]             = useState("");
+  const [search, setSearch] = useState("");
 
   // hover animation
   const [hoveredId, setHoveredId] = useState(null);
 
   // Modal cập nhật trạng thái
-  const [showModal, setShowModal]   = useState(false);
-  const [selected, setSelected]     = useState(null);
-  const [newStatus, setNewStatus]   = useState("");
-  const [updating, setUpdating]     = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [selected, setSelected] = useState(null);
+  const [newStatus, setNewStatus] = useState("");
+  const [updating, setUpdating] = useState(false);
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
   const fetchTables = useCallback(async () => {
@@ -182,8 +179,8 @@ export default function StaffSeatMapPage() {
   );
 
   // ── Grouped by tableType ───────────────────────────────────────────────────
-  const groupedMap   = useMemo(() => groupByType(displayed), [displayed]);
-  const zoneNames    = Object.keys(groupedMap);
+  const groupedMap = useMemo(() => groupByType(displayed), [displayed]);
+  const zoneNames = Object.keys(groupedMap);
 
   // ── Click table → navigate to order form ──────────────────────────────────
   const handleTableClick = (table) => {
@@ -280,7 +277,12 @@ export default function StaffSeatMapPage() {
             >
               <div
                 className="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
-                style={{ width: 40, height: 40, background: s.badgeBg, fontSize: 18 }}
+                style={{
+                  width: 40,
+                  height: 40,
+                  background: s.badgeBg,
+                  fontSize: 18,
+                }}
               />
               <div>
                 <div
@@ -289,7 +291,10 @@ export default function StaffSeatMapPage() {
                 >
                   {s.count}
                 </div>
-                <div className="small fw-semibold" style={{ color: "#64748b", fontSize: "0.72rem" }}>
+                <div
+                  className="small fw-semibold"
+                  style={{ color: "#64748b", fontSize: "0.72rem" }}
+                >
                   {s.label}
                 </div>
               </div>
@@ -310,13 +315,24 @@ export default function StaffSeatMapPage() {
           >
             <div
               className="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
-              style={{ width: 40, height: 40, background: "#f1f5f9", fontSize: 18 }}
+              style={{
+                width: 40,
+                height: 40,
+                background: "#f1f5f9",
+                fontSize: 18,
+              }}
             />
             <div>
-              <div className="fw-bold lh-1" style={{ color: "#1e293b", fontSize: "1.35rem" }}>
+              <div
+                className="fw-bold lh-1"
+                style={{ color: "#1e293b", fontSize: "1.35rem" }}
+              >
                 {tables.length}
               </div>
-              <div className="small fw-semibold" style={{ color: "#64748b", fontSize: "0.72rem" }}>
+              <div
+                className="small fw-semibold"
+                style={{ color: "#64748b", fontSize: "0.72rem" }}
+              >
                 Tổng số bàn
               </div>
             </div>
@@ -327,7 +343,11 @@ export default function StaffSeatMapPage() {
       {/* ── Filters ── */}
       <FilterBar>
         <Col md={4}>
-          <SearchInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm tên bàn, loại bàn..." />
+          <SearchInput
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Tìm tên bàn, loại bàn..."
+          />
         </Col>
         <Col md={3}>
           <Form.Select
@@ -351,7 +371,9 @@ export default function StaffSeatMapPage() {
               className="d-flex align-items-center gap-1 fw-semibold text-secondary"
               style={{ fontSize: "0.78rem", cursor: "pointer" }}
               onClick={() =>
-                setFilterStatus(filterStatus === item.status ? "all" : item.status)
+                setFilterStatus(
+                  filterStatus === item.status ? "all" : item.status,
+                )
               }
             >
               <span
@@ -375,14 +397,21 @@ export default function StaffSeatMapPage() {
       ) : displayed.length === 0 ? (
         <div>
           <EmptyState
-            title={tables.length === 0 ? "Chưa có dữ liệu bàn" : "Không tìm thấy bàn phù hợp"}
+            title={
+              tables.length === 0
+                ? "Chưa có dữ liệu bàn"
+                : "Không tìm thấy bàn phù hợp"
+            }
           />
           {tables.length > 0 && (
             <Button
               variant="outline-secondary"
               size="sm"
               className="rounded-3 fw-semibold"
-              onClick={() => { setFilterStatus("all"); setSearch(""); }}
+              onClick={() => {
+                setFilterStatus("all");
+                setSearch("");
+              }}
             >
               Xóa bộ lọc
             </Button>

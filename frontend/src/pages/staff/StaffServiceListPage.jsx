@@ -11,6 +11,7 @@ import { apiClient } from "../../services/api";
 const STATUS_UI = {
   AVAILABLE: { label: "Còn hàng", className: "text-success" },
   OUT_OF_STOCK: { label: "Tạm hết", className: "text-danger" },
+  UNAVAILABLE: { label: "Hết hàng", className: "text-secondary" },
 };
 
 function fmtPrice(value) {
@@ -21,7 +22,10 @@ function normalizeMenuStatus(item) {
   const availability = String(item?.availabilityStatus || "AVAILABLE").trim().toUpperCase();
   const stock = Number(item?.stockQuantity || 0);
 
-  if (["OUT_OF_STOCK", "UNAVAILABLE", "OUTOFSTOCK"].includes(availability)) {
+  if (["UNAVAILABLE", "DISCONTINUED"].includes(availability)) {
+    return "UNAVAILABLE";
+  }
+  if (["OUT_OF_STOCK", "OUTOFSTOCK"].includes(availability)) {
     return "OUT_OF_STOCK";
   }
   if (["IN_STOCK", "AVAILABLE"].includes(availability)) {
@@ -112,6 +116,7 @@ export default function StaffServiceListPage() {
             <option value="all">Tất cả trạng thái</option>
             <option value="AVAILABLE">Còn hàng</option>
             <option value="OUT_OF_STOCK">Tạm hết</option>
+            <option value="UNAVAILABLE">Hết hàng</option>
           </Form.Select>
         </Col>
 

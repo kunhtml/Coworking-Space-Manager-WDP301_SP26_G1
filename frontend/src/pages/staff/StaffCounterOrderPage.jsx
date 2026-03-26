@@ -12,7 +12,10 @@ function normalizeMenuStatus(item) {
   const availability = String(item?.availabilityStatus || "").trim().toUpperCase();
   const stock = Number(item?.stockQuantity || 0);
 
-  if (["OUT_OF_STOCK", "UNAVAILABLE", "OUTOFSTOCK"].includes(availability)) {
+  if (["UNAVAILABLE", "DISCONTINUED"].includes(availability)) {
+    return "UNAVAILABLE";
+  }
+  if (["OUT_OF_STOCK", "OUTOFSTOCK"].includes(availability)) {
     return "OUT_OF_STOCK";
   }
   if (["IN_STOCK", "AVAILABLE"].includes(availability)) {

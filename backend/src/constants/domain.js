@@ -32,6 +32,7 @@ export const PAYMENT_METHOD_VALUES = Object.values(PAYMENT_METHOD);
 export const MENU_AVAILABILITY = Object.freeze({
   AVAILABLE: "AVAILABLE",
   OUT_OF_STOCK: "OUT_OF_STOCK",
+  UNAVAILABLE: "UNAVAILABLE",
 });
 
 // Mảng giá trị trạng thái món để validate/input check
@@ -75,14 +76,24 @@ export function normalizePaymentMethod(rawMethod) {
 }
 
 // Chuẩn hóa trạng thái còn hàng dựa trên rawStatus và số lượng tồn kho
-// Nếu qty <= 0 thì luôn OUT_OF_STOCK, ngược lại AVAILABLE
+// - UNAVAILABLE: hết hàng/ngừng bán (ưu tiên giữ nguyên)
+// - OUT_OF_STOCK: tạm hết
+// - AVAILABLE: còn hàng (nếu qty <= 0 sẽ tự chuyển OUT_OF_STOCK)
 export function normalizeMenuAvailability(rawStatus, stockQuantity = 0) {
   const status = String(rawStatus || "")
     .trim()
     .toUpperCase();
   const qty = Number(stockQuantity || 0);
 
-  if (status === MENU_AVAILABILITY.OUT_OF_STOCK) {
+  if (
+    status === MENU_AVAILABILITY.UNAVAILABLE ||
+    status === "UNAVAILABLE" ||
+    status === "DISCONTINUED"
+  ) {
+    return MENU_AVAILABILITY.UNAVAILABLE;
+  }
+
+  if (status === MENU_AVAILABILITY.OUT_OF_STOCK || status === "OUTOFSTOCK") {
     return MENU_AVAILABILITY.OUT_OF_STOCK;
   }
 
