@@ -60,6 +60,46 @@ const STATUS_CONFIG = {
   },
 };
 
+const TIME_SLOT_START_MINUTES = 6 * 60;
+const TIME_SLOT_END_MINUTES = 23 * 60;
+const TIME_SLOT_STEP_MINUTES = 30;
+
+const toHHMM = (totalMinutes) => {
+  const hour = Math.floor(totalMinutes / 60);
+  const minute = totalMinutes % 60;
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+};
+
+const parseHHMM = (value) => {
+  const [h = "0", m = "0"] = String(value || "").split(":");
+  return Number(h) * 60 + Number(m);
+};
+
+const format12hLabel = (value) => {
+  const mins = parseHHMM(value);
+  let hour = Math.floor(mins / 60);
+  const minute = mins % 60;
+  const suffix = hour >= 12 ? "PM" : "AM";
+  if (hour === 0) hour = 12;
+  if (hour > 12) hour -= 12;
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")} ${suffix}`;
+};
+
+const buildTimeSlots = () => {
+  const slots = [];
+  for (
+    let m = TIME_SLOT_START_MINUTES;
+    m <= TIME_SLOT_END_MINUTES;
+    m += TIME_SLOT_STEP_MINUTES
+  ) {
+    const value = toHHMM(m);
+    slots.push({ value, label: format12hLabel(value), minutes: m });
+  }
+  return slots;
+};
+
+const TIME_SLOTS = buildTimeSlots();
+
 function toTypeName(table) {
   const fromObject = String(table?.tableType?.name || "").trim();
   if (fromObject) return fromObject;
@@ -96,6 +136,12 @@ export default function BookingPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [refreshTick, setRefreshTick] = useState(0);
+
+  const startTimeOptions = TIME_SLOTS;
+  const endTimeOptions = useMemo(
+    () => TIME_SLOTS.filter((slot) => slot.minutes > parseHHMM(selectedTimeStart)),
+    [selectedTimeStart],
+  );
 
   const loadAllTables = useCallback(async () => {
     setLoading(true);
@@ -140,6 +186,19 @@ export default function BookingPage() {
 
     run();
   }, [selectedDate, selectedTimeStart, selectedTimeEnd, refreshTick]);
+
+  useEffect(() => {
+    const startMinutes = parseHHMM(selectedTimeStart);
+    const endMinutes = parseHHMM(selectedTimeEnd);
+    if (endMinutes > startMinutes) return;
+
+    const fallback =
+      endTimeOptions.find((opt) => opt.minutes >= startMinutes + 120) ||
+      endTimeOptions[0];
+    if (fallback) {
+      setSelectedTimeEnd(fallback.value);
+    }
+  }, [selectedTimeStart, selectedTimeEnd, endTimeOptions]);
 
   const effectiveTables = useMemo(
     () =>
@@ -427,19 +486,29 @@ export default function BookingPage() {
                 </Col>
                 <Col md={2}>
                   <Form.Label className="fw-semibold">Bắt đầu</Form.Label>
-                  <Form.Control
-                    type="time"
+                  <Form.Select
                     value={selectedTimeStart}
                     onChange={(e) => setSelectedTimeStart(e.target.value)}
-                  />
+                  >
+                    {startTimeOptions.map((slot) => (
+                      <option key={slot.value} value={slot.value}>
+                        {slot.label}
+                      </option>
+                    ))}
+                  </Form.Select>
                 </Col>
                 <Col md={2}>
                   <Form.Label className="fw-semibold">Kết thúc</Form.Label>
-                  <Form.Control
-                    type="time"
+                  <Form.Select
                     value={selectedTimeEnd}
                     onChange={(e) => setSelectedTimeEnd(e.target.value)}
-                  />
+                  >
+                    {endTimeOptions.map((slot) => (
+                      <option key={slot.value} value={slot.value}>
+                        {slot.label}
+                      </option>
+                    ))}
+                  </Form.Select>
                 </Col>
                 <Col md={5}>
                   <Form.Label className="fw-semibold">Tìm kiếm</Form.Label>
@@ -449,6 +518,14 @@ export default function BookingPage() {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
+                </Col>
+              </Row>
+
+              <Row className="g-3 align-items-center mt-1">
+                <Col md={12} className="d-flex justify-content-md-end">
+                  <Badge bg="light" text="dark" className="px-3 py-2 border">
+                    Khung giờ: {format12hLabel(selectedTimeStart)} - {format12hLabel(selectedTimeEnd)}
+                  </Badge>
                 </Col>
               </Row>
 
