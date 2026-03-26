@@ -1,13 +1,6 @@
 import { useState, useEffect } from "react";
 
-import {
-  Button,
-  Card,
-  Col,
-  Container,
-  Row,
-  Badge,
-} from "react-bootstrap";
+import { Button, Card, Col, Container, Row, Badge } from "react-bootstrap";
 import { Link, useNavigate } from "react-router";
 import GuestCustomerNavbar from "../../components/common/GuestCustomerNavbar";
 import { apiClient } from "../../services/api";
@@ -89,7 +82,10 @@ export default function Home() {
           };
 
           current.price = Math.min(current.price, Number(t.pricePerHour || 0));
-          current.capacityValue = Math.max(current.capacityValue, Number(t.capacity || 0));
+          current.capacityValue = Math.max(
+            current.capacityValue,
+            Number(t.capacity || 0),
+          );
           current.total += 1;
           if (String(t.status || "").toLowerCase() === "available") {
             current.available += 1;
@@ -99,8 +95,17 @@ export default function Home() {
 
         const mappedWorkspaces = Array.from(grouped.values()).map((w, idx) => {
           const status =
-            w.available <= 0 ? "Het cho" : w.available === 1 ? "Con lai 1" : "Trong";
-          const statusColor = w.available <= 0 ? "danger" : w.available === 1 ? "warning" : "success";
+            w.available <= 0
+              ? "Het cho"
+              : w.available === 1
+                ? "Con lai 1"
+                : "Trong";
+          const statusColor =
+            w.available <= 0
+              ? "danger"
+              : w.available === 1
+                ? "warning"
+                : "success";
           return {
             id: w.id,
             title: w.title,
@@ -143,7 +148,6 @@ export default function Home() {
   }, []);
 
   // const [selectedCategory, setSelectedCategory] = useState("all");
-
 
   // const filteredMenuItems =
   //   selectedCategory === "all"
@@ -239,10 +243,10 @@ export default function Home() {
           <Row className="g-4">
             {menuItems.slice(0, 8).map((item) => (
               <Col key={item.id} lg={3} md={6}>
-                <Card 
+                <Card
                   className="h-100 border-0 shadow-sm rounded-4 overflow-hidden hover-lift"
-                  onClick={() => navigate('/menu')} // 👉 Đổi '/order' thành route thực tế của bạn
-                  style={{ cursor: "pointer" }}      // 👉 Thêm con trỏ chuột khi hover để báo hiệu có thể click
+                  onClick={() => navigate("/menu")}
+                  style={{ cursor: "pointer" }}
                 >
                   <div
                     className="card-header border-0 p-4 position-relative text-center"
@@ -273,7 +277,9 @@ export default function Home() {
 
                   <Card.Body className="p-4 d-flex flex-column text-center">
                     <h6 className="fw-bold mb-2">{item.name}</h6>
-                    <p className="text-muted small mb-4 flex-grow-1">{item.description}</p>
+                    <p className="text-muted small mb-4 flex-grow-1">
+                      {item.description}
+                    </p>
 
                     {/* Đã bỏ nút (+), căn giữa giá tiền cho đẹp mắt */}
                     <h5 className="fw-bold text-primary mb-0">
@@ -292,7 +298,7 @@ export default function Home() {
               variant="outline-primary"
               size="lg"
               className="px-5 py-3 rounded-pill fw-bold"
-              onClick={() => navigate('/menu')} // 👉 Đổi '/order' thành route thực tế của bạn
+              onClick={() => navigate("/menu")} // 👉 Đổi '/order' thành route thực tế của bạn
             >
               Xem thêm <i className="bi bi-arrow-right ms-2"></i>
             </Button>
@@ -416,4 +422,3 @@ export default function Home() {
     </div>
   );
 }
-

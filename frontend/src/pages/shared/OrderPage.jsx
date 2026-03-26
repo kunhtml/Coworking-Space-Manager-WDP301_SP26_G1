@@ -74,7 +74,9 @@ const getCategoryVisuals = (categoryName) => {
 };
 
 function normalizeMenuStatus(item) {
-  const availability = String(item?.availabilityStatus || "").trim().toUpperCase();
+  const availability = String(item?.availabilityStatus || "")
+    .trim()
+    .toUpperCase();
   const stock = Number(item?.stockQuantity || 0);
 
   if (["UNAVAILABLE", "DISCONTINUED"].includes(availability)) {
@@ -117,8 +119,9 @@ export default function MenuPage() {
           apiClient.get("/menu/items"),
         ]);
 
-        const categories = (Array.isArray(categoriesRes) ? categoriesRes : [])
-          .filter((c) => c?.isActive !== false);
+        const categories = (
+          Array.isArray(categoriesRes) ? categoriesRes : []
+        ).filter((c) => c?.isActive !== false);
         const items = Array.isArray(itemsRes) ? itemsRes : [];
 
         const catMap = new Map(
@@ -174,10 +177,10 @@ export default function MenuPage() {
         const rows = await getBookings();
         const nowMs = new Date().getTime();
         const active = (rows || []).filter(
-          (b) => 
-            b.status !== "Cancelled" && 
-            b.status !== "Pending" && 
-            new Date(b.endTime).getTime() >= nowMs
+          (b) =>
+            b.status !== "Cancelled" &&
+            b.status !== "Pending" &&
+            new Date(b.endTime).getTime() >= nowMs,
         );
         setMyBookings(active);
         setSelectedBookingId((prev) => prev || String(active[0]?.id || ""));
@@ -306,7 +309,7 @@ export default function MenuPage() {
       setShowCartModal(false);
 
       const orderId = result?.orderId || result?.data?.orderId;
-      
+
       if (paymentMethod === "QR") {
         if (orderId) {
           navigate(`/payment/order/${orderId}`);

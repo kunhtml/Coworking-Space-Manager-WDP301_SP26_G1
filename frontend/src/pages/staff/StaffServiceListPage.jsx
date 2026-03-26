@@ -19,7 +19,9 @@ function fmtPrice(value) {
 }
 
 function normalizeMenuStatus(item) {
-  const availability = String(item?.availabilityStatus || "AVAILABLE").trim().toUpperCase();
+  const availability = String(item?.availabilityStatus || "AVAILABLE")
+    .trim()
+    .toUpperCase();
   const stock = Number(item?.stockQuantity || 0);
 
   if (["UNAVAILABLE", "DISCONTINUED"].includes(availability)) {
@@ -70,14 +72,21 @@ export default function StaffServiceListPage() {
     const q = search.trim().toLowerCase();
 
     return items.filter((item) => {
-      const categoryId = String(item?.categoryId?._id || item?.categoryId || "");
+      const categoryId = String(
+        item?.categoryId?._id || item?.categoryId || "",
+      );
       const status = normalizeMenuStatus(item);
-      const byCategory = selectedCategory === "all" || categoryId === selectedCategory;
+      const byCategory =
+        selectedCategory === "all" || categoryId === selectedCategory;
       const byStatus = selectedStatus === "all" || status === selectedStatus;
       const bySearch =
         !q ||
-        String(item?.name || "").toLowerCase().includes(q) ||
-        String(item?.description || "").toLowerCase().includes(q);
+        String(item?.name || "")
+          .toLowerCase()
+          .includes(q) ||
+        String(item?.description || "")
+          .toLowerCase()
+          .includes(q);
       return byCategory && byStatus && bySearch;
     });
   }, [items, selectedCategory, selectedStatus, search]);
@@ -129,7 +138,11 @@ export default function StaffServiceListPage() {
         </Col>
 
         <Col md={2} className="d-grid">
-          <button className="staff-secondary-btn" type="button" onClick={loadData}>
+          <button
+            className="staff-secondary-btn"
+            type="button"
+            onClick={loadData}
+          >
             Tải lại
           </button>
         </Col>
@@ -145,7 +158,10 @@ export default function StaffServiceListPage() {
         <Row className="g-3">
           {filteredServices.map((service) => {
             const statusKey = normalizeMenuStatus(service);
-            const statusUi = STATUS_UI[statusKey] || { label: statusKey, className: "text-secondary" };
+            const statusUi = STATUS_UI[statusKey] || {
+              label: statusKey,
+              className: "text-secondary",
+            };
             const categoryName = service?.categoryId?.name || "Không phân loại";
 
             return (

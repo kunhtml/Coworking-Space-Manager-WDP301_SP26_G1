@@ -4,6 +4,8 @@ import {
   register,
   getMe,
   updateProfile,
+  sendProfileEmailOtp,
+  verifyProfileEmailOtp,
   changePassword,
   sendOtp,
   verifyOtp,
@@ -26,6 +28,12 @@ router.post("/auth/forgot-password/verify-otp", verifyForgotPasswordOtp);
 router.post("/auth/forgot-password/reset", resetForgotPassword);
 router.get("/auth/me", requireAuth, getMe);
 router.put("/auth/profile", requireAuth, updateProfile);
+router.post("/auth/profile/send-email-otp", requireAuth, sendProfileEmailOtp);
+router.post(
+  "/auth/profile/verify-email-otp",
+  requireAuth,
+  verifyProfileEmailOtp,
+);
 router.put("/auth/password", requireAuth, changePassword);
 router.post("/auth/send-otp", requireAuth, sendOtp);
 router.post("/auth/verify-otp", requireAuth, verifyOtp);

@@ -25,6 +25,7 @@ const getPurposeText = (purpose) => {
   if (normalized === "REGISTER") return "đăng ký tài khoản";
   if (normalized === "FORGOT_PASSWORD") return "quên mật khẩu";
   if (normalized === "UPDATE_PROFILE") return "cập nhật hồ sơ";
+  if (normalized === "UPDATE_EMAIL") return "đổi email hồ sơ";
   if (normalized === "CHANGE_PASSWORD") return "đổi mật khẩu";
   return "xác thực";
 };
