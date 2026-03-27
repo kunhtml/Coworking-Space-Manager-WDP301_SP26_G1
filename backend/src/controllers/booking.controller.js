@@ -218,7 +218,8 @@ export const updateMyBooking = async (req, res) => {
       nextStart &&
       nextEndFromPayload
     ) {
-      const diffHours = (nextEndFromPayload.getTime() - nextStart.getTime()) / 3600000;
+      const diffHours =
+        (nextEndFromPayload.getTime() - nextStart.getTime()) / 3600000;
       if (isFinite(diffHours) && diffHours > 0) {
         effectiveDuration = diffHours;
       }
@@ -260,7 +261,9 @@ export const updateMyBooking = async (req, res) => {
       });
     }
 
-    const table = booking.tableId ? await Table.findById(booking.tableId).lean() : null;
+    const table = booking.tableId
+      ? await Table.findById(booking.tableId).lean()
+      : null;
     const nextDepositAmount = Math.round(
       Number(table?.pricePerHour || 0) * effectiveDuration,
     );

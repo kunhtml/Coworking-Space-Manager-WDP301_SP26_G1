@@ -20,6 +20,7 @@ import { apiClient } from "../../services/api";
 import {
   buildVietnamDateTime,
   getVietnamDateString,
+  VIETNAM_TIMEZONE,
 } from "../../utils/timezone";
 
 export function meta() {
@@ -104,6 +105,16 @@ const buildTimeSlots = () => {
 
 const TIME_SLOTS = buildTimeSlots();
 
+const formatDurationChoice = (hours) => {
+  const totalMinutes = Math.round(Number(hours || 0) * 60);
+  if (totalMinutes <= 0) return "--";
+  if (totalMinutes < 60) return `${totalMinutes} phút`;
+
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return m === 0 ? `${h} giờ` : `${h} giờ ${m} phút`;
+};
+
 function toTypeName(table) {
   const fromObject = String(table?.tableType?.name || "").trim();
   if (fromObject) return fromObject;
@@ -120,10 +131,12 @@ function startOfTodayIso() {
 export default function BookingPage() {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const PAST_TIME_MESSAGE =
+    "Vui lòng chọn lại ngày giờ, không thể chọn giờ bắt đầu ở quá khứ.";
 
   const [selectedDate, setSelectedDate] = useState(startOfTodayIso());
-  const [selectedTimeStart, setSelectedTimeStart] = useState("08:00");
-  const [selectedTimeEnd, setSelectedTimeEnd] = useState("10:00");
+  const [selectedTimeStart, setSelectedTimeStart] = useState("");
+  const [selectedDurationHours, setSelectedDurationHours] = useState("");
   const [allTables, setAllTables] = useState([]);
   const [availableIds, setAvailableIds] = useState(new Set());
 
@@ -142,11 +155,30 @@ export default function BookingPage() {
   const [refreshTick, setRefreshTick] = useState(0);
 
   const startTimeOptions = TIME_SLOTS;
-  const endTimeOptions = useMemo(
-    () =>
-      TIME_SLOTS.filter((slot) => slot.minutes > parseHHMM(selectedTimeStart)),
-    [selectedTimeStart],
-  );
+  const normalizedDurationHours = useMemo(() => {
+    const raw = String(selectedDurationHours || "").trim();
+    if (!/^\d+$/.test(raw)) return 0;
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n < 1 || n > 99) return 0;
+    return n;
+  }, [selectedDurationHours]);
+
+  const selectedEndDateTime = useMemo(() => {
+    const startAt = buildVietnamDateTime(selectedDate, selectedTimeStart);
+    const duration = normalizedDurationHours;
+    if (!startAt || !Number.isFinite(duration) || duration <= 0) return null;
+    return new Date(startAt.getTime() + duration * 3600000);
+  }, [selectedDate, selectedTimeStart, normalizedDurationHours]);
+
+  const selectedTimeEndDisplay = useMemo(() => {
+    if (!selectedEndDateTime) return "--:--";
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: VIETNAM_TIMEZONE,
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    }).format(selectedEndDateTime);
+  }, [selectedEndDateTime]);
 
   const loadAllTables = useCallback(async () => {
     setLoading(true);
@@ -166,16 +198,16 @@ export default function BookingPage() {
   }, [loadAllTables]);
 
   useEffect(() => {
-    if (!selectedDate || !selectedTimeStart || !selectedTimeEnd) return;
+    if (!selectedDate || !selectedTimeStart || !normalizedDurationHours) return;
 
     const run = async () => {
       setCheckingAvailability(true);
-      setError("");
+      setError((prev) => (prev === PAST_TIME_MESSAGE ? prev : ""));
       try {
         const available = await searchAvailableTables({
           date: selectedDate,
           startTime: selectedTimeStart,
-          endTime: selectedTimeEnd,
+          duration: normalizedDurationHours,
         });
         const ids = new Set(
           (available || []).map((t) => String(t._id || t.sourceId || t.id)),
@@ -190,20 +222,18 @@ export default function BookingPage() {
     };
 
     run();
-  }, [selectedDate, selectedTimeStart, selectedTimeEnd, refreshTick]);
+  }, [
+    selectedDate,
+    selectedTimeStart,
+    normalizedDurationHours,
+    refreshTick,
+    PAST_TIME_MESSAGE,
+  ]);
 
-  useEffect(() => {
-    const startMinutes = parseHHMM(selectedTimeStart);
-    const endMinutes = parseHHMM(selectedTimeEnd);
-    if (endMinutes > startMinutes) return;
-
-    const fallback =
-      endTimeOptions.find((opt) => opt.minutes >= startMinutes + 120) ||
-      endTimeOptions[0];
-    if (fallback) {
-      setSelectedTimeEnd(fallback.value);
-    }
-  }, [selectedTimeStart, selectedTimeEnd, endTimeOptions]);
+  const hasAvailabilityCriteria = useMemo(
+    () => Boolean(selectedDate && selectedTimeStart && normalizedDurationHours),
+    [selectedDate, selectedTimeStart, normalizedDurationHours],
+  );
 
   const effectiveTables = useMemo(
     () =>
@@ -213,7 +243,7 @@ export default function BookingPage() {
         const baseStatus = String(table.status || "Available");
 
         let displayStatus = baseStatus;
-        if (baseStatus !== "Maintenance") {
+        if (hasAvailabilityCriteria && baseStatus !== "Maintenance") {
           displayStatus = availableIds.has(id)
             ? "Available"
             : baseStatus === "Occupied"
@@ -230,7 +260,7 @@ export default function BookingPage() {
           capacity: Number(table.capacity || 0),
         };
       }),
-    [allTables, availableIds],
+    [allTables, availableIds, hasAvailabilityCriteria],
   );
 
   const categoryOptions = useMemo(
@@ -258,9 +288,12 @@ export default function BookingPage() {
   }, [effectiveTables]);
 
   const filteredTables = useMemo(() => {
-    let rows = effectiveTables.filter(
-      (t) => !["Reserved", "Maintenance"].includes(t.displayStatus),
-    );
+    let rows = effectiveTables.filter((t) => {
+      if (!hasAvailabilityCriteria) {
+        return t.displayStatus !== "Maintenance";
+      }
+      return !["Reserved", "Maintenance"].includes(t.displayStatus);
+    });
 
     if (filterStatus !== "all") {
       rows = rows.filter((t) => t.displayStatus === filterStatus);
@@ -300,6 +333,7 @@ export default function BookingPage() {
     priceMin,
     priceMax,
     search,
+    hasAvailabilityCriteria,
   ]);
 
   const groupedTables = useMemo(() => {
@@ -317,6 +351,21 @@ export default function BookingPage() {
     if (!startAt) return false;
     return startAt.getTime() <= Date.now();
   }, [selectedDate, selectedTimeStart]);
+
+  useEffect(() => {
+    if (isPastTimeSelection) {
+      setError(PAST_TIME_MESSAGE);
+      return;
+    }
+
+    setError((prev) => (prev === PAST_TIME_MESSAGE ? "" : prev));
+  }, [
+    isPastTimeSelection,
+    selectedDate,
+    selectedTimeStart,
+    normalizedDurationHours,
+    PAST_TIME_MESSAGE,
+  ]);
 
   useEffect(() => {
     if (["Reserved", "Maintenance"].includes(filterStatus)) {
@@ -339,8 +388,13 @@ export default function BookingPage() {
       return;
     }
 
+    if (!selectedTimeStart || !normalizedDurationHours) {
+      setError("Vui lòng chọn giờ bắt đầu và thời gian cần thuê.");
+      return;
+    }
+
     if (isPastTimeSelection) {
-      setError("Không thể đặt bàn vào thời gian quá khứ. Vui lòng chọn giờ hiện tại hoặc tương lai.");
+      setError(PAST_TIME_MESSAGE);
       return;
     }
 
@@ -352,7 +406,7 @@ export default function BookingPage() {
         tableId: selectedTable.id,
         date: selectedDate,
         startTime: selectedTimeStart,
-        endTime: selectedTimeEnd,
+        duration: normalizedDurationHours,
         pricePerHour: selectedTable.pricePerHour,
         notes: `Đặt ${selectedTable.name} - ${selectedTable.typeName || "N/A"}`,
       };
@@ -377,10 +431,12 @@ export default function BookingPage() {
   };
 
   const calculateDuration = () => {
-    if (!selectedTimeStart || !selectedTimeEnd) return 0;
-    const start = new Date(`2000-01-01T${selectedTimeStart}`);
-    const end = new Date(`2000-01-01T${selectedTimeEnd}`);
-    return (end - start) / (1000 * 60 * 60); // hours
+    const duration = normalizedDurationHours;
+    return Number.isFinite(duration) && duration > 0 ? duration : 0;
+  };
+
+  const formatDurationText = () => {
+    return formatDurationChoice(calculateDuration());
   };
 
   const calculateTotalPrice = () => {
@@ -504,8 +560,13 @@ export default function BookingPage() {
                   <Form.Label className="fw-semibold">Bắt đầu</Form.Label>
                   <Form.Select
                     value={selectedTimeStart}
-                    onChange={(e) => setSelectedTimeStart(e.target.value)}
+                    onChange={(e) => {
+                      const nextStart = e.target.value;
+                      setSelectedTimeStart(nextStart);
+                      setSelectedDurationHours("");
+                    }}
                   >
+                    <option value="">Chọn giờ bắt đầu</option>
                     {startTimeOptions.map((slot) => (
                       <option key={slot.value} value={slot.value}>
                         {slot.label}
@@ -514,17 +575,30 @@ export default function BookingPage() {
                   </Form.Select>
                 </Col>
                 <Col md={2}>
-                  <Form.Label className="fw-semibold">Kết thúc</Form.Label>
-                  <Form.Select
-                    value={selectedTimeEnd}
-                    onChange={(e) => setSelectedTimeEnd(e.target.value)}
-                  >
-                    {endTimeOptions.map((slot) => (
-                      <option key={slot.value} value={slot.value}>
-                        {slot.label}
-                      </option>
-                    ))}
-                  </Form.Select>
+                  <Form.Label className="fw-semibold">
+                    Thời gian cần thuê
+                  </Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={selectedDurationHours}
+                    disabled={!selectedTimeStart}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={2}
+                    placeholder="Nhập số giờ (1-99)"
+                    onChange={(e) => {
+                      const value = String(e.target.value || "").trim();
+                      if (value === "") {
+                        setSelectedDurationHours("");
+                        return;
+                      }
+                      if (!/^\d+$/.test(value)) return;
+                      if (value.length > 2) return;
+                      const parsed = Number(value);
+                      if (parsed < 1 || parsed > 99) return;
+                      setSelectedDurationHours(value);
+                    }}
+                  />
                 </Col>
                 <Col md={5}>
                   <Form.Label className="fw-semibold">Tìm kiếm</Form.Label>
@@ -540,8 +614,11 @@ export default function BookingPage() {
               <Row className="g-3 align-items-center mt-1">
                 <Col md={12} className="d-flex justify-content-md-end">
                   <Badge bg="light" text="dark" className="px-3 py-2 border">
-                    Khung giờ: {format12hLabel(selectedTimeStart)} -{" "}
-                    {format12hLabel(selectedTimeEnd)}
+                    Khung giờ:{" "}
+                    {selectedTimeStart
+                      ? format12hLabel(selectedTimeStart)
+                      : "--:--"}{" "}
+                    - {selectedTimeEndDisplay}
                   </Badge>
                 </Col>
               </Row>
@@ -728,12 +805,21 @@ export default function BookingPage() {
                   <div>
                     <div className="fw-semibold">Bàn đã chọn</div>
                     <div className="text-secondary small">
-                      {selectedTable
-                        ? `${selectedTable.name} · ${selectedTable.typeName} · ${formatPrice(selectedTable.pricePerHour)}/h`
-                        : "Chưa chọn bàn"}
+                      {selectedTable ? selectedTable.name : "Chưa chọn bàn"}
                     </div>
                     <div className="text-secondary small">
-                      {selectedDate} · {selectedTimeStart} - {selectedTimeEnd} ·
+                      {selectedTable
+                        ? `${selectedTable.typeName} · ${formatPrice(selectedTable.pricePerHour)}/h`
+                        : "--"}
+                    </div>
+                    <div className="text-secondary small">
+                      {selectedDate} · {selectedTimeStart || "--:--"} -{" "}
+                      {selectedEndDateTime ? selectedTimeEndDisplay : "--:--"}
+                    </div>
+                    <div className="text-secondary small">
+                      Tổng thời gian: {formatDurationText()}
+                    </div>
+                    <div className="text-secondary small">
                       Tổng tạm tính: {formatPrice(calculateTotalPrice())}
                     </div>
                   </div>

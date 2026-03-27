@@ -2,6 +2,7 @@ import Booking from "../models/booking.js";
 import Table from "../models/table.js";
 import TableType from "../models/tableType.js";
 import mongoose from "mongoose";
+import { parseVietnamDateTime } from "../utils/timezone.js";
 
 const toObjectIdString = (value) => {
   if (!value) return "";
@@ -132,23 +133,19 @@ export const getAvailableTables = async (req, res) => {
         requestedDuration <= 0) &&
       requestEndTime
     ) {
-      const startStr = `${requestedDate}T${requestedStartTime}:00`;
-      const endStr = `${requestedDate}T${requestEndTime}:00`;
-      console.log("Parsing dates:", { startStr, endStr });
-
-      const start = new Date(startStr);
-      const end = new Date(endStr);
+      const start = parseVietnamDateTime(requestedDate, requestedStartTime);
+      const end = parseVietnamDateTime(requestedDate, requestEndTime);
 
       console.log("Parsed dates:", {
-        start: start.toString(),
-        end: end.toString(),
-        startTime: start.getTime(),
-        endTime: end.getTime(),
-        isStartValid: isFinite(start.getTime()),
-        isEndValid: isFinite(end.getTime()),
+        start: start?.toString?.(),
+        end: end?.toString?.(),
+        startTime: start?.getTime?.(),
+        endTime: end?.getTime?.(),
+        isStartValid: isFinite(start?.getTime?.()),
+        isEndValid: isFinite(end?.getTime?.()),
       });
 
-      if (!isFinite(start.getTime()) || !isFinite(end.getTime())) {
+      if (!isFinite(start?.getTime?.()) || !isFinite(end?.getTime?.())) {
         console.error("Invalid date/time format");
         return res
           .status(400)
@@ -176,7 +173,7 @@ export const getAvailableTables = async (req, res) => {
       });
     }
 
-    const startTime = new Date(`${requestedDate}T${requestedStartTime}:00`);
+    const startTime = parseVietnamDateTime(requestedDate, requestedStartTime);
     if (!isFinite(startTime.getTime())) {
       return res.status(400).json({ message: "Ngày hoặc giờ không hợp lệ." });
     }

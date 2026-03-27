@@ -556,7 +556,9 @@ export const getDailyTableUsage = async (req, res) => {
       .lean();
 
     const userIds = [
-      ...new Set(bookings.map((booking) => booking.userId?.toString()).filter(Boolean)),
+      ...new Set(
+        bookings.map((booking) => booking.userId?.toString()).filter(Boolean),
+      ),
     ];
     const users = userIds.length
       ? await User.find({ _id: { $in: userIds } })
