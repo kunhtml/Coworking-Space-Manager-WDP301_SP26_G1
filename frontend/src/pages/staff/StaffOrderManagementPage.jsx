@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Button,
@@ -24,8 +24,6 @@ import {
 import { processCounterPayment } from "../../services/staffPaymentService";
 
 // ── Config ────────────────────────────────────────────────────────────────────
-const ORDER_STATUS_OPTIONS = ["COMPLETED", "CANCELLED"];
-
 const ORDER_STATUS_UI = {
   WAITING_PAYMENT: {
     label: "Chờ thanh toán",
@@ -50,12 +48,6 @@ const ORDER_STATUS_UI = {
     bg: "#fee2e2",
     color: "#b91c1c",
     icon: "bi-x-circle",
-  },
-  REFUNDED: {
-    label: "Đơn bị hoàn",
-    bg: "#ffedd5",
-    color: "#c2410c",
-    icon: "bi-arrow-counterclockwise",
   },
 };
 
@@ -95,13 +87,6 @@ const STAT_GROUPS = [
     bg: "#fee2e2",
     color: "#b91c1c",
   },
-  {
-    key: "REFUNDED",
-    label: "Đơn bị hoàn",
-    icon: "bi-arrow-counterclockwise",
-    bg: "#ffedd5",
-    color: "#c2410c",
-  },
 ];
 
 function getWorkflowStatus(order) {
@@ -109,7 +94,8 @@ function getWorkflowStatus(order) {
     .trim()
     .toUpperCase();
   if (raw === "CANCELED") return "CANCELLED";
-  if (["WAITING_PAYMENT", "PAID", "COMPLETED", "CANCELLED", "REFUNDED"].includes(raw)) {
+  if (raw === "REFUNDED") return "CANCELLED";
+  if (["WAITING_PAYMENT", "PAID", "COMPLETED", "CANCELLED"].includes(raw)) {
     return raw;
   }
   return "WAITING_PAYMENT";
@@ -165,9 +151,12 @@ export default function StaffOrderManagementPage() {
   // Edit order modal
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingOrder, setEditingOrder] = useState(null);
-  const [editingStatus, setEditingStatus] = useState("COMPLETED");
   const [editingItems, setEditingItems] = useState([createEmptyLine()]);
   const [updating, setUpdating] = useState(false);
+
+  const [nowMs, setNowMs] = useState(Date.now());
+  const [syncingExpired, setSyncingExpired] = useState(false);
+  const lastAutoSyncRef = useRef(0);
 
   // Invoice modal
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
@@ -176,8 +165,10 @@ export default function StaffOrderManagementPage() {
   const [exporting, setExporting] = useState(false);
 
   // ── Load ────────────────────────────────────────────────────────────────────
-  const loadPageData = async () => {
-    setLoading(true);
+  const loadPageData = async ({ background = false } = {}) => {
+    if (!background) {
+      setLoading(true);
+    }
     setError("");
     try {
       const [orderRows, tableRows, menuRows] = await Promise.all([
@@ -191,7 +182,9 @@ export default function StaffOrderManagementPage() {
     } catch (err) {
       setError(err.message || "Không thể tải dữ liệu đơn hàng.");
     } finally {
-      setLoading(false);
+      if (!background) {
+        setLoading(false);
+      }
     }
   };
 
@@ -199,6 +192,34 @@ export default function StaffOrderManagementPage() {
     const t = setTimeout(loadPageData, 250);
     return () => clearTimeout(t);
   }, [search, dateFilter]);
+
+  useEffect(() => {
+    const timer = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const poll = setInterval(() => {
+      loadPageData({ background: true });
+    }, 15000);
+    return () => clearInterval(poll);
+  }, []);
+
+  useEffect(() => {
+    if (syncingExpired) return;
+    if (nowMs - lastAutoSyncRef.current < 15000) return;
+
+    const hasExpiredWaiting = orders.some((order) => {
+      if (getWorkflowStatus(order) !== "WAITING_PAYMENT") return false;
+      const expiresAt = new Date(order.createdAt).getTime() + 15 * 60 * 1000;
+      return nowMs >= expiresAt;
+    });
+    if (!hasExpiredWaiting) return;
+
+    lastAutoSyncRef.current = nowMs;
+    setSyncingExpired(true);
+    loadPageData({ background: true }).finally(() => setSyncingExpired(false));
+  }, [orders, nowMs, syncingExpired]);
 
   // ── Stats ────────────────────────────────────────────────────────────────────
   const statCounts = useMemo(() => {
@@ -309,12 +330,10 @@ export default function StaffOrderManagementPage() {
 
   // ── Edit order ───────────────────────────────────────────────────────────────
   const openEditOrder = (order) => {
+    if (getWorkflowStatus(order) !== "WAITING_PAYMENT") {
+      return;
+    }
     setEditingOrder(order);
-    setEditingStatus(
-      ["CANCELLED", "REFUNDED"].includes(getWorkflowStatus(order))
-        ? "CANCELLED"
-        : "COMPLETED",
-    );
     setEditingItems(
       (order.items || []).length
         ? order.items.map((it) => ({
@@ -344,12 +363,7 @@ export default function StaffOrderManagementPage() {
     setUpdating(true);
     setError("");
     try {
-      const canEditItems = getWorkflowStatus(editingOrder) === "WAITING_PAYMENT";
-      const payload = { status: editingStatus };
-      if (canEditItems) {
-        payload.items = editingItems;
-      }
-      await updateStaffOrder(editingOrder.id, payload);
+      await updateStaffOrder(editingOrder.id, { items: editingItems });
       setShowEditModal(false);
       setSuccessMsg("✅ Cập nhật đơn hàng thành công!");
       await loadPageData();
@@ -371,11 +385,6 @@ export default function StaffOrderManagementPage() {
     try {
       await updateStaffOrder(order.id, {
         status: "COMPLETED",
-        items: (order.items || []).map((it) => ({
-          menuItemId: String(it.menuItemId || ""),
-          quantity: Number(it.quantity || 1),
-          note: it.note || "",
-        })),
       });
       setSuccessMsg(`✅ Đơn ${order.orderCode} đã hoàn thành!`);
       await loadPageData();
@@ -417,6 +426,7 @@ export default function StaffOrderManagementPage() {
 
   // ── Retry payment ────────────────────────────────────────────────────────────────
   const [payingOrderId, setPayingOrderId] = useState(null);
+  const [cancellingOrderId, setCancellingOrderId] = useState(null);
 
   const retryPayment = async (order, method) => {
     setPayingOrderId(order.id);
@@ -436,6 +446,22 @@ export default function StaffOrderManagementPage() {
       setError(err.message || "Thanh toán thất bại.");
     } finally {
       setPayingOrderId(null);
+    }
+  };
+
+  const quickCancelOrder = async (order) => {
+    if (cancellingOrderId) return;
+    setCancellingOrderId(order.id);
+    setError("");
+    try {
+      await updateStaffOrder(order.id, { status: "CANCELLED" });
+      setSuccessMsg(`✅ Đơn ${order.orderCode} đã hủy.`);
+      await loadPageData();
+      setTimeout(() => setSuccessMsg(""), 4000);
+    } catch (err) {
+      setError(err.message || "Không thể hủy đơn.");
+    } finally {
+      setCancellingOrderId(null);
     }
   };
 
@@ -631,7 +657,7 @@ export default function StaffOrderManagementPage() {
                   const isEditable = workflowStatus === "WAITING_PAYMENT";
                   const created = new Date(order.createdAt);
                   const expiresAt = new Date(created.getTime() + 15 * 60 * 1000);
-                  const remainMs = expiresAt - Date.now();
+                  const remainMs = expiresAt - nowMs;
                   const remainMin = Math.max(0, Math.ceil(remainMs / 60000));
                   const isPaymentExpired = remainMin <= 0;
                   return (
@@ -794,6 +820,29 @@ export default function StaffOrderManagementPage() {
                             >
                               Hết hạn
                             </span>
+                          )}
+                          {["WAITING_PAYMENT", "PAID"].includes(workflowStatus) && (
+                            <button
+                              className="staff-icon-btn"
+                              type="button"
+                              title="Hủy đơn"
+                              disabled={cancellingOrderId === order.id}
+                              onClick={() => quickCancelOrder(order)}
+                              style={{
+                                background: "#fee2e2",
+                                color: "#b91c1c",
+                                border: "1.5px solid #fecaca",
+                              }}
+                            >
+                              {cancellingOrderId === order.id ? (
+                                <i
+                                  className="bi bi-arrow-clockwise"
+                                  style={{ animation: "spin 0.8s linear infinite" }}
+                                />
+                              ) : (
+                                <i className="bi bi-x-circle" />
+                              )}
+                            </button>
                           )}
                           {canComplete && (
                             <button
@@ -1060,53 +1109,6 @@ export default function StaffOrderManagementPage() {
             </Modal.Title>
           </Modal.Header>
           <Modal.Body className="px-4">
-            {/* Status selector */}
-            <div className="mb-4">
-              <Form.Label className="fw-bold mb-2">
-                Trạng thái đơn hàng
-              </Form.Label>
-              <div className="d-flex flex-wrap gap-2">
-                {ORDER_STATUS_OPTIONS.map((s) => {
-                  const ui = ORDER_STATUS_UI[s];
-                  const active = editingStatus === s;
-                  return (
-                    <div
-                      key={s}
-                      onClick={() => setEditingStatus(s)}
-                      className="rounded-3 px-3 py-2 d-flex align-items-center gap-2"
-                      style={{
-                        background: active ? ui.bg : "#f8fafc",
-                        border: `2px solid ${active ? ui.color : "#e2e8f0"}`,
-                        cursor: "pointer",
-                        transition: "all 0.15s",
-                        fontWeight: 600,
-                        fontSize: "0.87rem",
-                        color: active ? ui.color : "#475569",
-                      }}
-                    >
-                      <i className={`bi ${ui.icon}`} />
-                      {ui.label}
-                      {active && (
-                        <i
-                          className="bi bi-check-circle-fill ms-1"
-                          style={{ color: ui.color }}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {editingOrder && getWorkflowStatus(editingOrder) !== "WAITING_PAYMENT" && (
-              <Alert
-                className="border-0 rounded-3 mb-3"
-                style={{ background: "#fff7ed", color: "#c2410c" }}
-              >
-                Đơn đã thanh toán: chỉ hỗ trợ hủy đơn (đơn bị hoàn), không cho chỉnh/thêm món.
-              </Alert>
-            )}
-
             {/* Customer info (read-only) */}
             {editingOrder && (
               <div
@@ -1143,10 +1145,6 @@ export default function StaffOrderManagementPage() {
                 type="button"
                 className="rounded-3"
                 onClick={addEditItem}
-                disabled={
-                  !editingOrder ||
-                  getWorkflowStatus(editingOrder) !== "WAITING_PAYMENT"
-                }
               >
                 <i className="bi bi-plus-lg me-1" />
                 Thêm món
@@ -1163,10 +1161,6 @@ export default function StaffOrderManagementPage() {
                     value={item.menuItemId}
                     onChange={(e) =>
                       onChangeEditItem(index, "menuItemId", e.target.value)
-                    }
-                    disabled={
-                      !editingOrder ||
-                      getWorkflowStatus(editingOrder) !== "WAITING_PAYMENT"
                     }
                     required
                   >
@@ -1186,10 +1180,6 @@ export default function StaffOrderManagementPage() {
                     onChange={(e) =>
                       onChangeEditItem(index, "quantity", e.target.value)
                     }
-                    disabled={
-                      !editingOrder ||
-                      getWorkflowStatus(editingOrder) !== "WAITING_PAYMENT"
-                    }
                     required
                     placeholder="SL"
                   />
@@ -1200,10 +1190,6 @@ export default function StaffOrderManagementPage() {
                     onChange={(e) =>
                       onChangeEditItem(index, "note", e.target.value)
                     }
-                    disabled={
-                      !editingOrder ||
-                      getWorkflowStatus(editingOrder) !== "WAITING_PAYMENT"
-                    }
                     placeholder="Ghi chú"
                   />
                 </Col>
@@ -1213,10 +1199,6 @@ export default function StaffOrderManagementPage() {
                     type="button"
                     className="w-100 rounded-3"
                     onClick={() => removeEditItem(index)}
-                    disabled={
-                      !editingOrder ||
-                      getWorkflowStatus(editingOrder) !== "WAITING_PAYMENT"
-                    }
                   >
                     <i className="bi bi-x-lg" />
                   </Button>

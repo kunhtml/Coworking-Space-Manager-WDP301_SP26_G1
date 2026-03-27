@@ -115,14 +115,14 @@ function buildOrderRows(
 
     let paymentStatus = "WAITING_PAYMENT";
     if (orderStatus === "CANCELLED") {
-      paymentStatus = isPaid ? "REFUNDED" : "CANCELLED";
+      paymentStatus = "CANCELLED";
     } else if (isPaid) {
       paymentStatus = "PAID";
     }
 
     let staffStatus = "WAITING_PAYMENT";
     if (orderStatus === "CANCELLED") {
-      staffStatus = isPaid ? "REFUNDED" : "CANCELLED";
+      staffStatus = "CANCELLED";
     } else if (orderStatus === "COMPLETED") {
       staffStatus = "COMPLETED";
     } else if (isPaid) {
