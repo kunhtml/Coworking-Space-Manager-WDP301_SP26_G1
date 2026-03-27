@@ -3,10 +3,16 @@ import Table from "../models/table.js";
 import User from "../models/user.js";
 import Invoice from "../models/invoice.js";
 import Payment from "../models/payment.js";
+import { BOOKING_PAYMENT_HOLD_MINUTES } from "../constants/domain.js";
 import {
   getVietnamDateRange,
   parseVietnamDateTime,
 } from "../utils/timezone.js";
+
+const PENDING_BOOKING_STATUSES = ["Pending", "Awaiting_Payment"];
+
+const buildPendingCutoff = () =>
+  new Date(Date.now() - BOOKING_PAYMENT_HOLD_MINUTES * 60 * 1000);
 
 const normalizeBookingStatus = (status) => {
   return String(status || "").trim();
@@ -85,6 +91,15 @@ export const createBooking = async (req, res) => {
         message: "Bàn đang bảo trì, vui lòng chọn bàn khác.",
       });
     }
+
+    const pendingCutoff = buildPendingCutoff();
+    await Booking.updateMany(
+      {
+        status: { $in: PENDING_BOOKING_STATUSES },
+        createdAt: { $lt: pendingCutoff },
+      },
+      { $set: { status: "Cancelled" } },
+    );
 
     const overlapping = await Booking.find({
       tableId: bookingTableId,
@@ -230,6 +245,15 @@ export const updateMyBooking = async (req, res) => {
     const nextEnd = new Date(nextStart.getTime() + effectiveDuration * 3600000);
     const oldDepositAmount = Math.round(Number(booking.depositAmount || 0));
 
+    const pendingCutoff = buildPendingCutoff();
+    await Booking.updateMany(
+      {
+        status: { $in: PENDING_BOOKING_STATUSES },
+        createdAt: { $lt: pendingCutoff },
+      },
+      { $set: { status: "Cancelled" } },
+    );
+
     const overlapping = await Booking.find({
       _id: { $ne: booking._id },
       tableId: booking.tableId,
@@ -322,16 +346,6 @@ export const getAllBookings = async (req, res) => {
 
     let bookings = await Booking.find(filter).sort({ startTime: 1 }).lean();
 
-    // Search by booking code or guest name
-    if (search) {
-      const q = search.toLowerCase();
-      bookings = bookings.filter(
-        (b) =>
-          (b.bookingCode || "").toLowerCase().includes(q) ||
-          (b.guestInfo?.name || "").toLowerCase().includes(q),
-      );
-    }
-
     const tableIds = [
       ...new Set(bookings.map((b) => b.tableId?.toString()).filter(Boolean)),
     ];
@@ -347,7 +361,7 @@ export const getAllBookings = async (req, res) => {
     const tableMap = new Map(tables.map((t) => [t._id.toString(), t]));
     const userMap = new Map(users.map((u) => [u._id.toString(), u]));
 
-    const rows = bookings.map((b) => {
+    let rows = bookings.map((b) => {
       const table = tableMap.get(b.tableId?.toString());
       const user = userMap.get(b.userId?.toString());
       return {
@@ -364,6 +378,26 @@ export const getAllBookings = async (req, res) => {
         createdAt: b.createdAt,
       };
     });
+
+    // Search by booking code, customer name/phone, or table name.
+    if (search?.trim()) {
+      const q = search.trim().toLowerCase();
+      rows = rows.filter(
+        (r) =>
+          String(r.bookingCode || "")
+            .toLowerCase()
+            .includes(q) ||
+          String(r.customerName || "")
+            .toLowerCase()
+            .includes(q) ||
+          String(r.customerPhone || "")
+            .toLowerCase()
+            .includes(q) ||
+          String(r.spaceName || "")
+            .toLowerCase()
+            .includes(q),
+      );
+    }
 
     res.json(rows);
   } catch (err) {

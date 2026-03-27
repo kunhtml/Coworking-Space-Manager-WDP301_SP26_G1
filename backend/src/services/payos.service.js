@@ -5,7 +5,11 @@ import Booking from "../models/booking.js";
 import Order from "../models/order.js";
 import Payment from "../models/payment.js";
 import Invoice from "../models/invoice.js";
-import { ORDER_STATUS, PAYMENT_METHOD } from "../constants/domain.js";
+import {
+  BOOKING_PAYMENT_HOLD_MINUTES,
+  ORDER_STATUS,
+  PAYMENT_METHOD,
+} from "../constants/domain.js";
 
 const PAYOS_PAYMENT_METHOD = PAYMENT_METHOD.QR_PAYOS;
 const PAYOS_PENDING_STATUSES = new Set(["PENDING", "PROCESSING", "UNDERPAID"]);
@@ -221,7 +225,8 @@ export async function createOrReusePayOSPayment({ booking, buyer, origin }) {
       description, // Mô tả thanh toán
       returnUrl, // URL sau khi thanh toán thành công
       cancelUrl, // URL sau khi hủy thanh toán
-      expiredAt: Math.floor(Date.now() / 1000) + 15 * 60, // Hết hạn sau 15 phút
+      expiredAt:
+        Math.floor(Date.now() / 1000) + BOOKING_PAYMENT_HOLD_MINUTES * 60,
       buyerName: buyer?.fullName || booking?.guestInfo?.name || "Khách hàng",
       buyerEmail: buyer?.email || booking?.guestInfo?.email,
       buyerPhone: buyer?.phone || booking?.guestInfo?.phone,
@@ -626,7 +631,8 @@ export async function createOrReuseOrderPayOSPayment({ order, buyer, origin }) {
       description, // Mô tả thanh toán
       cancelUrl, // URL sau khi hủy thanh toán
       returnUrl, // URL sau khi thanh toán thành công
-      expiredAt: Math.floor(Date.now() / 1000) + 15 * 60, // Hết hạn sau 15 phút
+      expiredAt:
+        Math.floor(Date.now() / 1000) + BOOKING_PAYMENT_HOLD_MINUTES * 60,
       buyerName: buyer?.fullName || "Khách hàng",
       buyerEmail: buyer?.email,
       buyerPhone: buyer?.phone,
