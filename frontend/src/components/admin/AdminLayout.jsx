@@ -44,64 +44,14 @@ export default function AdminLayout({ children }) {
       <AdminSidebar user={user} onLogout={handleLogout} />
       <div className="admin-main flex-grow-1 d-flex flex-column">
         <header
-          className="admin-header border-bottom d-flex align-items-center justify-content-between px-5 py-3"
+          className="admin-header border-bottom d-flex align-items-center justify-content-end px-5 py-3"
           style={{
             backgroundColor: "white",
             boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08)",
             zIndex: 900,
           }}
         >
-          <div className="d-flex align-items-center gap-2">
-            <button
-              className="btn btn-sm rounded-circle"
-              style={{
-                backgroundColor: "#f0f2f5",
-                color: "#6c757d",
-                width: "40px",
-                height: "40px",
-                border: "none",
-                transition: "all 0.2s",
-              }}
-              onMouseEnter={(e) => (e.target.style.backgroundColor = "#e2e6eb")}
-              onMouseLeave={(e) => (e.target.style.backgroundColor = "#f0f2f5")}
-            >
-              <i className="bi bi-search"></i>
-            </button>
-          </div>
-
           <div className="d-flex align-items-center gap-3">
-            <div
-              style={{
-                width: "1px",
-                height: "24px",
-                backgroundColor: "#dee2e6",
-              }}
-            ></div>
-
-            <button
-              className="btn btn-sm rounded-circle position-relative"
-              style={{
-                backgroundColor: "#f0f2f5",
-                color: "#6c757d",
-                width: "40px",
-                height: "40px",
-                border: "none",
-                transition: "all 0.2s",
-              }}
-              onMouseEnter={(e) => (e.target.style.backgroundColor = "#e2e6eb")}
-              onMouseLeave={(e) => (e.target.style.backgroundColor = "#f0f2f5")}
-            >
-              <i className="bi bi-bell"></i>
-              <span
-                className="position-absolute top-0 start-100 translate-middle badge rounded-circle bg-danger"
-                style={{
-                  fontSize: "0.5rem",
-                  padding: "2px 4px",
-                }}
-              >
-              </span>
-            </button>
-
             <div className="d-flex align-items-center gap-2 ms-2">
               <div
                 style={{

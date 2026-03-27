@@ -656,7 +656,9 @@ export default function StaffOrderManagementPage() {
                   const canComplete = workflowStatus === "PAID";
                   const isEditable = workflowStatus === "WAITING_PAYMENT";
                   const created = new Date(order.createdAt);
-                  const expiresAt = new Date(created.getTime() + 15 * 60 * 1000);
+                  const expiresAt = new Date(
+                    created.getTime() + 15 * 60 * 1000,
+                  );
                   const remainMs = expiresAt - nowMs;
                   const remainMin = Math.max(0, Math.ceil(remainMs / 60000));
                   const isPaymentExpired = remainMin <= 0;
@@ -758,70 +760,76 @@ export default function StaffOrderManagementPage() {
                           >
                             <i className="bi bi-pencil-square" />
                           </button>
-                          {workflowStatus === "WAITING_PAYMENT" && !isPaymentExpired && (
-                            <>
-                              <button
-                                className="staff-icon-btn"
-                                type="button"
-                                title="Thanh toán tiền mặt"
-                                disabled={payingOrderId === order.id}
-                                onClick={() => retryPayment(order, "CASH")}
-                                style={{
-                                  background: "#dcfce7",
-                                  color: "#15803d",
-                                  border: "1.5px solid #bbf7d0",
-                                }}
-                              >
-                                {payingOrderId === order.id ? (
-                                  <i
-                                    className="bi bi-arrow-clockwise"
-                                    style={{
-                                      animation: "spin 0.8s linear infinite",
-                                    }}
-                                  />
-                                ) : (
-                                  <i className="bi bi-cash-coin" />
-                                )}
-                              </button>
-                              <button
-                                className="staff-icon-btn"
-                                type="button"
-                                title="Thanh toán QR PayOS"
-                                disabled={payingOrderId === order.id}
-                                onClick={() => retryPayment(order, "QR_PAYOS")}
-                                style={{
-                                  background: "#eef2ff",
-                                  color: "#6366f1",
-                                  border: "1.5px solid #c7d2fe",
-                                }}
-                              >
-                                <i className="bi bi-qr-code" />
-                              </button>
+                          {workflowStatus === "WAITING_PAYMENT" &&
+                            !isPaymentExpired && (
+                              <>
+                                <button
+                                  className="staff-icon-btn"
+                                  type="button"
+                                  title="Thanh toán tiền mặt"
+                                  disabled={payingOrderId === order.id}
+                                  onClick={() => retryPayment(order, "CASH")}
+                                  style={{
+                                    background: "#dcfce7",
+                                    color: "#15803d",
+                                    border: "1.5px solid #bbf7d0",
+                                  }}
+                                >
+                                  {payingOrderId === order.id ? (
+                                    <i
+                                      className="bi bi-arrow-clockwise"
+                                      style={{
+                                        animation: "spin 0.8s linear infinite",
+                                      }}
+                                    />
+                                  ) : (
+                                    <i className="bi bi-cash-coin" />
+                                  )}
+                                </button>
+                                <button
+                                  className="staff-icon-btn"
+                                  type="button"
+                                  title="Thanh toán QR PayOS"
+                                  disabled={payingOrderId === order.id}
+                                  onClick={() =>
+                                    retryPayment(order, "QR_PAYOS")
+                                  }
+                                  style={{
+                                    background: "#eef2ff",
+                                    color: "#6366f1",
+                                    border: "1.5px solid #c7d2fe",
+                                  }}
+                                >
+                                  <i className="bi bi-qr-code" />
+                                </button>
+                                <span
+                                  style={{
+                                    fontSize: "0.62rem",
+                                    color: "#f59e0b",
+                                    fontWeight: 700,
+                                    alignSelf: "center",
+                                  }}
+                                >
+                                  ⏰ {remainMin}p
+                                </span>
+                              </>
+                            )}
+                          {workflowStatus === "WAITING_PAYMENT" &&
+                            isPaymentExpired && (
                               <span
                                 style={{
                                   fontSize: "0.62rem",
-                                  color: "#f59e0b",
+                                  color: "#dc2626",
                                   fontWeight: 700,
                                   alignSelf: "center",
                                 }}
                               >
-                                ⏰ {remainMin}p
+                                Hết hạn
                               </span>
-                            </>
-                          )}
-                          {workflowStatus === "WAITING_PAYMENT" && isPaymentExpired && (
-                            <span
-                              style={{
-                                fontSize: "0.62rem",
-                                color: "#dc2626",
-                                fontWeight: 700,
-                                alignSelf: "center",
-                              }}
-                            >
-                              Hết hạn
-                            </span>
-                          )}
-                          {["WAITING_PAYMENT", "PAID"].includes(workflowStatus) && (
+                            )}
+                          {["WAITING_PAYMENT", "PAID"].includes(
+                            workflowStatus,
+                          ) && (
                             <button
                               className="staff-icon-btn"
                               type="button"
@@ -837,7 +845,9 @@ export default function StaffOrderManagementPage() {
                               {cancellingOrderId === order.id ? (
                                 <i
                                   className="bi bi-arrow-clockwise"
-                                  style={{ animation: "spin 0.8s linear infinite" }}
+                                  style={{
+                                    animation: "spin 0.8s linear infinite",
+                                  }}
                                 />
                               ) : (
                                 <i className="bi bi-x-circle" />
@@ -1335,8 +1345,8 @@ export default function StaffOrderManagementPage() {
                 </div>
                 <div className="d-flex justify-content-between mb-2">
                   <span style={{ color: "#64748b" }}>Đặt cọc booking</span>
-                  <strong style={{ color: "#b91c1c" }}>
-                    −{fmtCur(invoiceData.summary?.depositAmount)}
+                  <strong style={{ color: "#15803d" }}>
+                    +{fmtCur(invoiceData.summary?.depositAmount)}
                   </strong>
                 </div>
                 <hr className="my-2" />

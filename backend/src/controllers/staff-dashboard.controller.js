@@ -22,7 +22,14 @@ const STAFF_TABLE_STATUSES = new Set([
   "Cleaning",
 ]);
 
-const ACCEPTED_ORDER_STATUS_INPUTS = new Set(["PENDING", "CONFIRMED", "PREPARING", "SERVED", "COMPLETED", "CANCELLED"]);
+const ACCEPTED_ORDER_STATUS_INPUTS = new Set([
+  "PENDING",
+  "CONFIRMED",
+  "PREPARING",
+  "SERVED",
+  "COMPLETED",
+  "CANCELLED",
+]);
 
 function isValidObjectId(id) {
   return mongoose.Types.ObjectId.isValid(String(id || ""));
@@ -32,7 +39,9 @@ const normalizeText = (value) => String(value || "").trim();
 const normalizeEmail = (value) => normalizeText(value).toLowerCase();
 
 function resolveMenuAvailabilityAfterStock(currentStatus, nextQty) {
-  const current = String(currentStatus || "").trim().toUpperCase();
+  const current = String(currentStatus || "")
+    .trim()
+    .toUpperCase();
   if (current === "UNAVAILABLE") return "UNAVAILABLE";
   return Number(nextQty || 0) > 0 ? "AVAILABLE" : "OUT_OF_STOCK";
 }
@@ -137,7 +146,9 @@ function buildOrderRows(
     const orderGuest = o.guestInfo || {};
     const orderAmount = Number(o.totalAmount || 0);
     const tableAmount = Number(booking?.depositAmount || 0);
-    const combinedTotal = Number(invoice?.totalAmount ?? orderAmount + tableAmount);
+    const combinedTotal = Number(
+      invoice?.totalAmount ?? orderAmount + tableAmount,
+    );
 
     return {
       id: o._id,
@@ -151,8 +162,10 @@ function buildOrderRows(
         orderGuest?.name ||
         user?.fullName ||
         "Khach le",
-      customerPhone: booking?.guestInfo?.phone || orderGuest?.phone || user?.phone || "",
-      customerEmail: booking?.guestInfo?.email || orderGuest?.email || user?.email || "",
+      customerPhone:
+        booking?.guestInfo?.phone || orderGuest?.phone || user?.phone || "",
+      customerEmail:
+        booking?.guestInfo?.email || orderGuest?.email || user?.email || "",
       status: orderStatus,
       staffStatus,
       paymentStatus,
@@ -190,11 +203,7 @@ export const getStaffTableStatusList = async (req, res) => {
         {
           endTime: { $lt: now },
           status: {
-            $in: [
-              "Pending",
-              "Awaiting_Payment",
-              "Confirmed",
-            ],
+            $in: ["Pending", "Awaiting_Payment", "Confirmed"],
           },
         },
         { $set: { status: "Cancelled" } },
@@ -209,18 +218,16 @@ export const getStaffTableStatusList = async (req, res) => {
         const stillActive = await Booking.find({
           tableId: { $in: occupiedIds },
           status: {
-            $in: [
-              "CheckedIn",
-              "Confirmed",
-              "Awaiting_Payment",
-            ],
+            $in: ["CheckedIn", "Confirmed", "Awaiting_Payment"],
           },
           startTime: { $lte: now },
           endTime: { $gte: now },
         })
           .select("tableId")
           .lean();
-        const activeSet = new Set(stillActive.map((b) => b.tableId?.toString()));
+        const activeSet = new Set(
+          stillActive.map((b) => b.tableId?.toString()),
+        );
         const toRelease = occupiedIds.filter(
           (id) => !activeSet.has(id.toString()),
         );
@@ -262,12 +269,7 @@ export const getStaffTableStatusList = async (req, res) => {
     const activeBookingFilter = {
       tableId: { $in: tableIds },
       status: {
-        $in: [
-          "Pending",
-          "Awaiting_Payment",
-          "Confirmed",
-          "CheckedIn",
-        ],
+        $in: ["Pending", "Awaiting_Payment", "Confirmed", "CheckedIn"],
       },
       startTime: { $lte: now },
       endTime: { $gte: now },
@@ -283,7 +285,9 @@ export const getStaffTableStatusList = async (req, res) => {
     nearFutureEnd.setHours(0, 0, 0, 0);
 
     const scheduleStart = selectedDateRange ? selectedDateRange.from : now;
-    const scheduleEnd = selectedDateRange ? selectedDateRange.to : nearFutureEnd;
+    const scheduleEnd = selectedDateRange
+      ? selectedDateRange.to
+      : nearFutureEnd;
 
     const upcomingBookings = await Booking.find({
       tableId: { $in: tableIds },
@@ -528,7 +532,11 @@ export const findStaffCustomer = async (req, res) => {
   try {
     const q = normalizeText(req.query.q);
     if (!q) {
-      return res.status(400).json({ message: "Vui lòng nhập số điện thoại hoặc email để tìm khách." });
+      return res
+        .status(400)
+        .json({
+          message: "Vui lòng nhập số điện thoại hoặc email để tìm khách.",
+        });
     }
 
     const user = await findCustomerByPhoneOrEmail(q);
@@ -580,14 +588,19 @@ export const createCounterOrder = async (req, res) => {
     let booking = null;
     let customerUser = null;
 
-    const contactToSearch = normalizeText(customerQuery || customerPhone || customerEmail);
+    const contactToSearch = normalizeText(
+      customerQuery || customerPhone || customerEmail,
+    );
     if (contactToSearch) {
       customerUser = await findCustomerByPhoneOrEmail(contactToSearch);
     }
 
-    const resolvedName = normalizeText(customerName) || normalizeText(customerUser?.fullName);
-    const resolvedPhone = normalizeText(customerPhone) || normalizeText(customerUser?.phone);
-    const resolvedEmail = normalizeEmail(customerEmail) || normalizeEmail(customerUser?.email);
+    const resolvedName =
+      normalizeText(customerName) || normalizeText(customerUser?.fullName);
+    const resolvedPhone =
+      normalizeText(customerPhone) || normalizeText(customerUser?.phone);
+    const resolvedEmail =
+      normalizeEmail(customerEmail) || normalizeEmail(customerUser?.email);
 
     if (bookingId) {
       // Case 1: Existing booking
@@ -604,12 +617,6 @@ export const createCounterOrder = async (req, res) => {
         phone: resolvedPhone || normalizeText(booking.guestInfo?.phone),
         email: resolvedEmail || normalizeEmail(booking.guestInfo?.email),
       };
-
-      if (booking.tableId && (!nextGuestInfo.name || (!nextGuestInfo.phone && !nextGuestInfo.email))) {
-        return res.status(400).json({
-          message: "Đơn có bàn phải có tên khách và ít nhất số điện thoại hoặc email.",
-        });
-      }
 
       booking.guestInfo = nextGuestInfo;
       await booking.save();
@@ -648,12 +655,6 @@ export const createCounterOrder = async (req, res) => {
         });
       }
 
-      if (!resolvedName || (!resolvedPhone && !resolvedEmail)) {
-        return res.status(400).json({
-          message: "Đơn có bàn phải có tên khách và ít nhất số điện thoại hoặc email.",
-        });
-      }
-
       const depositAmount = Math.round(pricePerHour * hrs);
 
       booking = await Booking.create({
@@ -675,16 +676,15 @@ export const createCounterOrder = async (req, res) => {
     }
     // Case 3: No table, no booking → menu-only order (booking stays null)
 
-    const hasBookingTable = Boolean(booking?.tableId || hasTable);
-    const effectiveGuestName = normalizeText(booking?.guestInfo?.name || resolvedName);
-    const effectiveGuestPhone = normalizeText(booking?.guestInfo?.phone || resolvedPhone);
-    const effectiveGuestEmail = normalizeEmail(booking?.guestInfo?.email || resolvedEmail);
-
-    if (hasBookingTable && (!effectiveGuestName || (!effectiveGuestPhone && !effectiveGuestEmail))) {
-      return res.status(400).json({
-        message: "Đơn có bàn phải có tên khách và ít nhất số điện thoại hoặc email.",
-      });
-    }
+    const effectiveGuestName = normalizeText(
+      booking?.guestInfo?.name || resolvedName,
+    );
+    const effectiveGuestPhone = normalizeText(
+      booking?.guestInfo?.phone || resolvedPhone,
+    );
+    const effectiveGuestEmail = normalizeEmail(
+      booking?.guestInfo?.email || resolvedEmail,
+    );
 
     // Process menu items
     let validItems = [];
@@ -702,11 +702,19 @@ export const createCounterOrder = async (req, res) => {
         if (!it.menuItemId || qty <= 0) continue;
         const menu = menuMap.get(String(it.menuItemId));
         if (!menu) {
-          return res.status(400).json({ message: "Có món không tồn tại trong thực đơn." });
+          return res
+            .status(400)
+            .json({ message: "Có món không tồn tại trong thực đơn." });
         }
         const stock = Number(menu.stockQuantity || 0);
-        const availability = String(menu.availabilityStatus || "").trim().toUpperCase();
-        const isUnavailable = ["OUT_OF_STOCK", "UNAVAILABLE", "DISCONTINUED"].includes(availability);
+        const availability = String(menu.availabilityStatus || "")
+          .trim()
+          .toUpperCase();
+        const isUnavailable = [
+          "OUT_OF_STOCK",
+          "UNAVAILABLE",
+          "DISCONTINUED",
+        ].includes(availability);
         if (isUnavailable || stock <= 0) {
           return res.status(400).json({
             message: `Món ${menu.name || "đã chọn"} đã hết hàng, vui lòng chọn món khác.`,
@@ -726,7 +734,9 @@ export const createCounterOrder = async (req, res) => {
       }
 
       if (validItems.length === 0) {
-        return res.status(400).json({ message: "Vui lòng chọn ít nhất 1 món hợp lệ." });
+        return res
+          .status(400)
+          .json({ message: "Vui lòng chọn ít nhất 1 món hợp lệ." });
       }
 
       totalAmount = validItems.reduce(
@@ -778,7 +788,9 @@ export const createCounterOrder = async (req, res) => {
     // Create payment link only for non-cash flows when booking exists.
     let paymentResult = null;
     let paymentWarning = null;
-    const normalizedPaymentMethod = String(paymentMethod || "").trim().toUpperCase();
+    const normalizedPaymentMethod = String(paymentMethod || "")
+      .trim()
+      .toUpperCase();
     const shouldCreatePayosLink = booking && normalizedPaymentMethod !== "CASH";
     if (shouldCreatePayosLink) {
       const origin =
@@ -797,7 +809,8 @@ export const createCounterOrder = async (req, res) => {
         });
       } catch (payErr) {
         // Keep order/invoice creation successful even when QR link generation fails.
-        paymentWarning = payErr?.message || "Không thể tạo link thanh toán PayOS.";
+        paymentWarning =
+          payErr?.message || "Không thể tạo link thanh toán PayOS.";
       }
     }
 
@@ -857,7 +870,11 @@ export const updateStaffOrder = async (req, res) => {
         }
       }
 
-      if (targetStatus === "CANCELLED" && isPaid && order.status !== "CANCELLED") {
+      if (
+        targetStatus === "CANCELLED" &&
+        isPaid &&
+        order.status !== "CANCELLED"
+      ) {
         await restoreOrderItemsToStock(order._id);
         if (invoice) {
           invoice.status = "Cancelled";
@@ -1035,9 +1052,21 @@ async function buildStaffInvoicePayload(orderId) {
         }
       : null,
     customer: {
-      name: booking?.guestInfo?.name || order?.guestInfo?.name || user?.fullName || "Khách lẻ",
-      phone: booking?.guestInfo?.phone || order?.guestInfo?.phone || user?.phone || "",
-      email: booking?.guestInfo?.email || order?.guestInfo?.email || user?.email || "",
+      name:
+        booking?.guestInfo?.name ||
+        order?.guestInfo?.name ||
+        user?.fullName ||
+        "Khách lẻ",
+      phone:
+        booking?.guestInfo?.phone ||
+        order?.guestInfo?.phone ||
+        user?.phone ||
+        "",
+      email:
+        booking?.guestInfo?.email ||
+        order?.guestInfo?.email ||
+        user?.email ||
+        "",
     },
     table: table
       ? {
@@ -1219,6 +1248,3 @@ export const getStaffDashboardStats = async (req, res) => {
 };
 
 // GET /api/payments/:bookingId  — get payment page data
-
-
-

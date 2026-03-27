@@ -219,16 +219,15 @@ export default function StaffPOSPage() {
     () =>
       displayedTables
         .filter((t) => t.status === "Available" && !t.activeBooking)
-        .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""))),
+        .sort((a, b) =>
+          String(a.name || "").localeCompare(String(b.name || "")),
+        ),
     [displayedTables],
   );
 
   const availableSeatCount = useMemo(
     () =>
-      availableNowTables.reduce(
-        (sum, t) => sum + Number(t.capacity || 0),
-        0,
-      ),
+      availableNowTables.reduce((sum, t) => sum + Number(t.capacity || 0), 0),
     [availableNowTables],
   );
 
@@ -365,9 +364,7 @@ export default function StaffPOSPage() {
     setCreating(true);
     setError("");
     try {
-      const menuMap = new Map(
-        menuItems.map((m) => [String(m._id), m]),
-      );
+      const menuMap = new Map(menuItems.map((m) => [String(m._id), m]));
       for (const c of cart) {
         const current = menuMap.get(String(c.menuItemId));
         const stock = getMenuStock(current);
@@ -473,9 +470,13 @@ export default function StaffPOSPage() {
         setCustomerName(result.customer.fullName || "");
         setCustomerPhone(result.customer.phone || "");
         setCustomerEmail(result.customer.email || "");
-        setLookupMessage("Đã tìm thấy khách trong hệ thống và tự điền thông tin.");
+        setLookupMessage(
+          "Đã tìm thấy khách trong hệ thống và tự điền thông tin.",
+        );
       } else {
-        setLookupMessage("Không tìm thấy khách trong hệ thống. Có thể nhập thủ công.");
+        setLookupMessage(
+          "Không tìm thấy khách trong hệ thống. Có thể nhập thủ công.",
+        );
       }
     } catch (err) {
       setLookupMessage(err.message || "Không thể tìm khách lúc này.");
@@ -660,8 +661,9 @@ export default function StaffPOSPage() {
                     <tbody>
                       {availableNowTables.map((t) => {
                         const isSelected =
-                          String(selectedTable?.id || selectedTable?._id || "") ===
-                          String(t.id || t._id);
+                          String(
+                            selectedTable?.id || selectedTable?._id || "",
+                          ) === String(t.id || t._id);
                         return (
                           <tr key={String(t.id || t._id)}>
                             <td className="fw-semibold">{t.name}</td>
@@ -904,72 +906,74 @@ export default function StaffPOSPage() {
                       if (getMenuStock(item) <= 0) return null;
                       return (
                         <Col md={6} xl={4} key={String(item._id)}>
-
-                        <div
-                          className="rounded-3 p-2 h-100 d-flex flex-column"
-                          style={{
-                            background: "#fff",
-                            border: "1.5px solid #e2e8f0",
-                            cursor: "pointer",
-                            transition: "all 0.15s",
-                          }}
-                          onClick={() => addToCart(item)}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.borderColor = "#6366f1";
-                            e.currentTarget.style.boxShadow =
-                              "0 4px 12px rgba(99,102,241,0.12)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.borderColor = "#e2e8f0";
-                            e.currentTarget.style.boxShadow = "none";
-                          }}
-                        >
                           <div
-                            className="fw-bold"
-                            style={{ fontSize: "0.85rem", color: "#0f172a" }}
+                            className="rounded-3 p-2 h-100 d-flex flex-column"
+                            style={{
+                              background: "#fff",
+                              border: "1.5px solid #e2e8f0",
+                              cursor: "pointer",
+                              transition: "all 0.15s",
+                            }}
+                            onClick={() => addToCart(item)}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.borderColor = "#6366f1";
+                              e.currentTarget.style.boxShadow =
+                                "0 4px 12px rgba(99,102,241,0.12)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.borderColor = "#e2e8f0";
+                              e.currentTarget.style.boxShadow = "none";
+                            }}
                           >
-                            {item.name}
-                          </div>
-                          <div
-                            className="text-muted"
-                            style={{ fontSize: "0.72rem", flex: 1 }}
-                          >
-                            {item.description || "--"}
-                          </div>
-                          <div className="d-flex justify-content-between align-items-center mt-1">
-                            <span
+                            <div
                               className="fw-bold"
-                              style={{ color: "#15803d", fontSize: "0.85rem" }}
+                              style={{ fontSize: "0.85rem", color: "#0f172a" }}
                             >
-                              {fmtCur(item.price)}
-                            </span>
-                            <div className="d-flex align-items-center gap-1">
+                              {item.name}
+                            </div>
+                            <div
+                              className="text-muted"
+                              style={{ fontSize: "0.72rem", flex: 1 }}
+                            >
+                              {item.description || "--"}
+                            </div>
+                            <div className="d-flex justify-content-between align-items-center mt-1">
                               <span
-                                className="rounded-pill px-2"
+                                className="fw-bold"
                                 style={{
-                                  background: "#fef9c3",
-                                  color: "#92400e",
-                                  fontSize: "0.62rem",
-                                  fontWeight: 700,
+                                  color: "#15803d",
+                                  fontSize: "0.85rem",
                                 }}
                               >
+                                {fmtCur(item.price)}
+                              </span>
+                              <div className="d-flex align-items-center gap-1">
+                                <span
+                                  className="rounded-pill px-2"
+                                  style={{
+                                    background: "#fef9c3",
+                                    color: "#92400e",
+                                    fontSize: "0.62rem",
+                                    fontWeight: 700,
+                                  }}
+                                >
                                   Còn: {getMenuStock(item)}
-                              </span>
-                              <span
-                                className="rounded-pill px-2"
-                                style={{
-                                  background: "#eef2ff",
-                                  color: "#6366f1",
-                                  fontSize: "0.68rem",
-                                  fontWeight: 700,
-                                }}
-                              >
-                                Thêm
-                              </span>
+                                </span>
+                                <span
+                                  className="rounded-pill px-2"
+                                  style={{
+                                    background: "#eef2ff",
+                                    color: "#6366f1",
+                                    fontSize: "0.68rem",
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  Thêm
+                                </span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </Col>
+                        </Col>
                       );
                     })}
                     {availableMenu.length === 0 && (
@@ -1210,7 +1214,9 @@ export default function StaffPOSPage() {
                                   updateQty(item.menuItemId, item.quantity + 1)
                                 }
                                 disabled={(() => {
-                                  const current = menuMapById.get(String(item.menuItemId));
+                                  const current = menuMapById.get(
+                                    String(item.menuItemId),
+                                  );
                                   const stock = getMenuStock(current);
                                   return Number(item.quantity || 0) >= stock;
                                 })()}
@@ -1287,7 +1293,10 @@ export default function StaffPOSPage() {
                         </div>
                       </div>
 
-                      <div className="rounded-3 border p-2 mb-2" style={{ borderColor: "#e2e8f0" }}>
+                      <div
+                        className="rounded-3 border p-2 mb-2"
+                        style={{ borderColor: "#e2e8f0" }}
+                      >
                         <div
                           className="fw-bold mb-2"
                           style={{ fontSize: "0.75rem", color: "#475569" }}
@@ -1356,11 +1365,12 @@ export default function StaffPOSPage() {
                             />
                           </Col>
                         </Row>
-                        {selectedTable && (
-                          <div className="mt-2" style={{ fontSize: "0.7rem", color: "#b91c1c" }}>
-                            Đơn có bàn bắt buộc có Tên và (SĐT hoặc Email).
-                          </div>
-                        )}
+                        <div
+                          className="mt-2"
+                          style={{ fontSize: "0.7rem", color: "#64748b" }}
+                        >
+                          Thông tin khách là tuỳ chọn.
+                        </div>
                       </div>
 
                       {/* Payment buttons */}

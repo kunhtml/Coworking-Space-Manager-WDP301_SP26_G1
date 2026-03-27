@@ -71,7 +71,10 @@ export default function SpaceFormModal({
                     }
                   }}
                   onChange={(e) => {
-                    const digits = String(e.target.value || "").replace(/\D/g, "");
+                    const digits = String(e.target.value || "").replace(
+                      /\D/g,
+                      "",
+                    );
                     if (digits === "") {
                       setFormData({ ...formData, pricePerHour: "" });
                       setPriceError("");
