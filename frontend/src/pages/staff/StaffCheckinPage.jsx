@@ -14,9 +14,7 @@ import { getVietnamDateString } from "../../utils/timezone";
 
 // ── Config trạng thái ─────────────────────────────────────────────────────────
 const STATUS_LABEL = {
-  Pending: "Chờ thanh toán",
-  Awaiting_Payment: "Chờ thanh toán (PayOS)",
-  Confirmed: "Đã xác nhận",
+  Confirmed: "Chưa check-in",
   CheckedIn: "Đã check-in",
   Completed: "Đã hoàn thành",
   Cancelled: "Đã hủy",
@@ -133,24 +131,32 @@ export default function StaffCheckinPage() {
     return () => clearInterval(timer);
   }, []);
 
+  const checkinBookings = useMemo(
+    () =>
+      bookings.filter((b) =>
+        ["Confirmed", "CheckedIn"].includes(String(b.status || "")),
+      ),
+    [bookings],
+  );
+
   // ── Stats ─────────────────────────────────────────────────────────────────
   const statCounts = useMemo(() => {
-    const counts = { all: bookings.length };
+    const counts = { all: checkinBookings.length };
     STAT_GROUPS.forEach((g) => {
       if (g.key !== "all") {
-        counts[g.key] = bookings.filter((b) => b.status === g.key).length;
+        counts[g.key] = checkinBookings.filter((b) => b.status === g.key).length;
       }
     });
     return counts;
-  }, [bookings]);
+  }, [checkinBookings]);
 
   // ── Filter ────────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
-    let rows = bookings;
+    let rows = checkinBookings;
     if (statusFilter !== "all")
       rows = rows.filter((b) => b.status === statusFilter);
     return rows;
-  }, [bookings, statusFilter]);
+  }, [checkinBookings, statusFilter]);
 
   // ── Check-in confirm ──────────────────────────────────────────────────────
   const handleConfirmCheckIn = async () => {
@@ -302,11 +308,8 @@ export default function StaffCheckinPage() {
             onChange={(e) => setStatusFilter(e.target.value)}
           >
             <option value="all">Tất cả trạng thái</option>
-            {Object.entries(STATUS_LABEL).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
+            <option value="Confirmed">Chưa check-in</option>
+            <option value="CheckedIn">Đã check-in</option>
           </Form.Select>
         </Col>
         {(statusFilter !== "all" || search || dateFilter !== todayStr()) && (
@@ -337,7 +340,7 @@ export default function StaffCheckinPage() {
             title={
               bookings.length === 0
                 ? "Không có booking nào trong ngày này"
-                : "Không có booking phù hợp bộ lọc"
+                : "Không có booking check-in phù hợp bộ lọc"
             }
           />
           {bookings.length > 0 && (

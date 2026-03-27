@@ -29,8 +29,13 @@ function normalizeMenuStatus(item) {
   return stock > 0 ? "AVAILABLE" : "OUT_OF_STOCK";
 }
 
+function getMenuStock(item) {
+  return Number(item?.stockQuantity ?? item?.quantity ?? 0);
+}
+
 export default function StaffCounterOrderPage() {
   const [tables, setTables] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
   const [cart, setCart] = useState([]);
   const [tableId, setTableId] = useState("");
@@ -47,12 +52,14 @@ export default function StaffCounterOrderPage() {
       setLoading(true);
       setError("");
       try {
-        const [tableRows, menuRows] = await Promise.all([
+        const [tableRows, menuRows, categoryRows] = await Promise.all([
           getStaffTables(),
           apiClient.get("/menu/items?admin=true"),
+          apiClient.get("/menu/categories"),
         ]);
         setTables(Array.isArray(tableRows) ? tableRows : []);
         setMenuItems(Array.isArray(menuRows) ? menuRows : []);
+        setCategories(Array.isArray(categoryRows) ? categoryRows : []);
       } catch (err) {
         setError(err.message || "Không thể tải dữ liệu POS.");
       } finally {
@@ -64,11 +71,18 @@ export default function StaffCounterOrderPage() {
   }, []);
 
   const availableMenu = useMemo(
-    () =>
-      menuItems.filter((item) => {
-        return normalizeMenuStatus(item) === "AVAILABLE";
-      }),
-    [menuItems],
+    () => {
+      const activeCategoryIds = new Set(
+        categories.map((c) => String(c?._id || "")).filter(Boolean),
+      );
+      return menuItems.filter((item) => {
+        if (normalizeMenuStatus(item) !== "AVAILABLE") return false;
+        const catId = String(item?.categoryId?._id || item?.categoryId || "");
+        if (!catId) return true;
+        return activeCategoryIds.has(catId);
+      });
+    },
+    [menuItems, categories],
   );
 
   const cartTotal = useMemo(
@@ -81,12 +95,27 @@ export default function StaffCounterOrderPage() {
     [cart],
   );
 
+  const menuMapById = useMemo(
+    () => new Map(menuItems.map((m) => [String(m._id), m])),
+    [menuItems],
+  );
+
   const addToCart = (menuItem) => {
+    const stock = getMenuStock(menuItem);
+    if (stock <= 0) {
+      setError(`Món ${menuItem.name || "đã chọn"} đã hết hàng.`);
+      return;
+    }
+
     setCart((prev) => {
       const found = prev.find(
         (item) => String(item.menuItemId) === String(menuItem._id),
       );
       if (found) {
+        if (Number(found.quantity || 0) >= stock) {
+          setError(`Món ${menuItem.name || "đã chọn"} chỉ còn ${stock} phần.`);
+          return prev;
+        }
         return prev.map((item) =>
           String(item.menuItemId) === String(menuItem._id)
             ? { ...item, quantity: Number(item.quantity || 0) + 1 }
@@ -113,10 +142,18 @@ export default function StaffCounterOrderPage() {
       );
       return;
     }
+
+    const menu = menuMapById.get(String(menuItemId));
+    const maxQty = Math.max(0, getMenuStock(menu));
+    const safeQty = Math.min(nextQty, maxQty || nextQty);
+    if (maxQty > 0 && nextQty > maxQty) {
+      setError(`Món ${menu?.name || "đã chọn"} chỉ còn ${maxQty} phần.`);
+    }
+
     setCart((prev) =>
       prev.map((item) =>
         String(item.menuItemId) === String(menuItemId)
-          ? { ...item, quantity: nextQty }
+          ? { ...item, quantity: safeQty }
           : item,
       ),
     );

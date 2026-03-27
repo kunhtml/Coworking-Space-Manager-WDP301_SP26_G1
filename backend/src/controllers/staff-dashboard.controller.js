@@ -8,7 +8,6 @@ import MenuItem from "../models/menu_item.js";
 import User from "../models/user.js";
 import Invoice from "../models/invoice.js";
 import { createCounterOrderPayment } from "../services/payos.service.js";
-import { ORDER_STATUS, normalizeOrderStatus } from "../constants/domain.js";
 import {
   getVietnamDateRange,
   getVietnamDateString,
@@ -31,6 +30,38 @@ function isValidObjectId(id) {
 
 const normalizeText = (value) => String(value || "").trim();
 const normalizeEmail = (value) => normalizeText(value).toLowerCase();
+
+function resolveMenuAvailabilityAfterStock(currentStatus, nextQty) {
+  const current = String(currentStatus || "").trim().toUpperCase();
+  if (current === "UNAVAILABLE") return "UNAVAILABLE";
+  return Number(nextQty || 0) > 0 ? "AVAILABLE" : "OUT_OF_STOCK";
+}
+
+async function restoreOrderItemsToStock(orderId) {
+  const orderItems = await OrderItem.find({ orderId }).lean();
+  const qtyByMenuId = new Map();
+  for (const item of orderItems) {
+    const key = item.menuItemId?.toString();
+    if (!key) continue;
+    qtyByMenuId.set(
+      key,
+      Number(qtyByMenuId.get(key) || 0) + Number(item.quantity || 0),
+    );
+  }
+
+  for (const [menuId, restoreQty] of qtyByMenuId.entries()) {
+    const menu = await MenuItem.findById(menuId);
+    if (!menu) continue;
+    const currentQty = Number(menu.stockQuantity || 0);
+    const nextQty = Math.max(0, currentQty + Number(restoreQty || 0));
+    menu.stockQuantity = nextQty;
+    menu.availabilityStatus = resolveMenuAvailabilityAfterStock(
+      menu.availabilityStatus,
+      nextQty,
+    );
+    await menu.save();
+  }
+}
 
 async function findCustomerByPhoneOrEmail(keyword) {
   const q = normalizeText(keyword);
@@ -84,14 +115,14 @@ function buildOrderRows(
 
     let paymentStatus = "WAITING_PAYMENT";
     if (orderStatus === "CANCELLED") {
-      paymentStatus = "CANCELLED";
+      paymentStatus = isPaid ? "REFUNDED" : "CANCELLED";
     } else if (isPaid) {
       paymentStatus = "PAID";
     }
 
     let staffStatus = "WAITING_PAYMENT";
     if (orderStatus === "CANCELLED") {
-      staffStatus = "CANCELLED";
+      staffStatus = isPaid ? "REFUNDED" : "CANCELLED";
     } else if (orderStatus === "COMPLETED") {
       staffStatus = "COMPLETED";
     } else if (isPaid) {
@@ -104,6 +135,9 @@ function buildOrderRows(
       userMap.get(booking?.userId?.toString()) ||
       userMap.get(o.userId?.toString());
     const orderGuest = o.guestInfo || {};
+    const orderAmount = Number(o.totalAmount || 0);
+    const tableAmount = Number(booking?.depositAmount || 0);
+    const combinedTotal = Number(invoice?.totalAmount ?? orderAmount + tableAmount);
 
     return {
       id: o._id,
@@ -124,7 +158,9 @@ function buildOrderRows(
       paymentStatus,
       invoiceStatus: invoice?.status || "Pending",
       remainingAmount: invoiceRemaining,
-      totalAmount: Number(invoice?.totalAmount ?? o.totalAmount ?? 0),
+      orderAmount,
+      tableAmount,
+      totalAmount: combinedTotal,
       createdAt: o.createdAt,
       items: itemMap.get(o._id.toString()) || [],
     };
@@ -133,57 +169,67 @@ function buildOrderRows(
 
 export const getStaffTableStatusList = async (req, res) => {
   try {
-    const { status, search } = req.query;
+    const { status, search, date } = req.query;
     const tableFilter = {};
 
     if (status && status !== "all") {
       tableFilter.status = status;
     }
 
-    const now = new Date();
+    const realNow = new Date();
+    const selectedDateRange = date ? getVietnamDateRange(date) : null;
+    if (date && !selectedDateRange) {
+      return res.status(400).json({ message: "Ngày xem lịch không hợp lệ." });
+    }
+    const now = selectedDateRange ? selectedDateRange.from : realNow;
+    const shouldAutoSyncRealtime = !selectedDateRange;
 
     // Auto-cancel expired bookings (endTime passed, still not checked-in)
-    await Booking.updateMany(
-      {
-        endTime: { $lt: now },
-        status: {
-          $in: [
-            "Pending",
-            "Awaiting_Payment",
-            "Confirmed",
-          ],
+    if (shouldAutoSyncRealtime) {
+      await Booking.updateMany(
+        {
+          endTime: { $lt: now },
+          status: {
+            $in: [
+              "Pending",
+              "Awaiting_Payment",
+              "Confirmed",
+            ],
+          },
         },
-      },
-      { $set: { status: "Cancelled" } },
-    );
+        { $set: { status: "Cancelled" } },
+      );
+    }
 
     // Auto-release Occupied tables that have no active booking right now
-    const occupiedTables = await Table.find({ status: "Occupied" }).lean();
-    if (occupiedTables.length > 0) {
-      const occupiedIds = occupiedTables.map((t) => t._id);
-      const stillActive = await Booking.find({
-        tableId: { $in: occupiedIds },
-        status: {
-          $in: [
-            "CheckedIn",
-            "Confirmed",
-            "Awaiting_Payment",
-          ],
-        },
-        startTime: { $lte: now },
-        endTime: { $gte: now },
-      })
-        .select("tableId")
-        .lean();
-      const activeSet = new Set(stillActive.map((b) => b.tableId?.toString()));
-      const toRelease = occupiedIds.filter(
-        (id) => !activeSet.has(id.toString()),
-      );
-      if (toRelease.length > 0) {
-        await Table.updateMany(
-          { _id: { $in: toRelease } },
-          { $set: { status: "Available" } },
+    if (shouldAutoSyncRealtime) {
+      const occupiedTables = await Table.find({ status: "Occupied" }).lean();
+      if (occupiedTables.length > 0) {
+        const occupiedIds = occupiedTables.map((t) => t._id);
+        const stillActive = await Booking.find({
+          tableId: { $in: occupiedIds },
+          status: {
+            $in: [
+              "CheckedIn",
+              "Confirmed",
+              "Awaiting_Payment",
+            ],
+          },
+          startTime: { $lte: now },
+          endTime: { $gte: now },
+        })
+          .select("tableId")
+          .lean();
+        const activeSet = new Set(stillActive.map((b) => b.tableId?.toString()));
+        const toRelease = occupiedIds.filter(
+          (id) => !activeSet.has(id.toString()),
         );
+        if (toRelease.length > 0) {
+          await Table.updateMany(
+            { _id: { $in: toRelease } },
+            { $set: { status: "Available" } },
+          );
+        }
       }
     }
 
@@ -213,7 +259,7 @@ export const getStaffTableStatusList = async (req, res) => {
     }
 
     const tableIds = tables.map((t) => t._id);
-    const activeBookings = await Booking.find({
+    const activeBookingFilter = {
       tableId: { $in: tableIds },
       status: {
         $in: [
@@ -225,22 +271,27 @@ export const getStaffTableStatusList = async (req, res) => {
       },
       startTime: { $lte: now },
       endTime: { $gte: now },
-    })
+    };
+
+    const activeBookings = await Booking.find(activeBookingFilter)
       .sort({ startTime: 1 })
       .lean();
 
-    // Also fetch upcoming bookings (future, today + tomorrow) so staff sees occupied slots
-    const endOfTomorrow = new Date(now);
-    endOfTomorrow.setDate(endOfTomorrow.getDate() + 2);
-    endOfTomorrow.setHours(0, 0, 0, 0);
+    // For a selected date, return schedule in that day. Otherwise keep near-future window.
+    const nearFutureEnd = new Date(now);
+    nearFutureEnd.setDate(nearFutureEnd.getDate() + 2);
+    nearFutureEnd.setHours(0, 0, 0, 0);
+
+    const scheduleStart = selectedDateRange ? selectedDateRange.from : now;
+    const scheduleEnd = selectedDateRange ? selectedDateRange.to : nearFutureEnd;
 
     const upcomingBookings = await Booking.find({
       tableId: { $in: tableIds },
       status: {
         $in: ["Pending", "Awaiting_Payment", "Confirmed", "CheckedIn"],
       },
-      endTime: { $gt: now },
-      startTime: { $lt: endOfTomorrow },
+      endTime: { $gt: scheduleStart },
+      startTime: { $lt: scheduleEnd },
     })
       .sort({ startTime: 1 })
       .lean();
@@ -783,7 +834,13 @@ export const updateStaffOrder = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy đơn hàng." });
     }
 
+    const invoice = await Invoice.findOne({ orderIds: order._id });
+    const invoiceRemaining = Number(invoice?.remainingAmount || 0);
+    const invoiceStatus = invoice?.status || "Pending";
+    const isPaid = invoiceStatus === "Paid" || invoiceRemaining <= 0;
+
     let touched = false;
+    let didRefund = false;
     if (typeof status === "string" && status.trim()) {
       const rawStatus = status.trim().toUpperCase();
       if (!ACCEPTED_ORDER_STATUS_INPUTS.has(rawStatus)) {
@@ -793,19 +850,29 @@ export const updateStaffOrder = async (req, res) => {
       }
       const targetStatus = rawStatus;
       if (targetStatus === "COMPLETED") {
-        const invoice = await Invoice.findOne({ orderIds: order._id })
-          .select("status remainingAmount")
-          .lean();
-        const invoiceRemaining = Number(invoice?.remainingAmount || 0);
-        const invoiceStatus = invoice?.status || "Pending";
-        const isPaid =
-          invoiceStatus === "Paid" || invoiceRemaining <= 0;
         if (!isPaid) {
           return res.status(400).json({
             message: "Đơn chưa thanh toán, không thể xác nhận hoàn thành.",
           });
         }
       }
+
+      if (targetStatus === "CANCELLED" && isPaid && order.status !== "CANCELLED") {
+        await restoreOrderItemsToStock(order._id);
+        if (invoice) {
+          invoice.status = "Cancelled";
+          invoice.remainingAmount = 0;
+          await invoice.save();
+        }
+        didRefund = true;
+      }
+
+      if (targetStatus === "CANCELLED" && !isPaid && invoice) {
+        invoice.status = "Cancelled";
+        invoice.remainingAmount = 0;
+        await invoice.save();
+      }
+
       order.status = targetStatus;
       touched = true;
     } else {
@@ -813,6 +880,12 @@ export const updateStaffOrder = async (req, res) => {
     }
 
     if (Array.isArray(items)) {
+      if (isPaid) {
+        return res.status(400).json({
+          message: "Đơn đã thanh toán, chỉ có thể hủy đơn để hoàn.",
+        });
+      }
+
       const menuIds = [
         ...new Set(items.map((i) => i.menuItemId).filter(Boolean)),
       ];
@@ -825,6 +898,24 @@ export const updateStaffOrder = async (req, res) => {
         if (!it.menuItemId || qty <= 0) continue;
         const menu = menuMap.get(String(it.menuItemId));
         if (!menu) continue;
+        const stock = Number(menu.stockQuantity || 0);
+        const availability = String(menu.availabilityStatus || "")
+          .trim()
+          .toUpperCase();
+        const isUnavailable =
+          availability === "UNAVAILABLE" ||
+          availability === "OUT_OF_STOCK" ||
+          availability === "DISCONTINUED";
+        if (isUnavailable || stock <= 0) {
+          return res.status(400).json({
+            message: `Món ${menu.name || "đã chọn"} hiện không còn để thêm vào đơn.`,
+          });
+        }
+        if (qty > stock) {
+          return res.status(400).json({
+            message: `Món ${menu.name || "đã chọn"} chỉ còn ${stock} phần.`,
+          });
+        }
         validItems.push({
           menuItemId: menu._id,
           quantity: qty,
@@ -864,7 +955,9 @@ export const updateStaffOrder = async (req, res) => {
     await order.save();
 
     res.json({
-      message: "Cập nhật đơn hàng thành công.",
+      message: didRefund
+        ? "Đã hủy đơn và hoàn số lượng món vào kho."
+        : "Cập nhật đơn hàng thành công.",
       order: {
         id: order._id,
         status: order.status,

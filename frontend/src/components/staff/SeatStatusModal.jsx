@@ -6,6 +6,8 @@ export default function SeatStatusModal({
   selected,
   activeBooking,
   upcomingBookings = [],
+  bookedSlots = [],
+  freeSlots = [],
   formatTime,
   bookingStatusLabel,
   onGoToPOS,
@@ -73,6 +75,40 @@ export default function SeatStatusModal({
             <div className="text-muted" style={{ fontSize: "0.75rem" }}>Chưa có booking nào sắp tới.</div>
           </div>
         )}
+
+        <div className="mt-3 rounded-3 p-3" style={{ background: "#eff6ff", border: "1px solid #bfdbfe" }}>
+          <div className="fw-bold mb-2" style={{ color: "#1d4ed8" }}>
+            Thời gian đã đặt
+          </div>
+          {bookedSlots.length > 0 ? (
+            <div className="d-flex flex-column gap-1">
+              {bookedSlots.slice(0, 5).map((slot, idx) => (
+                <div key={idx} className="small fw-semibold" style={{ color: "#1e40af" }}>
+                  • {slot.label}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="small text-muted">Chưa có lịch đặt.</div>
+          )}
+        </div>
+
+        <div className="mt-2 rounded-3 p-3" style={{ background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
+          <div className="fw-bold mb-2" style={{ color: "#166534" }}>
+            Thời gian trống
+          </div>
+          {freeSlots.length > 0 ? (
+            <div className="d-flex flex-column gap-1">
+              {freeSlots.slice(0, 5).map((slot, idx) => (
+                <div key={idx} className="small fw-semibold" style={{ color: "#166534" }}>
+                  • {slot.label}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="small text-muted">Không còn khung trống hôm nay.</div>
+          )}
+        </div>
       </Modal.Body>
       <Modal.Footer className="border-0 pt-0 px-3 pb-3 d-flex flex-wrap">
         {onGoToPOS && (

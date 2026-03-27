@@ -94,6 +94,105 @@ function formatTime(date) {
   });
 }
 
+function formatSlotLabel(start, end) {
+  const s = new Date(start);
+  const e = new Date(end);
+  const datePrefix =
+    s.toDateString() === new Date().toDateString()
+      ? ""
+      : `${s.toLocaleDateString("vi-VN")} `;
+  return `${datePrefix}${formatTime(s)}-${formatTime(e)}`;
+}
+
+function getWindowForDate(selectedDate) {
+  if (!selectedDate) {
+    const start = new Date();
+    const end = new Date(start);
+    end.setHours(23, 59, 59, 999);
+    return { start, end };
+  }
+  const start = new Date(`${selectedDate}T00:00:00`);
+  const end = new Date(`${selectedDate}T23:59:59.999`);
+  return { start, end };
+}
+
+function buildTableTimeline(table, windowStart, windowEnd) {
+  const rawSlots = [];
+  const pushSlot = (booking) => {
+    if (!booking?.startTime || !booking?.endTime) return;
+    const start = new Date(booking.startTime);
+    const end = new Date(booking.endTime);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return;
+    if (end <= start) return;
+    rawSlots.push({ start, end });
+  };
+
+  pushSlot(table.activeBooking);
+  (table.upcomingBookings || []).forEach(pushSlot);
+
+  const merged = rawSlots
+    .sort((a, b) => a.start - b.start)
+    .reduce((acc, cur) => {
+      const last = acc[acc.length - 1];
+      if (!last || cur.start > last.end) {
+        acc.push({ ...cur });
+      } else if (cur.end > last.end) {
+        last.end = cur.end;
+      }
+      return acc;
+    }, []);
+
+  const bookedSlots = merged.map((s) => ({
+    start: s.start,
+    end: s.end,
+    label: formatSlotLabel(s.start, s.end),
+  }));
+
+  const freeSlots = [];
+  let cursor = new Date(windowStart);
+
+  const todayBookings = merged
+    .map((slot) => ({
+      start: slot.start < windowStart ? new Date(windowStart) : slot.start,
+      end: slot.end > windowEnd ? windowEnd : slot.end,
+    }))
+    .filter((slot) => slot.end > slot.start);
+
+  todayBookings.forEach((slot) => {
+    if (slot.start > cursor) {
+      freeSlots.push({
+        start: new Date(cursor),
+        end: new Date(slot.start),
+        label: `${formatTime(cursor)}-${formatTime(slot.start)}`,
+      });
+    }
+    if (slot.end > cursor) {
+      cursor = new Date(slot.end);
+    }
+  });
+
+  if (cursor < windowEnd) {
+    freeSlots.push({
+      start: new Date(cursor),
+      end: new Date(windowEnd),
+      label: `${formatTime(cursor)}-${formatTime(windowEnd)}`,
+    });
+  }
+
+  return {
+    bookedSlots,
+    freeSlots,
+    bookedSummary:
+      bookedSlots.length > 0
+        ? bookedSlots.slice(0, 2).map((s) => s.label).join(", ")
+        : "Chưa có lịch đặt",
+    freeSummary:
+      freeSlots.length > 0
+        ? freeSlots.slice(0, 2).map((s) => s.label).join(", ")
+        : "Không còn khung trống hôm nay",
+  };
+}
+
 function groupByType(tables) {
   const map = {};
   tables.forEach((t) => {
@@ -120,6 +219,7 @@ export default function StaffSeatMapPage() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterTableType, setFilterTableType] = useState("all");
   const [search, setSearch] = useState("");
+  const [scheduleDate, setScheduleDate] = useState("");
 
   // hover animation
   const [hoveredId, setHoveredId] = useState(null);
@@ -135,14 +235,14 @@ export default function StaffSeatMapPage() {
     try {
       setLoading(true);
       setError("");
-      const data = await getStaffTables();
+      const data = await getStaffTables({ date: scheduleDate || undefined });
       setTables(Array.isArray(data) ? data : data.tables || []);
     } catch (err) {
       setError(err.message || "Không thể tải danh sách bàn");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [scheduleDate]);
 
   useEffect(() => {
     fetchTables();
@@ -153,6 +253,7 @@ export default function StaffSeatMapPage() {
 
   // ── Filter & Search (client-side) ─────────────────────────────────────────
   const displayed = useMemo(() => {
+    const windowRange = getWindowForDate(scheduleDate);
     let rows = tables;
     if (filterStatus !== "all") {
       rows = rows.filter((t) => t.status === filterStatus);
@@ -168,8 +269,11 @@ export default function StaffSeatMapPage() {
           (t.tableType || "").toLowerCase().includes(q),
       );
     }
-    return rows;
-  }, [tables, filterStatus, filterTableType, search]);
+    return rows.map((t) => ({
+      ...t,
+      ...buildTableTimeline(t, windowRange.start, windowRange.end),
+    }));
+  }, [tables, filterStatus, filterTableType, search, scheduleDate]);
 
   const tableTypeOptions = useMemo(
     () =>
@@ -365,6 +469,14 @@ export default function StaffSeatMapPage() {
             placeholder="Tìm tên bàn, loại bàn..."
           />
         </Col>
+        <Col md={2}>
+          <Form.Control
+            type="date"
+            className="staff-filter-control"
+            value={scheduleDate}
+            onChange={(e) => setScheduleDate(e.target.value)}
+          />
+        </Col>
         <Col md={3}>
           <Form.Select
             className="staff-filter-control"
@@ -474,6 +586,8 @@ export default function StaffSeatMapPage() {
         selected={selected}
         activeBooking={selected?.activeBooking}
         upcomingBookings={selected?.upcomingBookings || []}
+        bookedSlots={selected?.bookedSlots || []}
+        freeSlots={selected?.freeSlots || []}
         error={error}
         statuses={ALL_STATUSES}
         getCfg={getCfg}

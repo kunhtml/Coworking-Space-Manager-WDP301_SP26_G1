@@ -51,6 +51,12 @@ const ORDER_STATUS_UI = {
     color: "#b91c1c",
     icon: "bi-x-circle",
   },
+  REFUNDED: {
+    label: "Đơn bị hoàn",
+    bg: "#ffedd5",
+    color: "#c2410c",
+    icon: "bi-arrow-counterclockwise",
+  },
 };
 
 const STAT_GROUPS = [
@@ -89,6 +95,13 @@ const STAT_GROUPS = [
     bg: "#fee2e2",
     color: "#b91c1c",
   },
+  {
+    key: "REFUNDED",
+    label: "Đơn bị hoàn",
+    icon: "bi-arrow-counterclockwise",
+    bg: "#ffedd5",
+    color: "#c2410c",
+  },
 ];
 
 function getWorkflowStatus(order) {
@@ -96,7 +109,7 @@ function getWorkflowStatus(order) {
     .trim()
     .toUpperCase();
   if (raw === "CANCELED") return "CANCELLED";
-  if (["WAITING_PAYMENT", "PAID", "COMPLETED", "CANCELLED"].includes(raw)) {
+  if (["WAITING_PAYMENT", "PAID", "COMPLETED", "CANCELLED", "REFUNDED"].includes(raw)) {
     return raw;
   }
   return "WAITING_PAYMENT";
@@ -298,7 +311,9 @@ export default function StaffOrderManagementPage() {
   const openEditOrder = (order) => {
     setEditingOrder(order);
     setEditingStatus(
-      getWorkflowStatus(order) === "CANCELLED" ? "CANCELLED" : "COMPLETED",
+      ["CANCELLED", "REFUNDED"].includes(getWorkflowStatus(order))
+        ? "CANCELLED"
+        : "COMPLETED",
     );
     setEditingItems(
       (order.items || []).length
@@ -329,10 +344,12 @@ export default function StaffOrderManagementPage() {
     setUpdating(true);
     setError("");
     try {
-      await updateStaffOrder(editingOrder.id, {
-        status: editingStatus,
-        items: editingItems,
-      });
+      const canEditItems = getWorkflowStatus(editingOrder) === "WAITING_PAYMENT";
+      const payload = { status: editingStatus };
+      if (canEditItems) {
+        payload.items = editingItems;
+      }
+      await updateStaffOrder(editingOrder.id, payload);
       setShowEditModal(false);
       setSuccessMsg("✅ Cập nhật đơn hàng thành công!");
       await loadPageData();
@@ -593,7 +610,9 @@ export default function StaffOrderManagementPage() {
                   <th>KHÁCH HÀNG</th>
                   <th>BÀN</th>
                   <th>MÓN</th>
-                  <th>TỔNG</th>
+                  <th>TIỀN MÓN</th>
+                  <th>TIỀN BÀN</th>
+                  <th>TỔNG CỘNG</th>
                   <th>TRẠNG THÁI</th>
                   <th>GIỜ / NGÀY</th>
                   <th>THAO TÁC</th>
@@ -609,6 +628,12 @@ export default function StaffOrderManagementPage() {
                     icon: "bi-question",
                   };
                   const canComplete = workflowStatus === "PAID";
+                  const isEditable = workflowStatus === "WAITING_PAYMENT";
+                  const created = new Date(order.createdAt);
+                  const expiresAt = new Date(created.getTime() + 15 * 60 * 1000);
+                  const remainMs = expiresAt - Date.now();
+                  const remainMin = Math.max(0, Math.ceil(remainMs / 60000));
+                  const isPaymentExpired = remainMin <= 0;
                   return (
                     <tr key={String(order.id)}>
                       <td>
@@ -657,6 +682,16 @@ export default function StaffOrderManagementPage() {
                       </td>
                       <td>
                         <span className="fw-bold" style={{ color: "#15803d" }}>
+                          {fmtCur(order.orderAmount)}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="fw-bold" style={{ color: "#1d4ed8" }}>
+                          {fmtCur(order.tableAmount)}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="fw-bold" style={{ color: "#15803d" }}>
                           {fmtCur(order.totalAmount)}
                         </span>
                       </td>
@@ -685,10 +720,19 @@ export default function StaffOrderManagementPage() {
                             type="button"
                             title="Cập nhật đơn"
                             onClick={() => openEditOrder(order)}
+                            disabled={!isEditable}
+                            style={
+                              !isEditable
+                                ? {
+                                    opacity: 0.45,
+                                    cursor: "not-allowed",
+                                  }
+                                : undefined
+                            }
                           >
                             <i className="bi bi-pencil-square" />
                           </button>
-                          {workflowStatus === "WAITING_PAYMENT" && (
+                          {workflowStatus === "WAITING_PAYMENT" && !isPaymentExpired && (
                             <>
                               <button
                                 className="staff-icon-btn"
@@ -727,41 +771,29 @@ export default function StaffOrderManagementPage() {
                               >
                                 <i className="bi bi-qr-code" />
                               </button>
-                              {(() => {
-                                const created = new Date(order.createdAt);
-                                const expiresAt = new Date(
-                                  created.getTime() + 15 * 60 * 1000,
-                                );
-                                const remainMs = expiresAt - Date.now();
-                                const remainMin = Math.max(
-                                  0,
-                                  Math.ceil(remainMs / 60000),
-                                );
-                                return remainMin > 0 ? (
-                                  <span
-                                    style={{
-                                      fontSize: "0.62rem",
-                                      color: "#f59e0b",
-                                      fontWeight: 700,
-                                      alignSelf: "center",
-                                    }}
-                                  >
-                                    ⏰ {remainMin}p
-                                  </span>
-                                ) : (
-                                  <span
-                                    style={{
-                                      fontSize: "0.62rem",
-                                      color: "#dc2626",
-                                      fontWeight: 700,
-                                      alignSelf: "center",
-                                    }}
-                                  >
-                                    Hết hạn
-                                  </span>
-                                );
-                              })()}
+                              <span
+                                style={{
+                                  fontSize: "0.62rem",
+                                  color: "#f59e0b",
+                                  fontWeight: 700,
+                                  alignSelf: "center",
+                                }}
+                              >
+                                ⏰ {remainMin}p
+                              </span>
                             </>
+                          )}
+                          {workflowStatus === "WAITING_PAYMENT" && isPaymentExpired && (
+                            <span
+                              style={{
+                                fontSize: "0.62rem",
+                                color: "#dc2626",
+                                fontWeight: 700,
+                                alignSelf: "center",
+                              }}
+                            >
+                              Hết hạn
+                            </span>
                           )}
                           {canComplete && (
                             <button
@@ -1066,6 +1098,15 @@ export default function StaffOrderManagementPage() {
               </div>
             </div>
 
+            {editingOrder && getWorkflowStatus(editingOrder) !== "WAITING_PAYMENT" && (
+              <Alert
+                className="border-0 rounded-3 mb-3"
+                style={{ background: "#fff7ed", color: "#c2410c" }}
+              >
+                Đơn đã thanh toán: chỉ hỗ trợ hủy đơn (đơn bị hoàn), không cho chỉnh/thêm món.
+              </Alert>
+            )}
+
             {/* Customer info (read-only) */}
             {editingOrder && (
               <div
@@ -1102,6 +1143,10 @@ export default function StaffOrderManagementPage() {
                 type="button"
                 className="rounded-3"
                 onClick={addEditItem}
+                disabled={
+                  !editingOrder ||
+                  getWorkflowStatus(editingOrder) !== "WAITING_PAYMENT"
+                }
               >
                 <i className="bi bi-plus-lg me-1" />
                 Thêm món
@@ -1118,6 +1163,10 @@ export default function StaffOrderManagementPage() {
                     value={item.menuItemId}
                     onChange={(e) =>
                       onChangeEditItem(index, "menuItemId", e.target.value)
+                    }
+                    disabled={
+                      !editingOrder ||
+                      getWorkflowStatus(editingOrder) !== "WAITING_PAYMENT"
                     }
                     required
                   >
@@ -1137,6 +1186,10 @@ export default function StaffOrderManagementPage() {
                     onChange={(e) =>
                       onChangeEditItem(index, "quantity", e.target.value)
                     }
+                    disabled={
+                      !editingOrder ||
+                      getWorkflowStatus(editingOrder) !== "WAITING_PAYMENT"
+                    }
                     required
                     placeholder="SL"
                   />
@@ -1147,6 +1200,10 @@ export default function StaffOrderManagementPage() {
                     onChange={(e) =>
                       onChangeEditItem(index, "note", e.target.value)
                     }
+                    disabled={
+                      !editingOrder ||
+                      getWorkflowStatus(editingOrder) !== "WAITING_PAYMENT"
+                    }
                     placeholder="Ghi chú"
                   />
                 </Col>
@@ -1156,6 +1213,10 @@ export default function StaffOrderManagementPage() {
                     type="button"
                     className="w-100 rounded-3"
                     onClick={() => removeEditItem(index)}
+                    disabled={
+                      !editingOrder ||
+                      getWorkflowStatus(editingOrder) !== "WAITING_PAYMENT"
+                    }
                   >
                     <i className="bi bi-x-lg" />
                   </Button>

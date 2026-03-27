@@ -327,7 +327,7 @@ export const getAllBookings = async (req, res) => {
       filter.startTime = { $gte: range.from, $lte: range.to };
     }
 
-    // Auto-cancel expired bookings (endTime already passed but still not checked-in)
+    // Auto-cancel expired bookings that were never checked-in.
     const now = new Date();
     await Booking.updateMany(
       {
@@ -341,6 +341,15 @@ export const getAllBookings = async (req, res) => {
         },
       },
       { $set: { status: "Cancelled" } },
+    );
+
+    // Auto-complete bookings that were checked-in and have passed endTime.
+    await Booking.updateMany(
+      {
+        endTime: { $lt: now },
+        status: "CheckedIn",
+      },
+      { $set: { status: "Completed" } },
     );
 
     let bookings = await Booking.find(filter).sort({ createdAt: -1 }).lean();

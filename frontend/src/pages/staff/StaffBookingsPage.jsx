@@ -10,6 +10,7 @@ const STATUS_MAP = {
   CheckedIn: { label: "Đang sử dụng", bg: "primary", textClass: "text-white" },
   Completed: { label: "Đã hoàn thành", bg: "secondary", textClass: "text-white" },
   Cancelled: { label: "Đã hủy", bg: "danger", textClass: "text-white" },
+  Canceled: { label: "Đã hủy", bg: "danger", textClass: "text-white" },
 };
 
 function formatDateTime(d) {
@@ -47,7 +48,13 @@ export default function StaffBookingsPage() {
     try {
       const qs = { date: dateFilter, search };
       const data = await getAllBookingsApi(qs);
-      setBookings(Array.isArray(data) ? data : []);
+      const rows = Array.isArray(data) ? data : [];
+      rows.sort(
+        (a, b) =>
+          new Date(b.createdAt || b.startTime || 0).getTime() -
+          new Date(a.createdAt || a.startTime || 0).getTime(),
+      );
+      setBookings(rows);
     } catch (err) {
       setError(err.message || "Lỗi tải danh sách booking.");
     } finally {
@@ -63,9 +70,7 @@ export default function StaffBookingsPage() {
   // Client-side status filter
   const filteredBookings = bookings.filter((b) => {
     if (statusFilter === "all") return true;
-    const s = String(b.status || "Pending");
-    if (statusFilter === "Pending" && s === "Awaiting_Payment") return true;
-    return s === statusFilter;
+    return String(b.status || "Pending") === statusFilter;
   });
 
   const totalPages = Math.ceil(filteredBookings.length / itemsPerPage);
@@ -118,10 +123,12 @@ export default function StaffBookingsPage() {
               >
                 <option value="all">Tất cả trạng thái</option>
                 <option value="Pending">Chờ thanh toán</option>
+                <option value="Awaiting_Payment">Chờ thanh toán (PayOS)</option>
                 <option value="Confirmed">Đã xác nhận</option>
                 <option value="CheckedIn">Đang sử dụng</option>
                 <option value="Completed">Đã hoàn thành</option>
                 <option value="Cancelled">Đã hủy</option>
+                <option value="Canceled">Đã hủy (legacy)</option>
               </Form.Select>
             </Col>
             <Col md={2}>

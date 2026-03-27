@@ -3,6 +3,8 @@ import QRCode from "qrcode";
 import mongoose from "mongoose";
 import Booking from "../models/booking.js";
 import Order from "../models/order.js";
+import OrderItem from "../models/order_item.js";
+import MenuItem from "../models/menu_item.js";
 import Payment from "../models/payment.js";
 import Invoice from "../models/invoice.js";
 import Table from "../models/table.js";
@@ -49,6 +51,72 @@ function mapPayOSStatus(status) {
   if (status === "EXPIRED") return "Expired";
   if (status === "FAILED") return "Failed";
   return "Pending";
+}
+
+function resolveMenuAvailabilityAfterStock(currentStatus, nextQty) {
+  const current = String(currentStatus || "").trim().toUpperCase();
+  if (current === "UNAVAILABLE") return "UNAVAILABLE";
+  return Number(nextQty || 0) > 0 ? "AVAILABLE" : "OUT_OF_STOCK";
+}
+
+async function consumeStockForPendingOrders(orderIds = []) {
+  if (!Array.isArray(orderIds) || !orderIds.length) return [];
+
+  const pendingOrders = await Order.find({
+    _id: { $in: orderIds },
+    status: "PENDING",
+  })
+    .select("_id")
+    .lean();
+  const pendingOrderIds = pendingOrders.map((o) => o._id);
+  if (!pendingOrderIds.length) return [];
+
+  const items = await OrderItem.find({ orderId: { $in: pendingOrderIds } }).lean();
+  const qtyByMenuId = new Map();
+  for (const item of items) {
+    const key = item.menuItemId?.toString();
+    if (!key) continue;
+    qtyByMenuId.set(
+      key,
+      Number(qtyByMenuId.get(key) || 0) + Number(item.quantity || 0),
+    );
+  }
+
+  if (qtyByMenuId.size) {
+    const menuIds = [...qtyByMenuId.keys()];
+    const menus = await MenuItem.find({ _id: { $in: menuIds } });
+    const menuMap = new Map(menus.map((m) => [m._id.toString(), m]));
+
+    for (const [menuId, consumeQty] of qtyByMenuId.entries()) {
+      const menu = menuMap.get(menuId);
+      if (!menu) {
+        throw new Error("Có món trong đơn không tồn tại.");
+      }
+      const availability = String(menu.availabilityStatus || "")
+        .trim()
+        .toUpperCase();
+      const stock = Number(menu.stockQuantity || 0);
+      if (availability === "UNAVAILABLE" || stock < Number(consumeQty || 0)) {
+        throw new Error(`Món ${menu.name || "đã chọn"} không đủ tồn kho để thanh toán.`);
+      }
+    }
+
+    for (const [menuId, consumeQty] of qtyByMenuId.entries()) {
+      const menu = menuMap.get(menuId);
+      const nextQty = Math.max(
+        0,
+        Number(menu.stockQuantity || 0) - Number(consumeQty || 0),
+      );
+      menu.stockQuantity = nextQty;
+      menu.availabilityStatus = resolveMenuAvailabilityAfterStock(
+        menu.availabilityStatus,
+        nextQty,
+      );
+      await menu.save();
+    }
+  }
+
+  return pendingOrderIds;
 }
 
 async function applyBookingPaidTransition(booking, now) {
@@ -382,9 +450,10 @@ export async function syncPayOSPaymentRecord({
 
     // Cập nhật trạng thái các order liên quan khi invoice đã thanh toán đủ
     if (remaining <= 0 && invoice.orderIds && invoice.orderIds.length > 0) {
+      const payableOrderIds = await consumeStockForPendingOrders(invoice.orderIds);
       await Order.updateMany(
         {
-          _id: { $in: invoice.orderIds },
+          _id: { $in: payableOrderIds },
           status: "PENDING",
         },
         {

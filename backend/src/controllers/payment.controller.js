@@ -21,6 +21,56 @@ import {
 const resolveFrontendOrigin = (req) =>
   req.get("origin") || process.env.FRONTEND_URL || "http://localhost:5173";
 
+function resolveMenuAvailabilityAfterStock(currentStatus, nextQty) {
+  const current = String(currentStatus || "").trim().toUpperCase();
+  if (current === "UNAVAILABLE") return "UNAVAILABLE";
+  return Number(nextQty || 0) > 0 ? "AVAILABLE" : "OUT_OF_STOCK";
+}
+
+async function consumeOrderMenuStock(orderId) {
+  const orderItems = await OrderItem.find({ orderId }).lean();
+  const qtyByMenuId = new Map();
+  for (const item of orderItems) {
+    const key = item.menuItemId?.toString();
+    if (!key) continue;
+    qtyByMenuId.set(
+      key,
+      Number(qtyByMenuId.get(key) || 0) + Number(item.quantity || 0),
+    );
+  }
+
+  if (!qtyByMenuId.size) return;
+
+  const menuIds = [...qtyByMenuId.keys()];
+  const menus = await MenuItem.find({ _id: { $in: menuIds } });
+  const menuMap = new Map(menus.map((m) => [m._id.toString(), m]));
+
+  for (const [menuId, consumeQty] of qtyByMenuId.entries()) {
+    const menu = menuMap.get(menuId);
+    if (!menu) {
+      throw new Error("Có món trong đơn không tồn tại.");
+    }
+    const availability = String(menu.availabilityStatus || "")
+      .trim()
+      .toUpperCase();
+    const stock = Number(menu.stockQuantity || 0);
+    if (availability === "UNAVAILABLE" || stock < Number(consumeQty || 0)) {
+      throw new Error(`Món ${menu.name || "đã chọn"} không đủ tồn kho để thanh toán.`);
+    }
+  }
+
+  for (const [menuId, consumeQty] of qtyByMenuId.entries()) {
+    const menu = menuMap.get(menuId);
+    const nextQty = Math.max(0, Number(menu.stockQuantity || 0) - Number(consumeQty || 0));
+    menu.stockQuantity = nextQty;
+    menu.availabilityStatus = resolveMenuAvailabilityAfterStock(
+      menu.availabilityStatus,
+      nextQty,
+    );
+    await menu.save();
+  }
+}
+
 export const getPaymentData = async (req, res) => {
   try {
     const { bookingId } = req.params;
@@ -377,6 +427,9 @@ export const processCounterPayment = async (req, res) => {
       ),
     );
 
+    const wasAlreadyPaid =
+      invoice.status === "Paid" || Number(invoice.remainingAmount || 0) <= 0;
+
     if (paymentMethod === "QR_PAYOS") {
       if (!isPayOSConfigured()) {
         return res.status(400).json({ message: "PayOS chưa được cấu hình." });
@@ -410,6 +463,10 @@ export const processCounterPayment = async (req, res) => {
         checkoutUrl: qrPayment.payment?.payos?.checkoutUrl || null,
         qrCode: qrPayment.payment?.payos?.qrCode || null,
       });
+    }
+
+    if (!wasAlreadyPaid) {
+      await consumeOrderMenuStock(order._id);
     }
 
     const payment = await Payment.create({

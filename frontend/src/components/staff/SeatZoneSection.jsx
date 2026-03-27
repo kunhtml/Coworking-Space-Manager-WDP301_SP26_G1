@@ -112,6 +112,17 @@ export default function SeatZoneSection({
                       )}
                     </div>
                   )}
+                  <div
+                    className="mt-2 rounded-3 px-2 py-1 text-start"
+                    style={{ background: "#f8fafc", fontSize: "0.68rem" }}
+                  >
+                    <div className="fw-bold" style={{ color: "#0f766e" }}>
+                      Trống: {table.freeSummary || "--"}
+                    </div>
+                    <div className="fw-semibold" style={{ color: "#92400e" }}>
+                      Đã đặt: {table.bookedSummary || "--"}
+                    </div>
+                  </div>
                 </Card.Body>
               </Card>
             </Col>

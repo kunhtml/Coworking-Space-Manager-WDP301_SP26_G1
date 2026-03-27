@@ -8,6 +8,7 @@ export async function getStaffTables(params = {}) {
   const query = new URLSearchParams();
   if (params.status) query.set("status", params.status);
   if (params.search) query.set("search", params.search);
+  if (params.date) query.set("date", params.date);
   const qs = query.toString();
   return apiClient.get(`/staff/dashboard/tables${qs ? `?${qs}` : ""}`);
 }

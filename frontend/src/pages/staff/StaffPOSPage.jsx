@@ -9,6 +9,7 @@ import {
   Form,
   Row,
   Spinner,
+  Table,
 } from "react-bootstrap";
 import AdminLayout from "../../components/admin/AdminLayout";
 import { apiClient } from "../../services/api";
@@ -18,7 +19,6 @@ import {
   getStaffTables,
 } from "../../services/staffDashboardService";
 import { processCounterPayment } from "../../services/staffPaymentService";
-import SeatZoneSection from "../../components/staff/SeatZoneSection";
 
 // ── Table status config ─────────────────────────────────────────────────────
 const STATUS_CONFIG = {
@@ -215,10 +215,36 @@ export default function StaffPOSPage() {
     return s;
   }, [tables]);
 
+  const availableNowTables = useMemo(
+    () =>
+      displayedTables
+        .filter((t) => t.status === "Available" && !t.activeBooking)
+        .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""))),
+    [displayedTables],
+  );
+
+  const availableSeatCount = useMemo(
+    () =>
+      availableNowTables.reduce(
+        (sum, t) => sum + Number(t.capacity || 0),
+        0,
+      ),
+    [availableNowTables],
+  );
+
   // ── Menu filtering ──
   const availableMenu = useMemo(() => {
+    const activeCategoryIds = new Set(
+      categories.map((c) => String(c?._id || "")).filter(Boolean),
+    );
+
     // POS counter should only display sellable items.
-    let items = menuItems.filter((item) => isMenuSellable(item));
+    let items = menuItems.filter((item) => {
+      if (!isMenuSellable(item)) return false;
+      const catId = String(item?.categoryId?._id || item?.categoryId || "");
+      if (!catId) return true;
+      return activeCategoryIds.has(catId);
+    });
     if (selectedCategory !== "all") {
       items = items.filter((item) => {
         const catId = String(item?.categoryId?._id || item?.categoryId || "");
@@ -245,7 +271,7 @@ export default function StaffPOSPage() {
       );
     }
     return items;
-  }, [menuItems, selectedCategory, menuSearch, menuStockFilter]);
+  }, [menuItems, categories, selectedCategory, menuSearch, menuStockFilter]);
 
   // ── Cart logic ──
   const cartTotal = useMemo(
@@ -256,6 +282,11 @@ export default function StaffPOSPage() {
         0,
       ),
     [cart],
+  );
+
+  const menuMapById = useMemo(
+    () => new Map(menuItems.map((m) => [String(m._id), m])),
+    [menuItems],
   );
 
   const addToCart = (menuItem) => {
@@ -270,6 +301,10 @@ export default function StaffPOSPage() {
       );
       const stock = getMenuStock(menuItem);
       if (found) {
+        if (Number(found.quantity || 0) >= stock) {
+          setError(`Món ${menuItem.name || "đã chọn"} chỉ còn ${stock} phần.`);
+          return prev;
+        }
         const nextQty = Math.min(Number(found.quantity || 0) + 1, stock);
         return prev.map((item) =>
           String(item.menuItemId) === String(menuItem._id)
@@ -297,10 +332,18 @@ export default function StaffPOSPage() {
       );
       return;
     }
+
+    const menu = menuMapById.get(String(menuItemId));
+    const maxQty = Math.max(0, getMenuStock(menu));
+    const safeQty = Math.min(nextQty, maxQty || nextQty);
+    if (maxQty > 0 && nextQty > maxQty) {
+      setError(`Món ${menu?.name || "đã chọn"} chỉ còn ${maxQty} phần.`);
+    }
+
     setCart((prev) =>
       prev.map((item) =>
         String(item.menuItemId) === String(menuItemId)
-          ? { ...item, quantity: nextQty }
+          ? { ...item, quantity: safeQty }
           : item,
       ),
     );
@@ -590,42 +633,56 @@ export default function StaffPOSPage() {
                     style={{ color: "#6366f1" }}
                   />
                 </div>
-              ) : displayedTables.length === 0 ? (
+              ) : availableNowTables.length === 0 ? (
                 <div className="text-center py-4 text-muted small fw-semibold">
-                  Không có bàn phù hợp
+                  Không có bàn trống tại thời điểm hiện tại
                 </div>
               ) : (
-                (() => {
-                  const groupedMap = {};
-                  displayedTables.forEach((t) => {
-                    const c = t.tableType || "Khác";
-                    if (!groupedMap[c]) groupedMap[c] = [];
-                    groupedMap[c].push(t);
-                  });
-                  const zoneNames = Object.keys(groupedMap).sort();
-                  return zoneNames.map((zone) => (
-                    <SeatZoneSection
-                      key={zone}
-                      zone={zone}
-                      tables={groupedMap[zone]}
-                      getCfg={getCfg}
-                      hoveredId={hoveredId}
-                      setHoveredId={setHoveredId}
-                      onOpen={(t) =>
-                        setSelectedTable(
-                          selectedTable &&
-                            (selectedTable.id || selectedTable._id) ===
-                              (t.id || t._id)
-                            ? null
-                            : t,
-                        )
-                      }
-                      formatTime={formatTime}
-                      bookingStatusLabel={BOOKING_STATUS_LABEL}
-                      colProps={{ xs: 6, xl: 6 }}
-                    />
-                  ));
-                })()
+                <>
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <div className="small fw-bold" style={{ color: "#334155" }}>
+                      Bàn trống hiện tại: {availableNowTables.length}
+                    </div>
+                    <div className="small fw-bold" style={{ color: "#16a34a" }}>
+                      Tổng chỗ còn trống: {availableSeatCount}
+                    </div>
+                  </div>
+                  <Table bordered hover size="sm" className="mb-0 bg-white">
+                    <thead>
+                      <tr>
+                        <th>Bàn</th>
+                        <th>Loại</th>
+                        <th>Chỗ</th>
+                        <th>Giá/h</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {availableNowTables.map((t) => {
+                        const isSelected =
+                          String(selectedTable?.id || selectedTable?._id || "") ===
+                          String(t.id || t._id);
+                        return (
+                          <tr key={String(t.id || t._id)}>
+                            <td className="fw-semibold">{t.name}</td>
+                            <td>{t.tableType || "--"}</td>
+                            <td>{Number(t.capacity || 0)}</td>
+                            <td>{fmtCur(t.pricePerHour)}</td>
+                            <td className="text-end">
+                              <Button
+                                size="sm"
+                                variant={isSelected ? "secondary" : "primary"}
+                                onClick={() => setSelectedTable(t)}
+                              >
+                                {isSelected ? "Đã chọn" : "Chọn"}
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </Table>
+                </>
               )}
             </Card.Body>
           </Card>
@@ -1152,6 +1209,11 @@ export default function StaffPOSPage() {
                                 onClick={() =>
                                   updateQty(item.menuItemId, item.quantity + 1)
                                 }
+                                disabled={(() => {
+                                  const current = menuMapById.get(String(item.menuItemId));
+                                  const stock = getMenuStock(current);
+                                  return Number(item.quantity || 0) >= stock;
+                                })()}
                               >
                                 +
                               </button>
