@@ -57,7 +57,9 @@ export default function BookingTimeFormCard({
                       if (eh * 60 + em < sh * 60 + sm + 60 && sh !== 23) {
                         let minH = sh + 1;
                         if (minH > 23) minH = 23;
-                        setSelectedTimeEnd(`${minH.toString().padStart(2, "0")}:${sm.toString().padStart(2, "0")}`);
+                        setSelectedTimeEnd(
+                          `${minH.toString().padStart(2, "0")}:${sm.toString().padStart(2, "0")}`,
+                        );
                         return;
                       }
                     }
@@ -77,7 +79,13 @@ export default function BookingTimeFormCard({
         </Row>
 
         <div className="mt-4">
-          <Button variant="primary" size="lg" className="px-5" onClick={handleSearch} disabled={loading}>
+          <Button
+            variant="primary"
+            size="lg"
+            className="px-5"
+            onClick={handleSearch}
+            disabled={loading}
+          >
             {loading ? (
               <>
                 <Spinner size="sm" className="me-2" />

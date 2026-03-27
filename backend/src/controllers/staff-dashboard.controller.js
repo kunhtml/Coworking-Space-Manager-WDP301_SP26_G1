@@ -612,12 +612,10 @@ export const createCounterOrder = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res
-      .status(500)
-      .json({
-        message: "Lỗi tạo counter order: " + err.message,
-        stack: err.stack,
-      });
+    res.status(500).json({
+      message: "Lỗi tạo counter order: " + err.message,
+      stack: err.stack,
+    });
   }
 };
 

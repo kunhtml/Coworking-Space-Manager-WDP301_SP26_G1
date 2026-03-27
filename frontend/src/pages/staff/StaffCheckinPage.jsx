@@ -1,11 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import {
-  Alert,
-  Button,
-  Col,
-  Form,
-  Row,
-} from "react-bootstrap";
+import { Alert, Button, Col, Form, Row } from "react-bootstrap";
 import AdminLayout from "../../components/admin/AdminLayout";
 import EmptyState from "../../components/common/EmptyState";
 import FilterBar from "../../components/common/FilterBar";
@@ -29,25 +23,58 @@ const STATUS_LABEL = {
 };
 
 const STATUS_STYLE = {
-  Pending:         { bg: "#fef9c3", color: "#92400e", icon: "bi-clock"              },
-  Awaiting_Payment:{ bg: "#fef9c3", color: "#92400e", icon: "bi-credit-card"        },
-  Confirmed:       { bg: "#dbeafe", color: "#1d4ed8", icon: "bi-check-circle"       },
-  CheckedIn:       { bg: "#dcfce7", color: "#15803d", icon: "bi-person-check-fill"  },
-  Completed:       { bg: "#e0f2fe", color: "#0369a1", icon: "bi-trophy"             },
-  Cancelled:       { bg: "#fee2e2", color: "#b91c1c", icon: "bi-x-circle"           },
+  Pending: { bg: "#fef9c3", color: "#92400e", icon: "bi-clock" },
+  Awaiting_Payment: { bg: "#fef9c3", color: "#92400e", icon: "bi-credit-card" },
+  Confirmed: { bg: "#dbeafe", color: "#1d4ed8", icon: "bi-check-circle" },
+  CheckedIn: { bg: "#dcfce7", color: "#15803d", icon: "bi-person-check-fill" },
+  Completed: { bg: "#e0f2fe", color: "#0369a1", icon: "bi-trophy" },
+  Cancelled: { bg: "#fee2e2", color: "#b91c1c", icon: "bi-x-circle" },
 };
 
 const STAT_GROUPS = [
-  { key: "all",              label: "Tất cả",      icon: "bi-calendar3",          bg: "#f1f5f9", color: "#475569" },
-  { key: "Confirmed",        label: "Cần check-in", icon: "bi-check-circle",       bg: "#dbeafe", color: "#1d4ed8" },
-  { key: "CheckedIn",        label: "Đã check-in",  icon: "bi-person-check-fill",  bg: "#dcfce7", color: "#15803d" },
-  { key: "Completed",        label: "Hoàn thành",   icon: "bi-trophy",             bg: "#e0f2fe", color: "#0369a1" },
-  { key: "Cancelled",        label: "Đã hủy",       icon: "bi-x-circle",           bg: "#fee2e2", color: "#b91c1c" },
+  {
+    key: "all",
+    label: "Tất cả",
+    icon: "bi-calendar3",
+    bg: "#f1f5f9",
+    color: "#475569",
+  },
+  {
+    key: "Confirmed",
+    label: "Cần check-in",
+    icon: "bi-check-circle",
+    bg: "#dbeafe",
+    color: "#1d4ed8",
+  },
+  {
+    key: "CheckedIn",
+    label: "Đã check-in",
+    icon: "bi-person-check-fill",
+    bg: "#dcfce7",
+    color: "#15803d",
+  },
+  {
+    key: "Completed",
+    label: "Hoàn thành",
+    icon: "bi-trophy",
+    bg: "#e0f2fe",
+    color: "#0369a1",
+  },
+  {
+    key: "Cancelled",
+    label: "Đã hủy",
+    icon: "bi-x-circle",
+    bg: "#fee2e2",
+    color: "#b91c1c",
+  },
 ];
 
 function fmt(d) {
   if (!d) return "--";
-  return new Date(d).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+  return new Date(d).toLocaleTimeString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function fmtDate(d) {
@@ -63,11 +90,11 @@ function fmtCur(v) {
 const todayStr = () => getVietnamDateString();
 
 export default function StaffCheckinPage() {
-  const [bookings, setBookings]   = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState("");
-  const [success, setSuccess]     = useState("");
-  const [search, setSearch]       = useState("");
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState(todayStr());
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -76,7 +103,7 @@ export default function StaffCheckinPage() {
 
   // Modal check-in xác nhận
   const [pendingBooking, setPendingBooking] = useState(null);
-  const [checkingId, setCheckingId]         = useState("");
+  const [checkingId, setCheckingId] = useState("");
 
   // Modal xem chi tiết
   const [detailBooking, setDetailBooking] = useState(null);
@@ -120,7 +147,8 @@ export default function StaffCheckinPage() {
   // ── Filter ────────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     let rows = bookings;
-    if (statusFilter !== "all") rows = rows.filter((b) => b.status === statusFilter);
+    if (statusFilter !== "all")
+      rows = rows.filter((b) => b.status === statusFilter);
     return rows;
   }, [bookings, statusFilter]);
 
@@ -131,7 +159,9 @@ export default function StaffCheckinPage() {
     setError("");
     try {
       await staffCheckInBooking(pendingBooking.id);
-      setSuccess(`✅ Check-in thành công cho ${pendingBooking.customerName || pendingBooking.bookingCode}!`);
+      setSuccess(
+        `✅ Check-in thành công cho ${pendingBooking.customerName || pendingBooking.bookingCode}!`,
+      );
       setPendingBooking(null);
       await loadBookings();
       setTimeout(() => setSuccess(""), 4000);
@@ -170,12 +200,20 @@ export default function StaffCheckinPage() {
 
       {/* Alerts */}
       {success && (
-        <Alert className="border-0 rounded-3 mb-3" style={{ background: "#dcfce7", color: "#15803d" }}>
+        <Alert
+          className="border-0 rounded-3 mb-3"
+          style={{ background: "#dcfce7", color: "#15803d" }}
+        >
           {success}
         </Alert>
       )}
       {error && (
-        <Alert variant="danger" className="rounded-3 mb-3" dismissible onClose={() => setError("")}>
+        <Alert
+          variant="danger"
+          className="rounded-3 mb-3"
+          dismissible
+          onClose={() => setError("")}
+        >
           {error}
         </Alert>
       )}
@@ -194,25 +232,45 @@ export default function StaffCheckinPage() {
                   border: `2px solid ${active ? g.color : "#e2e8f0"}`,
                   cursor: "pointer",
                   transition: "all 0.15s",
-                  boxShadow: active ? `0 4px 16px ${g.color}22` : "0 1px 4px rgba(0,0,0,0.04)",
+                  boxShadow: active
+                    ? `0 4px 16px ${g.color}22`
+                    : "0 1px 4px rgba(0,0,0,0.04)",
                 }}
               >
                 <div
                   className="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
-                  style={{ width: 38, height: 38, background: g.bg, fontSize: 17, color: g.color }}
+                  style={{
+                    width: 38,
+                    height: 38,
+                    background: g.bg,
+                    fontSize: 17,
+                    color: g.color,
+                  }}
                 >
                   <i className={`bi ${g.icon}`} />
                 </div>
                 <div>
-                  <div className="fw-bold lh-1" style={{ color: g.color, fontSize: "1.2rem" }}>
+                  <div
+                    className="fw-bold lh-1"
+                    style={{ color: g.color, fontSize: "1.2rem" }}
+                  >
                     {statCounts[g.key] ?? 0}
                   </div>
-                  <div style={{ color: "#64748b", fontSize: "0.7rem", fontWeight: 600 }}>
+                  <div
+                    style={{
+                      color: "#64748b",
+                      fontSize: "0.7rem",
+                      fontWeight: 600,
+                    }}
+                  >
                     {g.label}
                   </div>
                 </div>
                 {active && (
-                  <i className="bi bi-funnel-fill ms-auto" style={{ color: g.color, fontSize: "0.72rem" }} />
+                  <i
+                    className="bi bi-funnel-fill ms-auto"
+                    style={{ color: g.color, fontSize: "0.72rem" }}
+                  />
                 )}
               </div>
             </Col>
@@ -223,7 +281,11 @@ export default function StaffCheckinPage() {
       {/* Search + Date filter */}
       <FilterBar>
         <Col md={4}>
-          <SearchInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm mã booking, tên khách, SĐT..." />
+          <SearchInput
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Tìm mã booking, tên khách, SĐT..."
+          />
         </Col>
         <Col md={3}>
           <Form.Control
@@ -241,7 +303,9 @@ export default function StaffCheckinPage() {
           >
             <option value="all">Tất cả trạng thái</option>
             {Object.entries(STATUS_LABEL).map(([k, v]) => (
-              <option key={k} value={k}>{v}</option>
+              <option key={k} value={k}>
+                {v}
+              </option>
             ))}
           </Form.Select>
         </Col>
@@ -250,9 +314,14 @@ export default function StaffCheckinPage() {
             <Button
               variant="outline-secondary"
               className="rounded-3 fw-semibold"
-              onClick={() => { setStatusFilter("all"); setSearch(""); setDateFilter(todayStr()); }}
+              onClick={() => {
+                setStatusFilter("all");
+                setSearch("");
+                setDateFilter(todayStr());
+              }}
             >
-              <i className="bi bi-x-lg me-1" />Xóa lọc
+              <i className="bi bi-x-lg me-1" />
+              Xóa lọc
             </Button>
           </Col>
         )}
@@ -265,14 +334,21 @@ export default function StaffCheckinPage() {
         <div>
           <EmptyState
             icon="📋"
-            title={bookings.length === 0 ? "Không có booking nào trong ngày này" : "Không có booking phù hợp bộ lọc"}
+            title={
+              bookings.length === 0
+                ? "Không có booking nào trong ngày này"
+                : "Không có booking phù hợp bộ lọc"
+            }
           />
           {bookings.length > 0 && (
             <Button
               variant="outline-secondary"
               size="sm"
               className="rounded-3 fw-semibold"
-              onClick={() => { setStatusFilter("all"); setSearch(""); }}
+              onClick={() => {
+                setStatusFilter("all");
+                setSearch("");
+              }}
             >
               Xóa bộ lọc
             </Button>

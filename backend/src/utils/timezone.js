@@ -41,7 +41,24 @@ export function parseVietnamDateTime(dateText, timeText) {
   }
 
   if (!date || !time) return null;
-  const fullTime = /^\d{2}:\d{2}$/.test(time) ? `${time}:00` : time;
+  const amPmMatch = time.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)$/i);
+
+  let normalizedTime = time;
+  if (amPmMatch) {
+    let hour = Number(amPmMatch[1]);
+    const minute = Number(amPmMatch[2]);
+    const second = Number(amPmMatch[3] || 0);
+    const period = amPmMatch[4].toUpperCase();
+
+    if (period === "AM" && hour === 12) hour = 0;
+    if (period === "PM" && hour < 12) hour += 12;
+
+    normalizedTime = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:${String(second).padStart(2, "0")}`;
+  }
+
+  const fullTime = /^\d{2}:\d{2}$/.test(normalizedTime)
+    ? `${normalizedTime}:00`
+    : normalizedTime;
   const value = new Date(`${date}T${fullTime}${VIETNAM_UTC_OFFSET}`);
   return Number.isFinite(value.getTime()) ? value : null;
 }
