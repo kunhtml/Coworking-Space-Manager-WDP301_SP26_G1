@@ -1,14 +1,32 @@
 import { useEffect, useState } from "react";
-import { Alert, Card, Col, Form, Row, Spinner, Table, Pagination, Badge } from "react-bootstrap";
+import {
+  Alert,
+  Card,
+  Col,
+  Form,
+  Row,
+  Spinner,
+  Table,
+  Pagination,
+  Badge,
+} from "react-bootstrap";
 import AdminLayout from "../../components/admin/AdminLayout";
 import { getAllBookingsApi } from "../../services/bookingService";
 
 const STATUS_MAP = {
   Pending: { label: "Chờ thanh toán", bg: "warning", textClass: "text-dark" },
-  Awaiting_Payment: { label: "Chờ thanh toán", bg: "warning", textClass: "text-dark" },
+  Awaiting_Payment: {
+    label: "Chờ thanh toán",
+    bg: "warning",
+    textClass: "text-dark",
+  },
   Confirmed: { label: "Đã xác nhận", bg: "success", textClass: "text-white" },
   CheckedIn: { label: "Đang sử dụng", bg: "primary", textClass: "text-white" },
-  Completed: { label: "Đã hoàn thành", bg: "secondary", textClass: "text-white" },
+  Completed: {
+    label: "Đã hoàn thành",
+    bg: "secondary",
+    textClass: "text-white",
+  },
   Cancelled: { label: "Đã hủy", bg: "danger", textClass: "text-white" },
 };
 
@@ -19,7 +37,7 @@ function formatDateTime(d) {
     minute: "2-digit",
     day: "2-digit",
     month: "2-digit",
-    year: "numeric"
+    year: "numeric",
   });
 }
 
@@ -60,18 +78,28 @@ export default function StaffBookingsPage() {
     return () => clearTimeout(t);
   }, [search, dateFilter]);
 
-  // Client-side status filter
-  const filteredBookings = bookings.filter((b) => {
-    if (statusFilter === "all") return true;
-    const s = String(b.status || "Pending");
-    if (statusFilter === "Pending" && s === "Awaiting_Payment") return true;
-    return s === statusFilter;
-  });
+  // Client-side status filter + default sort by schedule time (newest first)
+  const filteredBookings = bookings
+    .filter((b) => {
+      if (statusFilter === "all") return true;
+      const s = String(b.status || "Pending");
+      if (statusFilter === "Pending" && s === "Awaiting_Payment") return true;
+      return s === statusFilter;
+    })
+    .sort((a, b) => {
+      const aStart = new Date(a.startTime || 0).getTime();
+      const bStart = new Date(b.startTime || 0).getTime();
+      if (bStart !== aStart) return bStart - aStart;
+
+      const aEnd = new Date(a.endTime || 0).getTime();
+      const bEnd = new Date(b.endTime || 0).getTime();
+      return bEnd - aEnd;
+    });
 
   const totalPages = Math.ceil(filteredBookings.length / itemsPerPage);
   const displayBookings = filteredBookings.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
   useEffect(() => {
@@ -83,7 +111,9 @@ export default function StaffBookingsPage() {
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h3 className="fw-bold mb-1 text-dark">Danh sách Booking</h3>
-          <p className="text-secondary mb-0">Quản lý và tra cứu thông tin đặt bàn của khách</p>
+          <p className="text-secondary mb-0">
+            Quản lý và tra cứu thông tin đặt bàn của khách
+          </p>
         </div>
       </div>
 
@@ -98,7 +128,7 @@ export default function StaffBookingsPage() {
                   style={{ outline: "none" }}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Tìm theo mã booking, Tên, SĐT..."
+                  placeholder="Tìm theo mã booking, tên khách, SĐT, tên bàn..."
                 />
               </div>
             </Col>
@@ -165,14 +195,22 @@ export default function StaffBookingsPage() {
                     const statusObj = STATUS_MAP[b.status] || {
                       label: b.status,
                       bg: "secondary",
-                      textClass: "text-white"
+                      textClass: "text-white",
                     };
                     return (
                       <tr key={b.id}>
-                        <td className="fw-semibold text-primary">{b.bookingCode}</td>
+                        <td className="fw-semibold text-primary">
+                          {b.bookingCode}
+                        </td>
                         <td>
-                          <div className="fw-semibold text-dark">{b.customerName}</div>
-                          {b.customerPhone && <small className="text-muted">{b.customerPhone}</small>}
+                          <div className="fw-semibold text-dark">
+                            {b.customerName}
+                          </div>
+                          {b.customerPhone && (
+                            <small className="text-muted">
+                              {b.customerPhone}
+                            </small>
+                          )}
                         </td>
                         <td className="fw-semibold">{b.spaceName}</td>
                         <td>
@@ -182,9 +220,14 @@ export default function StaffBookingsPage() {
                             {formatDateTime(b.endTime)}
                           </div>
                         </td>
-                        <td className="fw-semibold text-dark">{fmtMoney(b.depositAmount)}</td>
+                        <td className="fw-semibold text-dark">
+                          {fmtMoney(b.depositAmount)}
+                        </td>
                         <td>
-                          <Badge bg={statusObj.bg} className={`px-2 py-1 rounded-pill ${statusObj.textClass}`}>
+                          <Badge
+                            bg={statusObj.bg}
+                            className={`px-2 py-1 rounded-pill ${statusObj.textClass}`}
+                          >
                             {statusObj.label}
                           </Badge>
                         </td>
@@ -201,7 +244,7 @@ export default function StaffBookingsPage() {
               <Pagination>
                 <Pagination.Prev
                   disabled={currentPage === 1}
-                  onClick={() => setCurrentPage(c => c - 1)}
+                  onClick={() => setCurrentPage((c) => c - 1)}
                 />
                 {[...Array(totalPages)].map((_, i) => (
                   <Pagination.Item
@@ -214,7 +257,7 @@ export default function StaffBookingsPage() {
                 ))}
                 <Pagination.Next
                   disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage(c => c + 1)}
+                  onClick={() => setCurrentPage((c) => c + 1)}
                 />
               </Pagination>
             </div>

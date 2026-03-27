@@ -7,6 +7,7 @@ import {
   Col,
   Container,
   Form,
+  InputGroup,
   Row,
 } from "react-bootstrap";
 import { useNavigate } from "react-router";
@@ -56,6 +57,20 @@ const STATUS_CONFIG = {
     badgeColor: "#ca8a04",
     dot: "#ca8a04",
   },
+  Unavailable: {
+    label: "Không khả dụng",
+    borderColor: "#f59e0b",
+    badgeBg: "#fff7ed",
+    badgeColor: "#c2410c",
+    dot: "#c2410c",
+  },
+  Awaiting_Payment: {
+    label: "Đang chờ thanh toán",
+    borderColor: "#f59e0b",
+    badgeBg: "#fef3c7",
+    badgeColor: "#b45309",
+    dot: "#d97706",
+  },
   Maintenance: {
     label: "Bảo trì",
     borderColor: "#94a3b8",
@@ -104,6 +119,33 @@ const buildTimeSlots = () => {
 };
 
 const TIME_SLOTS = buildTimeSlots();
+const START_HOUR_OPTIONS = Array.from({ length: 18 }, (_, i) =>
+  String(i + 6).padStart(2, "0"),
+);
+const MINUTE_OPTIONS = Array.from({ length: 60 }, (_, i) =>
+  String(i).padStart(2, "0"),
+);
+
+const splitHHMM = (value) => {
+  const match = String(value || "").match(/^(\d{2}):(\d{2})$/);
+  if (!match) return { hour: "", minute: "" };
+  return { hour: match[1], minute: match[2] };
+};
+
+const formatVietnamDate = (dateValue) => {
+  if (!dateValue) return "--";
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: VIETNAM_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(dateValue);
+
+  const year = parts.find((p) => p.type === "year")?.value;
+  const month = parts.find((p) => p.type === "month")?.value;
+  const day = parts.find((p) => p.type === "day")?.value;
+  return year && month && day ? `${year}-${month}-${day}` : "--";
+};
 
 const formatDurationChoice = (hours) => {
   const totalMinutes = Math.round(Number(hours || 0) * 60);
@@ -154,7 +196,6 @@ export default function BookingPage() {
   const [success, setSuccess] = useState("");
   const [refreshTick, setRefreshTick] = useState(0);
 
-  const startTimeOptions = TIME_SLOTS;
   const normalizedDurationHours = useMemo(() => {
     const raw = String(selectedDurationHours || "").trim();
     if (!/^\d+$/.test(raw)) return 0;
@@ -162,6 +203,25 @@ export default function BookingPage() {
     if (!Number.isFinite(n) || n < 1 || n > 99) return 0;
     return n;
   }, [selectedDurationHours]);
+
+  const startTimeParts = useMemo(
+    () => splitHHMM(selectedTimeStart),
+    [selectedTimeStart],
+  );
+
+  const setStartTimeFromParts = useCallback((hourPart, minutePart) => {
+    const hour = String(hourPart || "").trim();
+    const minute = String(minutePart || "").trim();
+
+    if (!hour || !minute) {
+      setSelectedTimeStart("");
+      setSelectedDurationHours("");
+      return;
+    }
+
+    setSelectedTimeStart(`${hour}:${minute}`);
+    setSelectedDurationHours("");
+  }, []);
 
   const selectedEndDateTime = useMemo(() => {
     const startAt = buildVietnamDateTime(selectedDate, selectedTimeStart);
@@ -195,6 +255,13 @@ export default function BookingPage() {
 
   useEffect(() => {
     loadAllTables();
+  }, [loadAllTables]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      loadAllTables();
+    }, 60_000);
+    return () => clearInterval(timer);
   }, [loadAllTables]);
 
   useEffect(() => {
@@ -248,7 +315,11 @@ export default function BookingPage() {
             ? "Available"
             : baseStatus === "Occupied"
               ? "Occupied"
-              : "Reserved";
+              : baseStatus === "Awaiting_Payment"
+                ? "Awaiting_Payment"
+                : baseStatus === "Reserved"
+                  ? "Reserved"
+                  : "Unavailable";
         }
 
         return {
@@ -281,7 +352,9 @@ export default function BookingPage() {
     return {
       Available: count("Available"),
       Occupied: count("Occupied"),
+      Awaiting_Payment: count("Awaiting_Payment"),
       Reserved: count("Reserved"),
+      Unavailable: count("Unavailable"),
       Maintenance: count("Maintenance"),
       total: effectiveTables.length,
     };
@@ -292,7 +365,7 @@ export default function BookingPage() {
       if (!hasAvailabilityCriteria) {
         return t.displayStatus !== "Maintenance";
       }
-      return !["Reserved", "Maintenance"].includes(t.displayStatus);
+      return t.displayStatus !== "Maintenance";
     });
 
     if (filterStatus !== "all") {
@@ -349,7 +422,9 @@ export default function BookingPage() {
   const isPastTimeSelection = useMemo(() => {
     const startAt = buildVietnamDateTime(selectedDate, selectedTimeStart);
     if (!startAt) return false;
-    return startAt.getTime() <= Date.now();
+    const nowMinute = new Date();
+    nowMinute.setSeconds(0, 0);
+    return startAt.getTime() < nowMinute.getTime();
   }, [selectedDate, selectedTimeStart]);
 
   useEffect(() => {
@@ -368,7 +443,7 @@ export default function BookingPage() {
   ]);
 
   useEffect(() => {
-    if (["Reserved", "Maintenance"].includes(filterStatus)) {
+    if (["Maintenance"].includes(filterStatus)) {
       setFilterStatus("all");
     }
   }, [filterStatus]);
@@ -504,7 +579,13 @@ export default function BookingPage() {
           </div>
 
           <Row className="g-3 mb-4">
-            {["Available", "Occupied"].map((statusKey) => {
+            {[
+              "Available",
+              "Occupied",
+              "Awaiting_Payment",
+              "Reserved",
+              "Unavailable",
+            ].map((statusKey) => {
               const cfg = STATUS_CONFIG[statusKey];
               return (
                 <Col xs={6} md={3} lg={2} key={statusKey}>
@@ -558,21 +639,44 @@ export default function BookingPage() {
                 </Col>
                 <Col md={2}>
                   <Form.Label className="fw-semibold">Bắt đầu</Form.Label>
-                  <Form.Select
-                    value={selectedTimeStart}
-                    onChange={(e) => {
-                      const nextStart = e.target.value;
-                      setSelectedTimeStart(nextStart);
-                      setSelectedDurationHours("");
-                    }}
-                  >
-                    <option value="">Chọn giờ bắt đầu</option>
-                    {startTimeOptions.map((slot) => (
-                      <option key={slot.value} value={slot.value}>
-                        {slot.label}
-                      </option>
-                    ))}
-                  </Form.Select>
+                  <InputGroup>
+                    <Form.Select
+                      aria-label="Giờ bắt đầu"
+                      value={startTimeParts.hour}
+                      onChange={(e) =>
+                        setStartTimeFromParts(
+                          e.target.value,
+                          startTimeParts.minute || "00",
+                        )
+                      }
+                    >
+                      <option value="">Giờ</option>
+                      {START_HOUR_OPTIONS.map((hour) => (
+                        <option key={hour} value={hour}>
+                          {hour}
+                        </option>
+                      ))}
+                    </Form.Select>
+                    <InputGroup.Text>:</InputGroup.Text>
+                    <Form.Select
+                      aria-label="Phút bắt đầu"
+                      value={startTimeParts.minute}
+                      disabled={!startTimeParts.hour}
+                      onChange={(e) =>
+                        setStartTimeFromParts(
+                          startTimeParts.hour,
+                          e.target.value,
+                        )
+                      }
+                    >
+                      <option value="">Phút</option>
+                      {MINUTE_OPTIONS.map((minute) => (
+                        <option key={minute} value={minute}>
+                          {minute}
+                        </option>
+                      ))}
+                    </Form.Select>
+                  </InputGroup>
                 </Col>
                 <Col md={2}>
                   <Form.Label className="fw-semibold">
@@ -611,18 +715,6 @@ export default function BookingPage() {
                 </Col>
               </Row>
 
-              <Row className="g-3 align-items-center mt-1">
-                <Col md={12} className="d-flex justify-content-md-end">
-                  <Badge bg="light" text="dark" className="px-3 py-2 border">
-                    Khung giờ:{" "}
-                    {selectedTimeStart
-                      ? format12hLabel(selectedTimeStart)
-                      : "--:--"}{" "}
-                    - {selectedTimeEndDisplay}
-                  </Badge>
-                </Col>
-              </Row>
-
               <Row className="g-3 align-items-end">
                 <Col md={3}>
                   <Form.Label className="fw-semibold">Trạng thái</Form.Label>
@@ -633,6 +725,11 @@ export default function BookingPage() {
                     <option value="all">Tất cả trạng thái</option>
                     <option value="Available">Trống</option>
                     <option value="Occupied">Đang sử dụng</option>
+                    <option value="Awaiting_Payment">
+                      Đang chờ thanh toán
+                    </option>
+                    <option value="Reserved">Đã đặt trước</option>
+                    <option value="Unavailable">Không khả dụng</option>
                   </Form.Select>
                 </Col>
                 <Col md={2}>
@@ -780,10 +877,10 @@ export default function BookingPage() {
                                   pill
                                   style={{
                                     background: cfg.badgeBg,
-                                    color: cfg.badgeColor,
+                                    color: "#000000",
                                   }}
                                 >
-                                  {cfg.label}
+                                  {table.statusLabel || cfg.label}
                                 </Badge>
                               </Card.Body>
                             </Card>
@@ -805,16 +902,26 @@ export default function BookingPage() {
                   <div>
                     <div className="fw-semibold">Bàn đã chọn</div>
                     <div className="text-secondary small">
+                      Tên bàn:{" "}
                       {selectedTable ? selectedTable.name : "Chưa chọn bàn"}
                     </div>
                     <div className="text-secondary small">
+                      Loại bàn:{" "}
                       {selectedTable
                         ? `${selectedTable.typeName} · ${formatPrice(selectedTable.pricePerHour)}/h`
                         : "--"}
                     </div>
                     <div className="text-secondary small">
-                      {selectedDate} · {selectedTimeStart || "--:--"} -{" "}
-                      {selectedEndDateTime ? selectedTimeEndDisplay : "--:--"}
+                      Ngày giờ bắt đầu:{" "}
+                      {selectedTimeStart
+                        ? `${selectedDate} · ${format12hLabel(selectedTimeStart)}`
+                        : "--"}
+                    </div>
+                    <div className="text-secondary small">
+                      Ngày giờ kết thúc:{" "}
+                      {selectedEndDateTime
+                        ? `${formatVietnamDate(selectedEndDateTime)} · ${selectedTimeEndDisplay}`
+                        : "--"}
                     </div>
                     <div className="text-secondary small">
                       Tổng thời gian: {formatDurationText()}

@@ -28,6 +28,9 @@ export const PAYMENT_METHOD = Object.freeze({
 // Mảng giá trị phương thức thanh toán để validate/input check
 export const PAYMENT_METHOD_VALUES = Object.values(PAYMENT_METHOD);
 
+// Số phút giữ bàn ở trạng thái chờ thanh toán trước khi tự động hủy
+export const BOOKING_PAYMENT_HOLD_MINUTES = 15;
+
 // Trạng thái còn hàng của món
 export const MENU_AVAILABILITY = Object.freeze({
   AVAILABLE: "AVAILABLE",

@@ -1,12 +1,22 @@
-﻿import Booking from "../models/booking.js";
+import Booking from "../models/booking.js";
 import Table from "../models/table.js";
 import User from "../models/user.js";
 import Invoice from "../models/invoice.js";
 import Payment from "../models/payment.js";
+import { BOOKING_PAYMENT_HOLD_MINUTES } from "../constants/domain.js";
 import {
   getVietnamDateRange,
   parseVietnamDateTime,
 } from "../utils/timezone.js";
+
+const PENDING_BOOKING_STATUSES = ["Pending", "Awaiting_Payment"];
+
+const buildPendingCutoff = () =>
+  new Date(Date.now() - BOOKING_PAYMENT_HOLD_MINUTES * 60 * 1000);
+
+const normalizeBookingStatus = (status) => {
+  return String(status || "").trim();
+};
 
 const parseDateTimeInput = (dateValue, timeValue) => {
   if (!timeValue && !dateValue) return null;
@@ -82,15 +92,18 @@ export const createBooking = async (req, res) => {
       });
     }
 
+    const pendingCutoff = buildPendingCutoff();
+    await Booking.updateMany(
+      {
+        status: { $in: PENDING_BOOKING_STATUSES },
+        createdAt: { $lt: pendingCutoff },
+      },
+      { $set: { status: "Cancelled" } },
+    );
+
     const overlapping = await Booking.find({
       tableId: bookingTableId,
-      status: {
-        $nin: [
-          "Cancelled",
-          "Canceled",
-          "Completed",
-        ],
-      },
+      status: { $nin: ["Cancelled", "Canceled", "Completed"] },
       startTime: { $lt: endTime },
       endTime: { $gt: startTime },
     }).lean();
@@ -123,10 +136,7 @@ export const createBooking = async (req, res) => {
       bookingId: booking._id,
       totalAmount: Math.round(Number(depositAmount || 0)),
       remainingAmount: Math.round(Number(depositAmount || 0)),
-      status:
-        Number(depositAmount || 0) > 0
-          ? "Pending"
-          : "Paid",
+      status: Number(depositAmount || 0) > 0 ? "Pending" : "Paid",
     });
 
     res.status(201).json({
@@ -162,7 +172,7 @@ export const getMyBookings = async (req, res) => {
         startTime: b.startTime,
         endTime: b.endTime,
         depositAmount: b.depositAmount || 0,
-        status: b.status || "Pending",
+        status: normalizeBookingStatus(b.status || "Pending"),
         createdAt: b.createdAt,
       };
     });
@@ -193,13 +203,7 @@ export const updateMyBooking = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy booking." });
     }
 
-    if (
-      [
-        "Confirmed",
-        "Cancelled",
-        "Canceled",
-      ].includes(booking.status)
-    ) {
+    if (["Confirmed", "Cancelled", "Canceled"].includes(booking.status)) {
       return res.status(400).json({
         message: "Booking đã xác nhận hoặc đã hủy, không thể chỉnh sửa.",
       });
@@ -241,16 +245,19 @@ export const updateMyBooking = async (req, res) => {
     const nextEnd = new Date(nextStart.getTime() + effectiveDuration * 3600000);
     const oldDepositAmount = Math.round(Number(booking.depositAmount || 0));
 
+    const pendingCutoff = buildPendingCutoff();
+    await Booking.updateMany(
+      {
+        status: { $in: PENDING_BOOKING_STATUSES },
+        createdAt: { $lt: pendingCutoff },
+      },
+      { $set: { status: "Cancelled" } },
+    );
+
     const overlapping = await Booking.find({
       _id: { $ne: booking._id },
       tableId: booking.tableId,
-      status: {
-        $nin: [
-          "Cancelled",
-          "Canceled",
-          "Completed",
-        ],
-      },
+      status: { $nin: ["Cancelled", "Canceled", "Completed"] },
       startTime: { $lt: nextEnd },
       endTime: { $gt: nextStart },
     }).lean();
@@ -332,28 +339,12 @@ export const getAllBookings = async (req, res) => {
     await Booking.updateMany(
       {
         endTime: { $lt: now },
-        status: {
-          $in: [
-            "Pending",
-            "Awaiting_Payment",
-            "Confirmed",
-          ],
-        },
+        status: { $in: ["Pending", "Awaiting_Payment", "Confirmed"] },
       },
       { $set: { status: "Cancelled" } },
     );
 
-    let bookings = await Booking.find(filter).sort({ createdAt: -1 }).lean();
-
-    // Search by booking code or guest name
-    if (search) {
-      const q = search.toLowerCase();
-      bookings = bookings.filter(
-        (b) =>
-          (b.bookingCode || "").toLowerCase().includes(q) ||
-          (b.guestInfo?.name || "").toLowerCase().includes(q),
-      );
-    }
+    let bookings = await Booking.find(filter).sort({ startTime: 1 }).lean();
 
     const tableIds = [
       ...new Set(bookings.map((b) => b.tableId?.toString()).filter(Boolean)),
@@ -370,7 +361,7 @@ export const getAllBookings = async (req, res) => {
     const tableMap = new Map(tables.map((t) => [t._id.toString(), t]));
     const userMap = new Map(users.map((u) => [u._id.toString(), u]));
 
-    const rows = bookings.map((b) => {
+    let rows = bookings.map((b) => {
       const table = tableMap.get(b.tableId?.toString());
       const user = userMap.get(b.userId?.toString());
       return {
@@ -383,10 +374,30 @@ export const getAllBookings = async (req, res) => {
         startTime: b.startTime,
         endTime: b.endTime,
         depositAmount: b.depositAmount || 0,
-        status: b.status || "Pending",
+        status: normalizeBookingStatus(b.status || "Pending"),
         createdAt: b.createdAt,
       };
     });
+
+    // Search by booking code, customer name/phone, or table name.
+    if (search?.trim()) {
+      const q = search.trim().toLowerCase();
+      rows = rows.filter(
+        (r) =>
+          String(r.bookingCode || "")
+            .toLowerCase()
+            .includes(q) ||
+          String(r.customerName || "")
+            .toLowerCase()
+            .includes(q) ||
+          String(r.customerPhone || "")
+            .toLowerCase()
+            .includes(q) ||
+          String(r.spaceName || "")
+            .toLowerCase()
+            .includes(q),
+      );
+    }
 
     res.json(rows);
   } catch (err) {
@@ -406,16 +417,6 @@ export const checkInBooking = async (req, res) => {
 
     // Auto-cancel if booking time has already passed
     const now = new Date();
-    const startTime = booking.startTime ? new Date(booking.startTime) : null;
-    if (startTime) {
-      const earliestCheckIn = new Date(startTime.getTime() - 5 * 60 * 1000);
-      if (now < earliestCheckIn) {
-        return res.status(400).json({
-          message: "Chỉ được check-in sớm nhất trước giờ đặt 5 phút.",
-        });
-      }
-    }
-
     if (booking.endTime && new Date(booking.endTime) < now) {
       booking.status = "Cancelled";
       await booking.save();
@@ -424,9 +425,9 @@ export const checkInBooking = async (req, res) => {
       });
     }
 
-    if (booking.status !== "Confirmed") {
+    if (!["Confirmed", "Awaiting_Payment"].includes(booking.status)) {
       return res.status(400).json({
-        message: `Chỉ có thể check-in booking đã thanh toán/xác nhận (trạng thái hiện tại: ${booking.status}).`,
+        message: `Chỉ có thể check-in booking đã xác nhận/chờ thanh toán (trạng thái hiện tại: ${booking.status}).`,
       });
     }
     booking.status = "CheckedIn";
@@ -448,6 +449,3 @@ export const checkInBooking = async (req, res) => {
 };
 
 // GET /api/staff/dashboard/tables  (Staff / Admin)
-
-
-
