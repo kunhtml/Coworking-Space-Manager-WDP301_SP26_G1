@@ -319,6 +319,18 @@ export default function BookingPage() {
   }, [selectedDate, selectedTimeStart]);
 
   useEffect(() => {
+    const pastTimeMessage =
+      "Vui lòng chọn lại ngày giờ, không thể chọn thời gian ở quá khứ.";
+
+    if (isPastTimeSelection) {
+      setError(pastTimeMessage);
+      return;
+    }
+
+    setError((prev) => (prev === pastTimeMessage ? "" : prev));
+  }, [isPastTimeSelection]);
+
+  useEffect(() => {
     if (["Reserved", "Maintenance"].includes(filterStatus)) {
       setFilterStatus("all");
     }
@@ -340,7 +352,7 @@ export default function BookingPage() {
     }
 
     if (isPastTimeSelection) {
-      setError("Không thể đặt bàn vào thời gian quá khứ. Vui lòng chọn giờ hiện tại hoặc tương lai.");
+      setError("Vui lòng chọn lại ngày giờ, không thể chọn thời gian ở quá khứ.");
       return;
     }
 
