@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+﻿import mongoose from "mongoose";
 import Booking from "../models/booking.js";
 import Order from "../models/order.js";
 import OrderItem from "../models/order_item.js";
@@ -8,7 +8,6 @@ import MenuItem from "../models/menu_item.js";
 import User from "../models/user.js";
 import Invoice from "../models/invoice.js";
 import { createCounterOrderPayment } from "../services/payos.service.js";
-import { ORDER_STATUS, normalizeOrderStatus } from "../constants/domain.js";
 
 const STAFF_TABLE_STATUSES = new Set([
   "Available",
@@ -18,19 +17,33 @@ const STAFF_TABLE_STATUSES = new Set([
   "Cleaning",
 ]);
 
-const ACCEPTED_ORDER_STATUS_INPUTS = new Set([
-  ...Object.values(ORDER_STATUS),
-  "NEW",
-  "PAID",
-  "CANCELED",
-  "CANCELLED",
-]);
+const ACCEPTED_ORDER_STATUS_INPUTS = new Set(["PENDING", "CONFIRMED", "PREPARING", "SERVED", "COMPLETED", "CANCELLED"]);
 
 function isValidObjectId(id) {
   return mongoose.Types.ObjectId.isValid(String(id || ""));
 }
 
-function normalizeOrderRows(
+const normalizeText = (value) => String(value || "").trim();
+const normalizeEmail = (value) => normalizeText(value).toLowerCase();
+
+async function findCustomerByPhoneOrEmail(keyword) {
+  const q = normalizeText(keyword);
+  if (!q) return null;
+
+  const exactMatch = await User.findOne({
+    $or: [{ email: normalizeEmail(q) }, { phone: q }],
+  })
+    .select("fullName email phone")
+    .lean();
+  if (exactMatch) return exactMatch;
+
+  const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+  return User.findOne({ $or: [{ email: regex }, { phone: regex }] })
+    .select("fullName email phone")
+    .lean();
+}
+
+function buildOrderRows(
   orders,
   orderItems,
   menuMap,
@@ -57,23 +70,23 @@ function normalizeOrderRows(
   }
 
   return orders.map((o) => {
-    const normalizedOrderStatus = normalizeOrderStatus(o.status);
+    const orderStatus = o.status || "PENDING";
     const invoice = invoiceMap.get(o._id.toString()) || null;
     const invoiceRemaining = Number(invoice?.remainingAmount || 0);
-    const invoiceStatus = String(invoice?.status || "").toUpperCase();
-    const isPaid = invoiceStatus === "PAID" || invoiceRemaining <= 0;
+    const invoiceStatus = invoice?.status || "Pending";
+    const isPaid = invoiceStatus === "Paid" || invoiceRemaining <= 0;
 
     let paymentStatus = "WAITING_PAYMENT";
-    if (normalizedOrderStatus === ORDER_STATUS.CANCELLED) {
+    if (orderStatus === "CANCELLED") {
       paymentStatus = "CANCELLED";
     } else if (isPaid) {
       paymentStatus = "PAID";
     }
 
     let staffStatus = "WAITING_PAYMENT";
-    if (normalizedOrderStatus === ORDER_STATUS.CANCELLED) {
+    if (orderStatus === "CANCELLED") {
       staffStatus = "CANCELLED";
-    } else if (normalizedOrderStatus === ORDER_STATUS.COMPLETED) {
+    } else if (orderStatus === "COMPLETED") {
       staffStatus = "COMPLETED";
     } else if (isPaid) {
       staffStatus = "PAID";
@@ -84,6 +97,7 @@ function normalizeOrderRows(
     const user =
       userMap.get(booking?.userId?.toString()) ||
       userMap.get(o.userId?.toString());
+    const orderGuest = o.guestInfo || {};
 
     return {
       id: o._id,
@@ -92,14 +106,19 @@ function normalizeOrderRows(
       bookingCode: booking?.bookingCode || "Walk-in",
       tableId: booking?.tableId || null,
       tableName: table?.name || "Khong xac dinh",
-      customerName: booking?.guestInfo?.name || user?.fullName || "Khach le",
-      customerPhone: booking?.guestInfo?.phone || user?.phone || "",
-      status: normalizedOrderStatus,
+      customerName:
+        booking?.guestInfo?.name ||
+        orderGuest?.name ||
+        user?.fullName ||
+        "Khach le",
+      customerPhone: booking?.guestInfo?.phone || orderGuest?.phone || user?.phone || "",
+      customerEmail: booking?.guestInfo?.email || orderGuest?.email || user?.email || "",
+      status: orderStatus,
       staffStatus,
       paymentStatus,
       invoiceStatus: invoice?.status || "Pending",
       remainingAmount: invoiceRemaining,
-      totalAmount: Number(o.totalAmount || 0),
+      totalAmount: Number(invoice?.totalAmount ?? o.totalAmount ?? 0),
       createdAt: o.createdAt,
       items: itemMap.get(o._id.toString()) || [],
     };
@@ -121,7 +140,13 @@ export const getStaffTableStatusList = async (req, res) => {
     await Booking.updateMany(
       {
         endTime: { $lt: now },
-        status: { $in: ["Pending", "Awaiting_Payment", "Confirmed"] },
+        status: {
+          $in: [
+            "Pending",
+            "Awaiting_Payment",
+            "Confirmed",
+          ],
+        },
       },
       { $set: { status: "Cancelled" } },
     );
@@ -132,7 +157,13 @@ export const getStaffTableStatusList = async (req, res) => {
       const occupiedIds = occupiedTables.map((t) => t._id);
       const stillActive = await Booking.find({
         tableId: { $in: occupiedIds },
-        status: { $in: ["CheckedIn", "Confirmed", "Awaiting_Payment"] },
+        status: {
+          $in: [
+            "CheckedIn",
+            "Confirmed",
+            "Awaiting_Payment",
+          ],
+        },
         startTime: { $lte: now },
         endTime: { $gte: now },
       })
@@ -177,7 +208,12 @@ export const getStaffTableStatusList = async (req, res) => {
     const activeBookings = await Booking.find({
       tableId: { $in: tableIds },
       status: {
-        $in: ["Pending", "Awaiting_Payment", "Confirmed", "CheckedIn"],
+        $in: [
+          "Pending",
+          "Awaiting_Payment",
+          "Confirmed",
+          "CheckedIn",
+        ],
       },
       startTime: { $lte: now },
       endTime: { $gte: now },
@@ -192,7 +228,14 @@ export const getStaffTableStatusList = async (req, res) => {
 
     const upcomingBookings = await Booking.find({
       tableId: { $in: tableIds },
-      status: { $in: ["Pending", "Awaiting_Payment", "Confirmed", "CheckedIn"] },
+      status: {
+        $in: [
+          "Pending",
+          "Awaiting_Payment",
+          "Confirmed",
+          "CheckedIn",
+        ],
+      },
       endTime: { $gt: now },
       startTime: { $lt: endOfTomorrow },
     })
@@ -303,7 +346,7 @@ export const getStaffOrders = async (req, res) => {
     // Auto-cancel PENDING orders older than 15 minutes
     const expiryCutoff = new Date(Date.now() - 15 * 60 * 1000);
     const expiredOrders = await Order.find({
-      status: { $in: ["Pending", "PENDING"] },
+      status: "PENDING",
       createdAt: { $lt: expiryCutoff },
     }).lean();
 
@@ -311,12 +354,15 @@ export const getStaffOrders = async (req, res) => {
       const expiredIds = expiredOrders.map((o) => o._id);
       await Order.updateMany(
         { _id: { $in: expiredIds } },
-        { $set: { status: "Cancelled" } },
+        { $set: { status: "CANCELLED" } },
       );
 
       // Also cancel related invoices
       await Invoice.updateMany(
-        { orderIds: { $in: expiredIds }, status: { $ne: "Paid" } },
+        {
+          orderIds: { $in: expiredIds },
+          status: { $ne: "Paid" },
+        },
         { $set: { status: "Cancelled", remainingAmount: 0 } },
       );
 
@@ -326,20 +372,25 @@ export const getStaffOrders = async (req, res) => {
       ];
       if (expiredBookingIds.length > 0) {
         await Booking.updateMany(
-          { _id: { $in: expiredBookingIds }, status: { $in: ["Pending", "Awaiting_Payment"] } },
+          {
+            _id: { $in: expiredBookingIds },
+            status: {
+              $in: ["Pending", "Awaiting_Payment"],
+            },
+          },
           { $set: { status: "Cancelled" } },
         );
       }
     }
 
     if (status && status !== "all") {
-      const rawStatus = String(status).trim();
-      const normalizedStatus = normalizeOrderStatus(rawStatus);
-      orderFilter.status = {
-        $in: [
-          ...new Set([rawStatus, rawStatus.toUpperCase(), normalizedStatus]),
-        ],
-      };
+      const rawStatus = String(status).trim().toUpperCase();
+      if (!ACCEPTED_ORDER_STATUS_INPUTS.has(rawStatus)) {
+        return res
+          .status(400)
+          .json({ message: "Trạng thái đơn hàng không hợp lệ." });
+      }
+      orderFilter.status = rawStatus;
     }
 
     if (date) {
@@ -399,7 +450,7 @@ export const getStaffOrders = async (req, res) => {
       }
     }
 
-    const rows = normalizeOrderRows(
+    const rows = buildOrderRows(
       orders,
       orderItems,
       menuMap,
@@ -416,6 +467,33 @@ export const getStaffOrders = async (req, res) => {
   }
 };
 
+export const findStaffCustomer = async (req, res) => {
+  try {
+    const q = normalizeText(req.query.q);
+    if (!q) {
+      return res.status(400).json({ message: "Vui lòng nhập số điện thoại hoặc email để tìm khách." });
+    }
+
+    const user = await findCustomerByPhoneOrEmail(q);
+    if (!user) {
+      return res.json({ found: false, customer: null });
+    }
+
+    return res.json({
+      found: true,
+      customer: {
+        id: user._id,
+        fullName: user.fullName || "",
+        phone: user.phone || "",
+        email: user.email || "",
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi server." });
+  }
+};
+
 // POST /api/staff/dashboard/orders/counter  (Staff / Admin)
 
 export const createCounterOrder = async (req, res) => {
@@ -426,6 +504,9 @@ export const createCounterOrder = async (req, res) => {
       items,
       customerName,
       customerPhone,
+      customerEmail,
+      customerQuery,
+      paymentMethod,
       durationHours,
     } = req.body;
 
@@ -438,6 +519,16 @@ export const createCounterOrder = async (req, res) => {
     }
 
     let booking = null;
+    let customerUser = null;
+
+    const contactToSearch = normalizeText(customerQuery || customerPhone || customerEmail);
+    if (contactToSearch) {
+      customerUser = await findCustomerByPhoneOrEmail(contactToSearch);
+    }
+
+    const resolvedName = normalizeText(customerName) || normalizeText(customerUser?.fullName);
+    const resolvedPhone = normalizeText(customerPhone) || normalizeText(customerUser?.phone);
+    const resolvedEmail = normalizeEmail(customerEmail) || normalizeEmail(customerUser?.email);
 
     if (bookingId) {
       // Case 1: Existing booking
@@ -448,6 +539,21 @@ export const createCounterOrder = async (req, res) => {
       if (!booking) {
         return res.status(404).json({ message: "Không tìm thấy booking." });
       }
+
+      const nextGuestInfo = {
+        name: resolvedName || normalizeText(booking.guestInfo?.name),
+        phone: resolvedPhone || normalizeText(booking.guestInfo?.phone),
+        email: resolvedEmail || normalizeEmail(booking.guestInfo?.email),
+      };
+
+      if (booking.tableId && (!nextGuestInfo.name || (!nextGuestInfo.phone && !nextGuestInfo.email))) {
+        return res.status(400).json({
+          message: "Đơn có bàn phải có tên khách và ít nhất số điện thoại hoặc email.",
+        });
+      }
+
+      booking.guestInfo = nextGuestInfo;
+      await booking.save();
     } else if (hasTable) {
       // Case 2: Walk-in with table → create booking
       const table = await Table.findById(tableId).lean();
@@ -462,7 +568,14 @@ export const createCounterOrder = async (req, res) => {
       // Prevent overlapping with existing bookings
       const overlapping = await Booking.findOne({
         tableId,
-        status: { $in: ["Pending", "Awaiting_Payment", "Confirmed", "CheckedIn"] },
+        status: {
+          $in: [
+            "Pending",
+            "Awaiting_Payment",
+            "Confirmed",
+            "CheckedIn",
+          ],
+        },
         $or: [
           { startTime: { $lt: end }, endTime: { $gt: start } },
         ],
@@ -482,27 +595,47 @@ export const createCounterOrder = async (req, res) => {
           message: "Bàn chưa có giá. Vui lòng cập nhật giá bàn trước.",
         });
       }
+
+      if (!resolvedName || (!resolvedPhone && !resolvedEmail)) {
+        return res.status(400).json({
+          message: "Đơn có bàn phải có tên khách và ít nhất số điện thoại hoặc email.",
+        });
+      }
+
       const depositAmount = Math.round(pricePerHour * hrs);
 
       booking = await Booking.create({
         bookingCode,
+        userId: customerUser?._id || undefined,
         tableId: table._id,
         startTime: start,
         endTime: end,
-        status: "CheckedIn",
+        status: "Awaiting_Payment",
         depositAmount,
         guestInfo: {
-          name: customerName || "Khách lẻ",
-          phone: customerPhone || "",
+          name: resolvedName,
+          phone: resolvedPhone,
+          email: resolvedEmail,
         },
       });
 
-      await Table.findByIdAndUpdate(table._id, { status: "Occupied" });
+      await Table.findByIdAndUpdate(table._id, { status: "Reserved" });
     }
     // Case 3: No table, no booking → menu-only order (booking stays null)
 
+    const hasBookingTable = Boolean(booking?.tableId || hasTable);
+    const effectiveGuestName = normalizeText(booking?.guestInfo?.name || resolvedName);
+    const effectiveGuestPhone = normalizeText(booking?.guestInfo?.phone || resolvedPhone);
+    const effectiveGuestEmail = normalizeEmail(booking?.guestInfo?.email || resolvedEmail);
+
+    if (hasBookingTable && (!effectiveGuestName || (!effectiveGuestPhone && !effectiveGuestEmail))) {
+      return res.status(400).json({
+        message: "Đơn có bàn phải có tên khách và ít nhất số điện thoại hoặc email.",
+      });
+    }
+
     // Process menu items
-    let normalized = [];
+    let validItems = [];
     let totalAmount = 0;
 
     if (hasMenuItems) {
@@ -516,8 +649,23 @@ export const createCounterOrder = async (req, res) => {
         const qty = Number(it.quantity || 0);
         if (!it.menuItemId || qty <= 0) continue;
         const menu = menuMap.get(String(it.menuItemId));
-        if (!menu) continue;
-        normalized.push({
+        if (!menu) {
+          return res.status(400).json({ message: "Có món không tồn tại trong thực đơn." });
+        }
+        const stock = Number(menu.stockQuantity || 0);
+        const availability = String(menu.availabilityStatus || "").trim().toUpperCase();
+        const isUnavailable = ["OUT_OF_STOCK", "UNAVAILABLE", "DISCONTINUED"].includes(availability);
+        if (isUnavailable || stock <= 0) {
+          return res.status(400).json({
+            message: `Món ${menu.name || "đã chọn"} đã hết hàng, vui lòng chọn món khác.`,
+          });
+        }
+        if (qty > stock) {
+          return res.status(400).json({
+            message: `Món ${menu.name || "đã chọn"} chỉ còn ${stock} phần.`,
+          });
+        }
+        validItems.push({
           menuItemId: menu._id,
           quantity: qty,
           note: it.note || "",
@@ -525,22 +673,34 @@ export const createCounterOrder = async (req, res) => {
         });
       }
 
-      totalAmount = normalized.reduce(
+      if (validItems.length === 0) {
+        return res.status(400).json({ message: "Vui lòng chọn ít nhất 1 món hợp lệ." });
+      }
+
+      totalAmount = validItems.reduce(
         (sum, i) => sum + Number(i.quantity) * Number(i.priceAtOrder),
         0,
       );
     }
 
     const order = await Order.create({
-      userId: booking?.userId || req.user.id,
+      userId: booking?.userId || customerUser?._id || null,
       bookingId: booking?._id || null,
-      status: ORDER_STATUS.PENDING,
+      guestInfo:
+        effectiveGuestName || effectiveGuestPhone || effectiveGuestEmail
+          ? {
+              name: effectiveGuestName,
+              phone: effectiveGuestPhone,
+              email: effectiveGuestEmail,
+            }
+          : undefined,
+      status: "PENDING",
       totalAmount,
     });
 
-    if (normalized.length > 0) {
+    if (validItems.length > 0) {
       await OrderItem.insertMany(
-        normalized.map((i) => ({
+        validItems.map((i) => ({
           orderId: order._id,
           menuItemId: i.menuItemId,
           quantity: i.quantity,
@@ -563,21 +723,30 @@ export const createCounterOrder = async (req, res) => {
       status: combinedTotal > 0 ? "Pending" : "Paid",
     });
 
-    // Create payment link (only if booking exists)
+    // Create payment link only for non-cash flows when booking exists.
     let paymentResult = null;
-    if (booking) {
+    let paymentWarning = null;
+    const normalizedPaymentMethod = String(paymentMethod || "").trim().toUpperCase();
+    const shouldCreatePayosLink = booking && normalizedPaymentMethod !== "CASH";
+    if (shouldCreatePayosLink) {
       const origin =
         req.get("origin") || `http://localhost:${process.env.PORT || 5000}`;
-      paymentResult = await createCounterOrderPayment({
-        booking,
-        order,
-        invoice,
-        buyer: {
-          name: customerName || "Khách lẻ",
-          phone: customerPhone || "",
-        },
-        origin,
-      });
+      try {
+        paymentResult = await createCounterOrderPayment({
+          booking,
+          order,
+          invoice,
+          buyer: {
+            name: effectiveGuestName || "Khách lẻ",
+            phone: effectiveGuestPhone || "",
+            email: effectiveGuestEmail || undefined,
+          },
+          origin,
+        });
+      } catch (payErr) {
+        // Keep order/invoice creation successful even when QR link generation fails.
+        paymentWarning = payErr?.message || "Không thể tạo link thanh toán PayOS.";
+      }
     }
 
     res.status(201).json({
@@ -587,6 +756,7 @@ export const createCounterOrder = async (req, res) => {
       orderCode: `#${String(order._id).slice(-6).toUpperCase()}`,
       invoiceId: invoice._id,
       payment: paymentResult,
+      paymentWarning,
       bookingAmount,
       orderAmount,
       totalAmount: combinedTotal,
@@ -617,14 +787,15 @@ export const updateStaffOrder = async (req, res) => {
           .status(400)
           .json({ message: "Trạng thái đơn hàng không hợp lệ." });
       }
-      const targetStatus = normalizeOrderStatus(rawStatus);
-      if (targetStatus === ORDER_STATUS.COMPLETED) {
+      const targetStatus = rawStatus;
+      if (targetStatus === "COMPLETED") {
         const invoice = await Invoice.findOne({ orderIds: order._id })
           .select("status remainingAmount")
           .lean();
         const invoiceRemaining = Number(invoice?.remainingAmount || 0);
-        const invoiceStatus = String(invoice?.status || "").toUpperCase();
-        const isPaid = invoiceStatus === "PAID" || invoiceRemaining <= 0;
+        const invoiceStatus = invoice?.status || "Pending";
+        const isPaid =
+          invoiceStatus === "Paid" || invoiceRemaining <= 0;
         if (!isPaid) {
           return res.status(400).json({
             message: "Đơn chưa thanh toán, không thể xác nhận hoàn thành.",
@@ -634,7 +805,7 @@ export const updateStaffOrder = async (req, res) => {
       order.status = targetStatus;
       touched = true;
     } else {
-      order.status = normalizeOrderStatus(order.status);
+      order.status = order.status || "PENDING";
     }
 
     if (Array.isArray(items)) {
@@ -644,13 +815,13 @@ export const updateStaffOrder = async (req, res) => {
       const menus = await MenuItem.find({ _id: { $in: menuIds } }).lean();
       const menuMap = new Map(menus.map((m) => [m._id.toString(), m]));
 
-      const normalized = [];
+      const validItems = [];
       for (const it of items) {
         const qty = Number(it.quantity || 0);
         if (!it.menuItemId || qty <= 0) continue;
         const menu = menuMap.get(String(it.menuItemId));
         if (!menu) continue;
-        normalized.push({
+        validItems.push({
           menuItemId: menu._id,
           quantity: qty,
           note: it.note || "",
@@ -658,13 +829,13 @@ export const updateStaffOrder = async (req, res) => {
         });
       }
 
-      if (!normalized.length) {
+      if (!validItems.length) {
         return res.status(400).json({ message: "Danh sách món không hợp lệ." });
       }
 
       await OrderItem.deleteMany({ orderId: order._id });
       await OrderItem.insertMany(
-        normalized.map((i) => ({
+        validItems.map((i) => ({
           orderId: order._id,
           menuItemId: i.menuItemId,
           quantity: i.quantity,
@@ -673,7 +844,7 @@ export const updateStaffOrder = async (req, res) => {
         })),
       );
 
-      order.totalAmount = normalized.reduce(
+      order.totalAmount = validItems.reduce(
         (sum, i) => sum + Number(i.quantity) * Number(i.priceAtOrder),
         0,
       );
@@ -750,7 +921,7 @@ async function buildStaffInvoicePayload(orderId) {
     order: {
       id: order._id,
       orderCode: `#${String(order._id).slice(-6).toUpperCase()}`,
-      status: order.status || "Pending",
+      status: order.status || "PENDING",
       createdAt: order.createdAt,
       totalAmount: Number(order.totalAmount || 0),
     },
@@ -767,9 +938,9 @@ async function buildStaffInvoicePayload(orderId) {
         }
       : null,
     customer: {
-      name: booking?.guestInfo?.name || user?.fullName || "Khách lẻ",
-      phone: booking?.guestInfo?.phone || user?.phone || "",
-      email: booking?.guestInfo?.email || user?.email || "",
+      name: booking?.guestInfo?.name || order?.guestInfo?.name || user?.fullName || "Khách lẻ",
+      phone: booking?.guestInfo?.phone || order?.guestInfo?.phone || user?.phone || "",
+      email: booking?.guestInfo?.email || order?.guestInfo?.email || user?.email || "",
     },
     table: table
       ? {
@@ -912,10 +1083,10 @@ export const getStaffDashboardStats = async (req, res) => {
     }
 
     const statusCounts = {
-      Pending: 0,
-      Confirmed: 0,
-      Completed: 0,
-      Cancelled: 0,
+      ["PENDING"]: 0,
+      ["CONFIRMED"]: 0,
+      ["COMPLETED"]: 0,
+      ["CANCELLED"]: 0,
     };
     for (const o of todayOrders) {
       if (statusCounts[o.status] !== undefined) statusCounts[o.status]++;
@@ -931,7 +1102,7 @@ export const getStaffDashboardStats = async (req, res) => {
         orderCode: `#${String(o._id).slice(-6).toUpperCase()}`,
         customerName: bk?.guestInfo?.name || usr?.fullName || "Khách lẻ",
         tableName: tb?.name || "Walk-in",
-        status: o.status || "Pending",
+        status: o.status || "PENDING",
         totalAmount: Number(o.totalAmount || 0),
         itemCount: oimMap.get(o._id.toString()) || 0,
         createdAt: o.createdAt,
@@ -954,3 +1125,6 @@ export const getStaffDashboardStats = async (req, res) => {
 };
 
 // GET /api/payments/:bookingId  — get payment page data
+
+
+

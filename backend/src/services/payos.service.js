@@ -1,13 +1,13 @@
-import { PayOS } from "@payos/node";
+﻿import { PayOS } from "@payos/node";
 import QRCode from "qrcode";
 import mongoose from "mongoose";
 import Booking from "../models/booking.js";
 import Order from "../models/order.js";
 import Payment from "../models/payment.js";
 import Invoice from "../models/invoice.js";
-import { ORDER_STATUS, PAYMENT_METHOD } from "../constants/domain.js";
+import Table from "../models/table.js";
 
-const PAYOS_PAYMENT_METHOD = PAYMENT_METHOD.QR_PAYOS;
+const PAYOS_PAYMENT_METHOD = "QR_PAYOS";
 const PAYOS_PENDING_STATUSES = new Set(["PENDING", "PROCESSING", "UNDERPAID"]);
 const PAYOS_FAILED_STATUSES = new Set(["CANCELLED", "EXPIRED", "FAILED"]);
 
@@ -49,6 +49,33 @@ function mapPayOSStatus(status) {
   if (status === "EXPIRED") return "Expired";
   if (status === "FAILED") return "Failed";
   return "Pending";
+}
+
+async function applyBookingPaidTransition(booking, now) {
+  if (!booking) return;
+
+  const currentStatus = String(booking.status || "");
+  if (!["Pending", "Awaiting_Payment", "Confirmed"].includes(currentStatus)) {
+    return;
+  }
+
+  const start = booking.startTime ? new Date(booking.startTime) : null;
+  const canAutoUseNow =
+    currentStatus === "Awaiting_Payment" &&
+    start &&
+    start.getTime() <= now.getTime() + 5 * 60 * 1000;
+
+  if (canAutoUseNow) {
+    booking.status = "CheckedIn";
+    await booking.save();
+    if (booking.tableId) {
+      await Table.findByIdAndUpdate(booking.tableId, { status: "Occupied" });
+    }
+    return;
+  }
+
+  booking.status = "Confirmed";
+  await booking.save();
 }
 
 async function ensureInvoice(bookingId, depositAmount) {
@@ -137,7 +164,9 @@ export async function createOrReusePayOSPayment({ booking, buyer, origin }) {
     invoiceTotal: invoice.totalAmount,
     successPaid,
     remainingAmount,
-    pendingPayments: paymentHistory.filter((p) => p.paymentStatus === "Pending")
+    pendingPayments: paymentHistory.filter(
+      (p) => p.paymentStatus === "Pending",
+    )
       .length,
   });
 
@@ -263,7 +292,11 @@ export async function createOrReusePayOSPayment({ booking, buyer, origin }) {
     });
 
     // Mark booking as awaiting payment
-    if (["Pending", "Confirmed"].includes(booking.status || "")) {
+    if (
+      ["Pending", "Confirmed"].includes(
+        booking.status || "",
+      )
+    ) {
       await Booking.findByIdAndUpdate(booking._id, {
         status: "Awaiting_Payment",
       });
@@ -304,11 +337,15 @@ export async function syncPayOSPaymentRecord({
     payment.payos.status = derivedStatus;
     payment.payos.amountPaid = Math.round(
       paymentLink?.amountPaid ??
-        (paymentStatus === "Success" ? Number(payment.amount || 0) : 0),
+        (paymentStatus === "Success"
+          ? Number(payment.amount || 0)
+          : 0),
     );
     payment.payos.amountRemaining = Math.round(
       paymentLink?.amountRemaining ??
-        (paymentStatus === "Success" ? 0 : payment.payos?.amountRemaining || 0),
+        (paymentStatus === "Success"
+          ? 0
+          : payment.payos?.amountRemaining || 0),
     );
     payment.payos.lastSyncedAt = now;
   }
@@ -330,18 +367,17 @@ export async function syncPayOSPaymentRecord({
     );
     invoice.remainingAmount = remaining;
     invoice.status =
-      remaining <= 0 ? "Paid" : totalPaid > 0 ? "Partially_Paid" : "Pending";
+      remaining <= 0
+        ? "Paid"
+        : totalPaid > 0
+          ? "Partially_Paid"
+          : "Pending";
     await invoice.save();
 
     // Cập nhật trạng thái booking nếu thanh toán đủ
     const booking = await Booking.findById(invoice.bookingId);
-    if (
-      booking &&
-      remaining <= 0 &&
-      ["Pending", "Awaiting_Payment"].includes(booking.status || "")
-    ) {
-      booking.status = "Confirmed";
-      await booking.save();
+    if (booking && remaining <= 0) {
+      await applyBookingPaidTransition(booking, now);
     }
 
     // Cập nhật trạng thái các order liên quan khi invoice đã thanh toán đủ
@@ -349,10 +385,10 @@ export async function syncPayOSPaymentRecord({
       await Order.updateMany(
         {
           _id: { $in: invoice.orderIds },
-          status: { $in: [ORDER_STATUS.PENDING, "Pending"] },
+          status: "PENDING",
         },
         {
-          $set: { status: ORDER_STATUS.CONFIRMED, updatedAt: now },
+          $set: { status: "CONFIRMED", updatedAt: now },
         },
       );
     }
@@ -396,13 +432,21 @@ export async function cancelPayOSPayment(bookingId, userId) {
   }
 
   // Cancel the booking if it was only awaiting payment
-  if (["Pending", "Awaiting_Payment"].includes(booking.status || "")) {
-    await Booking.findByIdAndUpdate(booking._id, { status: "Cancelled" });
+  if (
+    ["Pending", "Awaiting_Payment"].includes(
+      booking.status || "",
+    )
+  ) {
+    await Booking.findByIdAndUpdate(booking._id, {
+      status: "Cancelled",
+    });
   }
 
   // Update invoice
   if (invoice) {
-    await Invoice.findByIdAndUpdate(invoice._id, { status: "Cancelled" });
+    await Invoice.findByIdAndUpdate(invoice._id, {
+      status: "Cancelled",
+    });
   }
 
   return { success: true };
@@ -538,7 +582,9 @@ export async function createOrReuseOrderPayOSPayment({ order, buyer, origin }) {
     invoiceTotal: invoice.totalAmount,
     successPaid,
     remainingAmount,
-    pendingPayments: paymentHistory.filter((p) => p.paymentStatus === "Pending")
+    pendingPayments: paymentHistory.filter(
+      (p) => p.paymentStatus === "Pending",
+    )
       .length,
   });
 
@@ -895,3 +941,6 @@ export async function createCounterOrderPayment({
     throw new Error(`Không thể tạo payment link: ${err.message}`);
   }
 }
+
+
+

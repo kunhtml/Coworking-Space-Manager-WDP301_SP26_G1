@@ -1,36 +1,39 @@
-import Booking from "../models/booking.js";
+﻿import Booking from "../models/booking.js";
 import Order from "../models/order.js";
 import OrderItem from "../models/order_item.js";
 import MenuItem from "../models/menu_item.js";
 import Invoice from "../models/invoice.js";
 import Payment from "../models/payment.js";
-import { ORDER_STATUS, normalizeOrderStatus } from "../constants/domain.js";
 
-const BLOCKED_BOOKING_STATUSES = new Set(["Cancelled", "Canceled"]);
+const BLOCKED_BOOKING_STATUSES = new Set([
+  "Cancelled",
+  "Canceled",
+]);
 
 function mapOrderRow(order, bookingMap, itemMap, invoiceMap) {
   const booking = bookingMap.get(order.bookingId?.toString());
   const invoice = invoiceMap.get(order._id?.toString());
-  const normalizedOrderStatus = normalizeOrderStatus(order.status);
-  const normalizedInvoiceStatus = String(invoice?.status || "").toUpperCase();
+  const currentOrderStatus = order.status || "PENDING";
+  const currentInvoiceStatus = invoice?.status || "Pending";
 
   let paymentStatus = "UNPAID";
-  if (normalizedOrderStatus === ORDER_STATUS.CANCELLED) {
+  if (currentOrderStatus === "CANCELLED") {
     paymentStatus = "CANCELLED";
   } else if (
-    normalizedInvoiceStatus === "PAID" ||
+    currentInvoiceStatus === "Paid" ||
     Number(invoice?.remainingAmount || 0) <= 0
   ) {
     paymentStatus = "PAID";
   }
 
   const appendOnlyEdit =
-    paymentStatus === "PAID" || normalizedInvoiceStatus === "PARTIALLY_PAID";
+    paymentStatus === "PAID" ||
+    currentInvoiceStatus === "Partially_Paid";
 
   return {
     id: order._id,
     bookingId: order.bookingId,
-    status: normalizedOrderStatus,
+    status: currentOrderStatus,
     paymentStatus,
     appendOnlyEdit,
     totalAmount: Number(order.totalAmount || 0),
@@ -124,13 +127,13 @@ export const createOrder = async (req, res) => {
     const menus = await MenuItem.find({ _id: { $in: menuIds } }).lean();
     const menuMap = new Map(menus.map((m) => [m._id.toString(), m]));
 
-    const normalizedItems = [];
+    const validItems = [];
     for (const item of items) {
       const qty = Number(item.quantity || 0);
       if (!item.menuItemId || qty <= 0) continue;
       const menu = menuMap.get(String(item.menuItemId));
       if (!menu) continue;
-      normalizedItems.push({
+      validItems.push({
         menuItemId: menu._id,
         quantity: qty,
         note: item.note || "",
@@ -138,12 +141,12 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    if (!normalizedItems.length) {
+    if (!validItems.length) {
       return res.status(400).json({ message: "Danh sách món không hợp lệ." });
     }
 
     const totalAmount = Math.round(
-      normalizedItems.reduce(
+      validItems.reduce(
         (sum, item) => sum + Number(item.quantity) * Number(item.priceAtOrder),
         0,
       ),
@@ -152,12 +155,12 @@ export const createOrder = async (req, res) => {
     const order = await Order.create({
       userId: req.user.id,
       bookingId,
-      status: ORDER_STATUS.PENDING,
+      status: "PENDING",
       totalAmount,
     });
 
     await OrderItem.insertMany(
-      normalizedItems.map((item) => ({
+      validItems.map((item) => ({
         orderId: order._id,
         menuItemId: item.menuItemId,
         quantity: item.quantity,
@@ -200,7 +203,7 @@ export const updateMyOrder = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy đơn hàng." });
     }
 
-    if (normalizeOrderStatus(order.status) !== ORDER_STATUS.PENDING) {
+    if ((order.status || "PENDING") !== "PENDING") {
       return res.status(400).json({
         message: "Chỉ có thể cập nhật đơn hàng khi trạng thái là PENDING.",
       });
@@ -212,13 +215,13 @@ export const updateMyOrder = async (req, res) => {
     const menus = await MenuItem.find({ _id: { $in: menuIds } }).lean();
     const menuMap = new Map(menus.map((m) => [m._id.toString(), m]));
 
-    const normalizedItems = [];
+    const validItems = [];
     for (const item of items) {
       const qty = Number(item.quantity || 0);
       if (!item.menuItemId || qty <= 0) continue;
       const menu = menuMap.get(String(item.menuItemId));
       if (!menu) continue;
-      normalizedItems.push({
+      validItems.push({
         menuItemId: menu._id,
         quantity: qty,
         note: item.note || "",
@@ -226,7 +229,7 @@ export const updateMyOrder = async (req, res) => {
       });
     }
 
-    if (!normalizedItems.length) {
+    if (!validItems.length) {
       return res.status(400).json({ message: "Danh sách món không hợp lệ." });
     }
 
@@ -262,7 +265,7 @@ export const updateMyOrder = async (req, res) => {
 
       const incomingByKey = new Map();
       const incomingMetaByKey = new Map();
-      for (const item of normalizedItems) {
+      for (const item of validItems) {
         const key = makeKey(item);
         incomingByKey.set(
           key,
@@ -275,7 +278,7 @@ export const updateMyOrder = async (req, res) => {
 
       const newlyAddedItems = [];
       if (appendOnly) {
-        newlyAddedItems.push(...normalizedItems);
+        newlyAddedItems.push(...validItems);
       } else {
         for (const [key, incomingQty] of incomingByKey.entries()) {
           const oldQty = Number(existingQtyByKey.get(key) || 0);
@@ -341,7 +344,7 @@ export const updateMyOrder = async (req, res) => {
     }
 
     const newTotalAmount = Math.round(
-      normalizedItems.reduce(
+      validItems.reduce(
         (sum, item) => sum + Number(item.quantity) * Number(item.priceAtOrder),
         0,
       ),
@@ -349,7 +352,7 @@ export const updateMyOrder = async (req, res) => {
 
     await OrderItem.deleteMany({ orderId: order._id });
     await OrderItem.insertMany(
-      normalizedItems.map((item) => ({
+      validItems.map((item) => ({
         orderId: order._id,
         menuItemId: item.menuItemId,
         quantity: item.quantity,
@@ -383,3 +386,6 @@ export const updateMyOrder = async (req, res) => {
     res.status(500).json({ message: "Lỗi server." });
   }
 };
+
+
+

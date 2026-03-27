@@ -630,6 +630,13 @@ export default function StaffOrderManagementPage() {
                             {order.customerPhone}
                           </div>
                         )}
+                        {order.customerEmail && (
+                          <div
+                            style={{ color: "#64748b", fontSize: "0.78rem" }}
+                          >
+                            {order.customerEmail}
+                          </div>
+                        )}
                       </td>
                       <td className="fw-semibold">{order.tableName || "--"}</td>
                       <td style={{ maxWidth: 200 }}>

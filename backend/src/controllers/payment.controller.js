@@ -1,4 +1,4 @@
-import Booking from "../models/booking.js";
+﻿import Booking from "../models/booking.js";
 import Order from "../models/order.js";
 import User from "../models/user.js";
 import Table from "../models/table.js";
@@ -17,13 +17,6 @@ import {
   syncPayOSPaymentRecord,
   createPayOSClient,
 } from "../services/payos.service.js";
-import {
-  ORDER_STATUS,
-  normalizeOrderStatus,
-  normalizePaymentMethod,
-  PAYMENT_METHOD,
-  PAYMENT_METHOD_VALUES,
-} from "../constants/domain.js";
 
 const resolveFrontendOrigin = (req) =>
   req.get("origin") || process.env.FRONTEND_URL || "http://localhost:5173";
@@ -162,7 +155,7 @@ export const getOrderPaymentData = async (req, res) => {
         bookingId: order.bookingId?.toString(),
         totalAmount: Number(order.totalAmount || 0),
         totalFormatted: fmt(order.totalAmount || 0),
-        status: order.status || "Pending",
+        status: order.status || "PENDING",
         createdAt: order.createdAt,
         items,
       },
@@ -328,9 +321,11 @@ export const cancelPayment = async (req, res) => {
 export const processCounterPayment = async (req, res) => {
   try {
     const { orderId, bookingId, method } = req.body;
-    const paymentMethod = normalizePaymentMethod(method || PAYMENT_METHOD.CASH);
+    const paymentMethod = String(method || "CASH")
+      .trim()
+      .toUpperCase();
 
-    if (!PAYMENT_METHOD_VALUES.includes(paymentMethod)) {
+    if (!["CASH", "QR_PAYOS"].includes(paymentMethod)) {
       return res
         .status(400)
         .json({
@@ -382,7 +377,7 @@ export const processCounterPayment = async (req, res) => {
       ),
     );
 
-    if (paymentMethod === PAYMENT_METHOD.QR_PAYOS) {
+    if (paymentMethod === "QR_PAYOS") {
       if (!isPayOSConfigured()) {
         return res.status(400).json({ message: "PayOS chưa được cấu hình." });
       }
@@ -428,9 +423,9 @@ export const processCounterPayment = async (req, res) => {
       paidAt: new Date(),
     });
 
-    const currentStatus = normalizeOrderStatus(order.status);
-    if (currentStatus === ORDER_STATUS.PENDING) {
-      order.status = ORDER_STATUS.CONFIRMED;
+    const currentStatus = order.status || "PENDING";
+    if (currentStatus === "PENDING") {
+      order.status = "CONFIRMED";
     }
     await order.save();
 
@@ -440,9 +435,17 @@ export const processCounterPayment = async (req, res) => {
 
     if (
       booking &&
-      ["Pending", "Awaiting_Payment"].includes(String(booking.status || ""))
+      ["Pending", "Awaiting_Payment", "Confirmed"].includes(
+        String(booking.status || ""),
+      )
     ) {
-      await Booking.findByIdAndUpdate(booking._id, { status: "Confirmed" });
+      await Booking.findByIdAndUpdate(booking._id, {
+        status: "CheckedIn",
+      });
+
+      if (booking.tableId) {
+        await Table.findByIdAndUpdate(booking.tableId, { status: "Occupied" });
+      }
     }
 
     return res.json({
@@ -452,7 +455,7 @@ export const processCounterPayment = async (req, res) => {
       paymentId: payment._id,
       method: paymentMethod,
       amount: amountToPay,
-      orderStatus: normalizeOrderStatus(order.status),
+      orderStatus: order.status,
     });
   } catch (err) {
     console.error("processCounterPayment error:", err);
@@ -485,3 +488,6 @@ export const payosWebhook = async (req, res) => {
 // ========== MENU MANAGEMENT (Admin/Staff) ==========
 
 // GET /api/menu/items
+
+
+

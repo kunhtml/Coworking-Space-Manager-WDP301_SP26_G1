@@ -1,8 +1,7 @@
-import Booking from "./models/booking.js";
+﻿import Booking from "./models/booking.js";
 import Payment from "./models/payment.js";
 import Invoice from "./models/invoice.js";
 import { isPayOSConfigured, createPayOSClient } from "./services/payos.service.js";
-import { PAYMENT_METHOD } from "./constants/domain.js";
 
 const EXPIRE_MINUTES = 30;
 const INTERVAL_MS = 5 * 60 * 1000; // run every 5 minutes
@@ -26,7 +25,7 @@ async function expireUnpaidBookings() {
         // Cancel pending PayOS payment link
         const pendingPayment = await Payment.findOne({
           invoiceId: invoice._id,
-          paymentMethod: PAYMENT_METHOD.QR_PAYOS,
+          paymentMethod: "QR_PAYOS",
           paymentStatus: "Pending",
         });
 
@@ -43,10 +42,14 @@ async function expireUnpaidBookings() {
           await pendingPayment.save();
         }
 
-        await Invoice.findByIdAndUpdate(invoice._id, { status: "Cancelled" });
+        await Invoice.findByIdAndUpdate(invoice._id, {
+          status: "Cancelled",
+        });
       }
 
-      await Booking.findByIdAndUpdate(booking._id, { status: "Cancelled" });
+      await Booking.findByIdAndUpdate(booking._id, {
+        status: "Cancelled",
+      });
       console.log(`[Scheduler] Cancelled booking ${booking.bookingCode || booking._id}`);
     } catch (err) {
       console.error(`[Scheduler] Error cancelling booking ${booking._id}:`, err.message);
@@ -60,3 +63,5 @@ export function startScheduler() {
   setInterval(() => expireUnpaidBookings().catch(console.error), INTERVAL_MS);
   console.log(`[Scheduler] Auto-expire started (${EXPIRE_MINUTES} min timeout, checks every 5 min)`);
 }
+
+

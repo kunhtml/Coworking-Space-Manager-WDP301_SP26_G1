@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import { MENU_AVAILABILITY, MENU_AVAILABILITY_VALUES } from "../constants/domain.js";
 const { Schema } = mongoose;
 
 const menuItemSchema = new Schema(
@@ -14,8 +13,8 @@ const menuItemSchema = new Schema(
         stockQuantity: Number,
         availabilityStatus: {
             type: String,
-            enum: MENU_AVAILABILITY_VALUES,
-            default: MENU_AVAILABILITY.AVAILABLE,
+            enum: ["AVAILABLE", "OUT_OF_STOCK", "UNAVAILABLE"],
+            default: "AVAILABLE",
         },
         createdAt: {
             type: Date,

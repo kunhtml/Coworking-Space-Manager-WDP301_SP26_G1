@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import { ORDER_STATUS } from "../constants/domain.js";
 const { Schema } = mongoose;
 
 const orderSchema = new Schema(
@@ -12,10 +11,15 @@ const orderSchema = new Schema(
             type: Schema.Types.ObjectId,
             ref: "Booking"
         },
+        guestInfo: {
+            name: String,
+            phone: String,
+            email: String,
+        },
         status: {
             type: String,
-            enum: Object.values(ORDER_STATUS),
-            default: ORDER_STATUS.PENDING,
+            enum: ["PENDING", "CONFIRMED", "PREPARING", "SERVED", "COMPLETED", "CANCELLED"],
+            default: "PENDING",
         },
         totalAmount: Number,
         createdAt: {

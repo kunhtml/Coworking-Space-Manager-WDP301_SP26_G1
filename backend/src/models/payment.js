@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import { PAYMENT_METHOD_VALUES } from "../constants/domain.js";
 const { Schema } = mongoose;
 
 const paymentSchema = new Schema(
@@ -8,12 +7,16 @@ const paymentSchema = new Schema(
         bookingId: { type: Schema.Types.ObjectId, ref: "Booking" },
         paymentMethod: {
             type: String,
-            enum: PAYMENT_METHOD_VALUES,
+            enum: ["CASH", "QR_PAYOS"],
         },
         transactionId: String,
         amount: Number,
         type: String,
-        paymentStatus: { type: String, default: "Pending" },
+        paymentStatus: {
+            type: String,
+            enum: ["Pending", "Success", "Failed", "Expired", "Cancelled"],
+            default: "Pending"
+        },
         paidAt: Date,
         payos: {
             orderCode: Number,

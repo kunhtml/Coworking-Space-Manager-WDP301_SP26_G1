@@ -33,6 +33,13 @@ export async function createCounterOrder(payload) {
   return apiClient.post("/staff/dashboard/orders/counter", payload);
 }
 
+export async function findStaffCustomer(keyword) {
+  const q = String(keyword || "").trim();
+  if (!q) return { found: false, customer: null };
+  const query = new URLSearchParams({ q });
+  return apiClient.get(`/staff/dashboard/customers/search?${query.toString()}`);
+}
+
 export async function updateStaffOrder(orderId, payload) {
   return apiClient.put(`/staff/dashboard/orders/${orderId}`, payload);
 }

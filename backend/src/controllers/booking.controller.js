@@ -1,12 +1,8 @@
-import Booking from "../models/booking.js";
+﻿import Booking from "../models/booking.js";
 import Table from "../models/table.js";
 import User from "../models/user.js";
 import Invoice from "../models/invoice.js";
 import Payment from "../models/payment.js";
-
-const normalizeBookingStatus = (status) => {
-  return String(status || "").trim();
-};
 
 const parseDateTimeInput = (dateValue, timeValue) => {
   if (!timeValue && !dateValue) return null;
@@ -87,7 +83,13 @@ export const createBooking = async (req, res) => {
 
     const overlapping = await Booking.find({
       tableId: bookingTableId,
-      status: { $nin: ["Cancelled", "Canceled", "Completed"] },
+      status: {
+        $nin: [
+          "Cancelled",
+          "Canceled",
+          "Completed",
+        ],
+      },
       startTime: { $lt: endTime },
       endTime: { $gt: startTime },
     }).lean();
@@ -120,7 +122,10 @@ export const createBooking = async (req, res) => {
       bookingId: booking._id,
       totalAmount: Math.round(Number(depositAmount || 0)),
       remainingAmount: Math.round(Number(depositAmount || 0)),
-      status: Number(depositAmount || 0) > 0 ? "Pending" : "Paid",
+      status:
+        Number(depositAmount || 0) > 0
+          ? "Pending"
+          : "Paid",
     });
 
     res.status(201).json({
@@ -156,7 +161,7 @@ export const getMyBookings = async (req, res) => {
         startTime: b.startTime,
         endTime: b.endTime,
         depositAmount: b.depositAmount || 0,
-        status: normalizeBookingStatus(b.status || "Pending"),
+        status: b.status || "Pending",
         createdAt: b.createdAt,
       };
     });
@@ -187,7 +192,13 @@ export const updateMyBooking = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy booking." });
     }
 
-    if (["Confirmed", "Cancelled", "Canceled"].includes(booking.status)) {
+    if (
+      [
+        "Confirmed",
+        "Cancelled",
+        "Canceled",
+      ].includes(booking.status)
+    ) {
       return res.status(400).json({
         message: "Booking đã xác nhận hoặc đã hủy, không thể chỉnh sửa.",
       });
@@ -223,7 +234,13 @@ export const updateMyBooking = async (req, res) => {
     const overlapping = await Booking.find({
       _id: { $ne: booking._id },
       tableId: booking.tableId,
-      status: { $nin: ["Cancelled", "Canceled", "Completed"] },
+      status: {
+        $nin: [
+          "Cancelled",
+          "Canceled",
+          "Completed",
+        ],
+      },
       startTime: { $lt: nextEnd },
       endTime: { $gt: nextStart },
     }).lean();
@@ -301,12 +318,18 @@ export const getAllBookings = async (req, res) => {
     await Booking.updateMany(
       {
         endTime: { $lt: now },
-        status: { $in: ["Pending", "Awaiting_Payment", "Confirmed"] },
+        status: {
+          $in: [
+            "Pending",
+            "Awaiting_Payment",
+            "Confirmed",
+          ],
+        },
       },
       { $set: { status: "Cancelled" } },
     );
 
-    let bookings = await Booking.find(filter).sort({ startTime: 1 }).lean();
+    let bookings = await Booking.find(filter).sort({ createdAt: -1 }).lean();
 
     // Search by booking code or guest name
     if (search) {
@@ -346,7 +369,7 @@ export const getAllBookings = async (req, res) => {
         startTime: b.startTime,
         endTime: b.endTime,
         depositAmount: b.depositAmount || 0,
-        status: normalizeBookingStatus(b.status || "Pending"),
+        status: b.status || "Pending",
         createdAt: b.createdAt,
       };
     });
@@ -369,6 +392,16 @@ export const checkInBooking = async (req, res) => {
 
     // Auto-cancel if booking time has already passed
     const now = new Date();
+    const startTime = booking.startTime ? new Date(booking.startTime) : null;
+    if (startTime) {
+      const earliestCheckIn = new Date(startTime.getTime() - 5 * 60 * 1000);
+      if (now < earliestCheckIn) {
+        return res.status(400).json({
+          message: "Chỉ được check-in sớm nhất trước giờ đặt 5 phút.",
+        });
+      }
+    }
+
     if (booking.endTime && new Date(booking.endTime) < now) {
       booking.status = "Cancelled";
       await booking.save();
@@ -377,9 +410,9 @@ export const checkInBooking = async (req, res) => {
       });
     }
 
-    if (!["Confirmed", "Awaiting_Payment"].includes(booking.status)) {
+    if (booking.status !== "Confirmed") {
       return res.status(400).json({
-        message: `Chỉ có thể check-in booking đã xác nhận/chờ thanh toán (trạng thái hiện tại: ${booking.status}).`,
+        message: `Chỉ có thể check-in booking đã thanh toán/xác nhận (trạng thái hiện tại: ${booking.status}).`,
       });
     }
     booking.status = "CheckedIn";
@@ -401,3 +434,6 @@ export const checkInBooking = async (req, res) => {
 };
 
 // GET /api/staff/dashboard/tables  (Staff / Admin)
+
+
+

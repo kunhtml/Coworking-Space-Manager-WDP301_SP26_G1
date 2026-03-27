@@ -8,6 +8,7 @@ import {
   getStaffOrderInvoice,
   exportStaffOrderInvoice,
   getStaffDashboardStats,
+  findStaffCustomer,
 } from "../controllers/staff-dashboard.controller.js";
 import { checkInBooking } from "../controllers/booking.controller.js";
 import { requireStaff } from "../middleware/middleware.js";
@@ -19,6 +20,7 @@ router.get("/staff/dashboard/tables", requireStaff, getStaffTableStatusList);
 router.patch("/staff/dashboard/tables/:id/status", requireStaff, updateStaffTableStatus);
 router.patch("/staff/dashboard/bookings/:id/checkin", requireStaff, checkInBooking);
 router.get("/staff/dashboard/orders", requireStaff, getStaffOrders);
+router.get("/staff/dashboard/customers/search", requireStaff, findStaffCustomer);
 router.post("/staff/dashboard/orders/counter", requireStaff, createCounterOrder);
 router.put("/staff/dashboard/orders/:id", requireStaff, updateStaffOrder);
 router.get("/staff/dashboard/orders/:id/invoice", requireStaff, getStaffOrderInvoice);
