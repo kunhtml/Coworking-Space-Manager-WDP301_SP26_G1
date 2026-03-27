@@ -118,6 +118,7 @@ export default function StaffSeatMapPage() {
 
   // filters
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterTableType, setFilterTableType] = useState("all");
   const [search, setSearch] = useState("");
 
   // hover animation
@@ -156,6 +157,9 @@ export default function StaffSeatMapPage() {
     if (filterStatus !== "all") {
       rows = rows.filter((t) => t.status === filterStatus);
     }
+    if (filterTableType !== "all") {
+      rows = rows.filter((t) => (t.tableType || "") === filterTableType);
+    }
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       rows = rows.filter(
@@ -165,7 +169,19 @@ export default function StaffSeatMapPage() {
       );
     }
     return rows;
-  }, [tables, filterStatus, search]);
+  }, [tables, filterStatus, filterTableType, search]);
+
+  const tableTypeOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          tables
+            .map((t) => String(t.tableType || "").trim())
+            .filter(Boolean),
+        ),
+      ).sort(),
+    [tables],
+  );
 
   // Stats
   const stats = useMemo(
@@ -363,6 +379,20 @@ export default function StaffSeatMapPage() {
             ))}
           </Form.Select>
         </Col>
+        <Col md={3}>
+          <Form.Select
+            className="staff-filter-control"
+            value={filterTableType}
+            onChange={(e) => setFilterTableType(e.target.value)}
+          >
+            <option value="all">Tất cả loại bàn</option>
+            {tableTypeOptions.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </Form.Select>
+        </Col>
         {/* Legend */}
         <Col className="d-none d-md-flex flex-wrap gap-3 align-items-center justify-content-end">
           {STATUS_LEGEND.map((item) => (
@@ -410,6 +440,7 @@ export default function StaffSeatMapPage() {
               className="rounded-3 fw-semibold"
               onClick={() => {
                 setFilterStatus("all");
+                setFilterTableType("all");
                 setSearch("");
               }}
             >
