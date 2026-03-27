@@ -1,7 +1,7 @@
 [
   {
     "_id": { "$oid": "65e6e1000000000000000001" },
-    "name": "Hot_Desk",
+    "name": "Hot Desk",
     "description": "Bàn làm việc linh hoạt theo giờ hoặc theo ngày",
     "capacity": 1,
     "createdAt": { "$date": "2025-10-01T08:00:00.000Z" },
@@ -9,7 +9,7 @@
   },
   {
     "_id": { "$oid": "65e6e1000000000000000002" },
-    "name": "Dedicated_Desk",
+    "name": "Dedicated Desk",
     "description": "Bàn cố định dành riêng cho một người",
     "capacity": 1,
     "createdAt": { "$date": "2025-10-01T08:00:00.000Z" },
@@ -17,7 +17,7 @@
   },
   {
     "_id": { "$oid": "65e6e1000000000000000003" },
-    "name": "Meeting_Room",
+    "name": "Meeting Room",
     "description": "",
     "capacity": 1,
     "createdAt": { "$date": "2025-10-01T08:00:00.000Z" },
@@ -25,7 +25,7 @@
   },
   {
     "_id": { "$oid": "65e6e1000000000000000004" },
-    "name": "Private_Office",
+    "name": "Private Office",
     "description": "Văn phòng riêng cho doanh nghiệp nhỏ",
     "capacity": 6,
     "createdAt": { "$date": "2025-10-01T08:00:00.000Z" },
@@ -33,7 +33,7 @@
   },
   {
     "_id": { "$oid": "65e6e1000000000000000005" },
-    "name": "Event_Space",
+    "name": "Event Space",
     "description": "Không gian tổ chức sự kiện và hội thảo",
     "capacity": 50,
     "createdAt": { "$date": "2025-10-01T08:00:00.000Z" },
@@ -41,7 +41,7 @@
   },
   {
     "_id": { "$oid": "69c40967efee12184efcceb7" },
-    "name": "Group_Table",
+    "name": "Group Table",
     "description": "",
     "capacity": 1,
     "createdAt": { "$date": "2026-03-25T16:12:23.997Z" },
@@ -49,11 +49,10 @@
   },
   {
     "_id": { "$oid": "69c40968efee12184efcceb8" },
-    "name": "VIP_Room",
+    "name": "VIP Room",
     "description": "",
     "capacity": 1,
     "createdAt": { "$date": "2026-03-25T16:12:23.999Z" },
     "__v": 0
   }
 ]
-

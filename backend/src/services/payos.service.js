@@ -1,4 +1,4 @@
-﻿import { PayOS } from "@payos/node";
+import { PayOS } from "@payos/node";
 import QRCode from "qrcode";
 import mongoose from "mongoose";
 import Booking from "../models/booking.js";
@@ -7,9 +7,13 @@ import OrderItem from "../models/order_item.js";
 import MenuItem from "../models/menu_item.js";
 import Payment from "../models/payment.js";
 import Invoice from "../models/invoice.js";
-import Table from "../models/table.js";
+import {
+  BOOKING_PAYMENT_HOLD_MINUTES,
+  ORDER_STATUS,
+  PAYMENT_METHOD,
+} from "../constants/domain.js";
 
-const PAYOS_PAYMENT_METHOD = "QR_PAYOS";
+const PAYOS_PAYMENT_METHOD = PAYMENT_METHOD.QR_PAYOS;
 const PAYOS_PENDING_STATUSES = new Set(["PENDING", "PROCESSING", "UNDERPAID"]);
 const PAYOS_FAILED_STATUSES = new Set(["CANCELLED", "EXPIRED", "FAILED"]);
 
@@ -232,9 +236,7 @@ export async function createOrReusePayOSPayment({ booking, buyer, origin }) {
     invoiceTotal: invoice.totalAmount,
     successPaid,
     remainingAmount,
-    pendingPayments: paymentHistory.filter(
-      (p) => p.paymentStatus === "Pending",
-    )
+    pendingPayments: paymentHistory.filter((p) => p.paymentStatus === "Pending")
       .length,
   });
 
@@ -318,7 +320,8 @@ export async function createOrReusePayOSPayment({ booking, buyer, origin }) {
       description, // Mô tả thanh toán
       returnUrl, // URL sau khi thanh toán thành công
       cancelUrl, // URL sau khi hủy thanh toán
-      expiredAt: Math.floor(Date.now() / 1000) + 15 * 60, // Hết hạn sau 15 phút
+      expiredAt:
+        Math.floor(Date.now() / 1000) + BOOKING_PAYMENT_HOLD_MINUTES * 60,
       buyerName: buyer?.fullName || booking?.guestInfo?.name || "Khách hàng",
       buyerEmail: buyer?.email || booking?.guestInfo?.email,
       buyerPhone: buyer?.phone || booking?.guestInfo?.phone,
@@ -360,11 +363,7 @@ export async function createOrReusePayOSPayment({ booking, buyer, origin }) {
     });
 
     // Mark booking as awaiting payment
-    if (
-      ["Pending", "Confirmed"].includes(
-        booking.status || "",
-      )
-    ) {
+    if (["Pending", "Confirmed"].includes(booking.status || "")) {
       await Booking.findByIdAndUpdate(booking._id, {
         status: "Awaiting_Payment",
       });
@@ -405,15 +404,11 @@ export async function syncPayOSPaymentRecord({
     payment.payos.status = derivedStatus;
     payment.payos.amountPaid = Math.round(
       paymentLink?.amountPaid ??
-        (paymentStatus === "Success"
-          ? Number(payment.amount || 0)
-          : 0),
+        (paymentStatus === "Success" ? Number(payment.amount || 0) : 0),
     );
     payment.payos.amountRemaining = Math.round(
       paymentLink?.amountRemaining ??
-        (paymentStatus === "Success"
-          ? 0
-          : payment.payos?.amountRemaining || 0),
+        (paymentStatus === "Success" ? 0 : payment.payos?.amountRemaining || 0),
     );
     payment.payos.lastSyncedAt = now;
   }
@@ -435,17 +430,18 @@ export async function syncPayOSPaymentRecord({
     );
     invoice.remainingAmount = remaining;
     invoice.status =
-      remaining <= 0
-        ? "Paid"
-        : totalPaid > 0
-          ? "Partially_Paid"
-          : "Pending";
+      remaining <= 0 ? "Paid" : totalPaid > 0 ? "Partially_Paid" : "Pending";
     await invoice.save();
 
     // Cập nhật trạng thái booking nếu thanh toán đủ
     const booking = await Booking.findById(invoice.bookingId);
-    if (booking && remaining <= 0) {
-      await applyBookingPaidTransition(booking, now);
+    if (
+      booking &&
+      remaining <= 0 &&
+      ["Pending", "Awaiting_Payment"].includes(booking.status || "")
+    ) {
+      booking.status = "Confirmed";
+      await booking.save();
     }
 
     // Cập nhật trạng thái các order liên quan khi invoice đã thanh toán đủ
@@ -457,7 +453,7 @@ export async function syncPayOSPaymentRecord({
           status: "PENDING",
         },
         {
-          $set: { status: "CONFIRMED", updatedAt: now },
+          $set: { status: ORDER_STATUS.CONFIRMED, updatedAt: now },
         },
       );
     }
@@ -501,21 +497,13 @@ export async function cancelPayOSPayment(bookingId, userId) {
   }
 
   // Cancel the booking if it was only awaiting payment
-  if (
-    ["Pending", "Awaiting_Payment"].includes(
-      booking.status || "",
-    )
-  ) {
-    await Booking.findByIdAndUpdate(booking._id, {
-      status: "Cancelled",
-    });
+  if (["Pending", "Awaiting_Payment"].includes(booking.status || "")) {
+    await Booking.findByIdAndUpdate(booking._id, { status: "Cancelled" });
   }
 
   // Update invoice
   if (invoice) {
-    await Invoice.findByIdAndUpdate(invoice._id, {
-      status: "Cancelled",
-    });
+    await Invoice.findByIdAndUpdate(invoice._id, { status: "Cancelled" });
   }
 
   return { success: true };
@@ -651,9 +639,7 @@ export async function createOrReuseOrderPayOSPayment({ order, buyer, origin }) {
     invoiceTotal: invoice.totalAmount,
     successPaid,
     remainingAmount,
-    pendingPayments: paymentHistory.filter(
-      (p) => p.paymentStatus === "Pending",
-    )
+    pendingPayments: paymentHistory.filter((p) => p.paymentStatus === "Pending")
       .length,
   });
 
@@ -741,7 +727,8 @@ export async function createOrReuseOrderPayOSPayment({ order, buyer, origin }) {
       description, // Mô tả thanh toán
       cancelUrl, // URL sau khi hủy thanh toán
       returnUrl, // URL sau khi thanh toán thành công
-      expiredAt: Math.floor(Date.now() / 1000) + 15 * 60, // Hết hạn sau 15 phút
+      expiredAt:
+        Math.floor(Date.now() / 1000) + BOOKING_PAYMENT_HOLD_MINUTES * 60,
       buyerName: buyer?.fullName || "Khách hàng",
       buyerEmail: buyer?.email,
       buyerPhone: buyer?.phone,
@@ -1010,6 +997,3 @@ export async function createCounterOrderPayment({
     throw new Error(`Không thể tạo payment link: ${err.message}`);
   }
 }
-
-
-

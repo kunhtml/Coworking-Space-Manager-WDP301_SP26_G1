@@ -279,9 +279,7 @@ export default function StaffSeatMapPage() {
     () =>
       Array.from(
         new Set(
-          tables
-            .map((t) => String(t.tableType || "").trim())
-            .filter(Boolean),
+          tables.map((t) => String(t.tableType || "").trim()).filter(Boolean),
         ),
       ).sort(),
     [tables],

@@ -598,7 +598,9 @@
       "$oid": "7dbadd33c63cd2f04d85b311"
     },
     "name": "Hot Desk H1",
-    "tableType": "Hot_Desk",
+    "tableTypeId": {
+      "$oid": "65e6e1000000000000000001"
+    },
     "status": "Available",
     "pricePerHour": 22000,
     "pricePerDay": 110000,
@@ -606,14 +608,17 @@
       "$date": "2026-01-13T08:00:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "Hot_Desk"
   },
   {
     "_id": {
       "$oid": "1e6b5ab3c73358218472793d"
     },
     "name": "Hot Desk H2",
-    "tableType": "Hot_Desk",
+    "tableTypeId": {
+      "$oid": "65e6e1000000000000000001"
+    },
     "status": "Available",
     "pricePerHour": 24000,
     "pricePerDay": 120000,
@@ -621,14 +626,17 @@
       "$date": "2026-01-13T08:10:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "Hot_Desk"
   },
   {
     "_id": {
       "$oid": "cbd0f20ce06410d4e7a51608"
     },
     "name": "Hot Desk H3",
-    "tableType": "Hot_Desk",
+    "tableTypeId": {
+      "$oid": "65e6e1000000000000000001"
+    },
     "status": "Available",
     "pricePerHour": 26000,
     "pricePerDay": 130000,
@@ -636,14 +644,17 @@
       "$date": "2026-01-13T08:20:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "Hot_Desk"
   },
   {
     "_id": {
       "$oid": "678e0f592ee3d75a8c502057"
     },
     "name": "Hot Desk H4",
-    "tableType": "Hot_Desk",
+    "tableTypeId": {
+      "$oid": "65e6e1000000000000000001"
+    },
     "status": "Available",
     "pricePerHour": 28000,
     "pricePerDay": 140000,
@@ -651,14 +662,17 @@
       "$date": "2026-01-13T08:30:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "Hot_Desk"
   },
   {
     "_id": {
       "$oid": "e1b199e7c09d2426f3b99b01"
     },
     "name": "Dedicated Desk D1",
-    "tableType": "Dedicated_Desk",
+    "tableTypeId": {
+      "$oid": "65e6e1000000000000000002"
+    },
     "status": "Available",
     "pricePerHour": 32000,
     "pricePerDay": 160000,
@@ -666,14 +680,17 @@
       "$date": "2026-01-14T08:00:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "Dedicated_Desk"
   },
   {
     "_id": {
       "$oid": "a9d9468a34bceda811d225b1"
     },
     "name": "Dedicated Desk D2",
-    "tableType": "Dedicated_Desk",
+    "tableTypeId": {
+      "$oid": "65e6e1000000000000000002"
+    },
     "status": "Available",
     "pricePerHour": 34000,
     "pricePerDay": 170000,
@@ -681,14 +698,17 @@
       "$date": "2026-01-14T08:10:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "Dedicated_Desk"
   },
   {
     "_id": {
       "$oid": "ae35a8d66da7e9347bb48fab"
     },
     "name": "Dedicated Desk D3",
-    "tableType": "Dedicated_Desk",
+    "tableTypeId": {
+      "$oid": "65e6e1000000000000000002"
+    },
     "status": "Available",
     "pricePerHour": 36000,
     "pricePerDay": 180000,
@@ -696,14 +716,17 @@
       "$date": "2026-01-14T08:20:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "Dedicated_Desk"
   },
   {
     "_id": {
       "$oid": "8afbba73992c939412a48e15"
     },
     "name": "Dedicated Desk D4",
-    "tableType": "Dedicated_Desk",
+    "tableTypeId": {
+      "$oid": "65e6e1000000000000000002"
+    },
     "status": "Available",
     "pricePerHour": 38000,
     "pricePerDay": 190000,
@@ -711,14 +734,17 @@
       "$date": "2026-01-14T08:30:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "Dedicated_Desk"
   },
   {
     "_id": {
       "$oid": "bd077d98300ab175ed11c660"
     },
     "name": "Meeting Room M1",
-    "tableType": "Meeting_Room",
+    "tableTypeId": {
+      "$oid": "65e6e1000000000000000003"
+    },
     "status": "Available",
     "pricePerHour": 162000,
     "pricePerDay": 910000,
@@ -726,14 +752,17 @@
       "$date": "2026-01-15T08:00:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "Meeting_Room"
   },
   {
     "_id": {
       "$oid": "8cd1b6eba1a494f54a8459b7"
     },
     "name": "Meeting Room M2",
-    "tableType": "Meeting_Room",
+    "tableTypeId": {
+      "$oid": "65e6e1000000000000000003"
+    },
     "status": "Available",
     "pricePerHour": 164000,
     "pricePerDay": 920000,
@@ -741,14 +770,17 @@
       "$date": "2026-01-15T08:10:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "Meeting_Room"
   },
   {
     "_id": {
       "$oid": "a943c8fc46210c31dcc6880c"
     },
     "name": "Meeting Room M3",
-    "tableType": "Meeting_Room",
+    "tableTypeId": {
+      "$oid": "65e6e1000000000000000003"
+    },
     "status": "Available",
     "pricePerHour": 166000,
     "pricePerDay": 930000,
@@ -756,14 +788,17 @@
       "$date": "2026-01-15T08:20:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "Meeting_Room"
   },
   {
     "_id": {
       "$oid": "eb65a45f99241e59fb4acb6a"
     },
     "name": "Meeting Room M4",
-    "tableType": "Meeting_Room",
+    "tableTypeId": {
+      "$oid": "65e6e1000000000000000003"
+    },
     "status": "Available",
     "pricePerHour": 168000,
     "pricePerDay": 940000,
@@ -771,14 +806,17 @@
       "$date": "2026-01-15T08:30:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "Meeting_Room"
   },
   {
     "_id": {
       "$oid": "1fbb7601e5b1ce4bde92e7b2"
     },
     "name": "Group Table G1",
-    "tableType": "Group_Table",
+    "tableTypeId": {
+      "$oid": "69c40967efee12184efcceb7"
+    },
     "status": "Available",
     "pricePerHour": 72000,
     "pricePerDay": 390000,
@@ -786,14 +824,17 @@
       "$date": "2026-01-16T08:00:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "Group_Table"
   },
   {
     "_id": {
       "$oid": "c3a7d93ab6031a4dc4e01760"
     },
     "name": "Group Table G2",
-    "tableType": "Group_Table",
+    "tableTypeId": {
+      "$oid": "69c40967efee12184efcceb7"
+    },
     "status": "Available",
     "pricePerHour": 74000,
     "pricePerDay": 400000,
@@ -801,14 +842,17 @@
       "$date": "2026-01-16T08:10:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "Group_Table"
   },
   {
     "_id": {
       "$oid": "8dcf41488d2a5b4550e3a413"
     },
     "name": "Group Table G3",
-    "tableType": "Group_Table",
+    "tableTypeId": {
+      "$oid": "69c40967efee12184efcceb7"
+    },
     "status": "Available",
     "pricePerHour": 76000,
     "pricePerDay": 410000,
@@ -816,14 +860,17 @@
       "$date": "2026-01-16T08:20:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "Group_Table"
   },
   {
     "_id": {
       "$oid": "ea4121942cb562e17e2f472a"
     },
     "name": "Group Table G4",
-    "tableType": "Group_Table",
+    "tableTypeId": {
+      "$oid": "69c40967efee12184efcceb7"
+    },
     "status": "Available",
     "pricePerHour": 78000,
     "pricePerDay": 420000,
@@ -831,14 +878,17 @@
       "$date": "2026-01-16T08:30:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "Group_Table"
   },
   {
     "_id": {
       "$oid": "d0dd113e1c0846722be0d8a3"
     },
     "name": "VIP Room V1",
-    "tableType": "VIP_Room",
+    "tableTypeId": {
+      "$oid": "69c40968efee12184efcceb8"
+    },
     "status": "Available",
     "pricePerHour": 242000,
     "pricePerDay": 1510000,
@@ -846,14 +896,17 @@
       "$date": "2026-01-17T08:00:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "VIP_Room"
   },
   {
     "_id": {
       "$oid": "b5cd515336f9d1d1955ae66c"
     },
     "name": "VIP Room V2",
-    "tableType": "VIP_Room",
+    "tableTypeId": {
+      "$oid": "69c40968efee12184efcceb8"
+    },
     "status": "Available",
     "pricePerHour": 244000,
     "pricePerDay": 1520000,
@@ -861,14 +914,17 @@
       "$date": "2026-01-17T08:10:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "VIP_Room"
   },
   {
     "_id": {
       "$oid": "89f16e034010ef8fd4921cb3"
     },
     "name": "VIP Room V3",
-    "tableType": "VIP_Room",
+    "tableTypeId": {
+      "$oid": "69c40968efee12184efcceb8"
+    },
     "status": "Available",
     "pricePerHour": 246000,
     "pricePerDay": 1530000,
@@ -876,14 +932,17 @@
       "$date": "2026-01-17T08:20:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "VIP_Room"
   },
   {
     "_id": {
       "$oid": "cd8fd37b696fae8eb3489d0e"
     },
     "name": "VIP Room V4",
-    "tableType": "VIP_Room",
+    "tableTypeId": {
+      "$oid": "69c40968efee12184efcceb8"
+    },
     "status": "Available",
     "pricePerHour": 248000,
     "pricePerDay": 1540000,
@@ -891,14 +950,17 @@
       "$date": "2026-01-17T08:30:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "VIP_Room"
   },
   {
     "_id": {
       "$oid": "0435a14d8485835fef969431"
     },
     "name": "Private Office O1",
-    "tableType": "Private_Office",
+    "tableTypeId": {
+      "$oid": "65e6e1000000000000000004"
+    },
     "status": "Available",
     "pricePerHour": 192000,
     "pricePerDay": 1260000,
@@ -906,14 +968,17 @@
       "$date": "2026-01-18T08:00:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "Private_Office"
   },
   {
     "_id": {
       "$oid": "60e384e22059d1be5fc12ba2"
     },
     "name": "Private Office O2",
-    "tableType": "Private_Office",
+    "tableTypeId": {
+      "$oid": "65e6e1000000000000000004"
+    },
     "status": "Available",
     "pricePerHour": 194000,
     "pricePerDay": 1270000,
@@ -921,14 +986,17 @@
       "$date": "2026-01-18T08:10:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "Private_Office"
   },
   {
     "_id": {
       "$oid": "d8af00bcdd7456562034dfa6"
     },
     "name": "Private Office O3",
-    "tableType": "Private_Office",
+    "tableTypeId": {
+      "$oid": "65e6e1000000000000000004"
+    },
     "status": "Available",
     "pricePerHour": 196000,
     "pricePerDay": 1280000,
@@ -936,14 +1004,17 @@
       "$date": "2026-01-18T08:20:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "Private_Office"
   },
   {
     "_id": {
       "$oid": "f2d08959b1077af59819451e"
     },
     "name": "Private Office O4",
-    "tableType": "Private_Office",
+    "tableTypeId": {
+      "$oid": "65e6e1000000000000000004"
+    },
     "status": "Available",
     "pricePerHour": 198000,
     "pricePerDay": 1290000,
@@ -951,14 +1022,17 @@
       "$date": "2026-01-18T08:30:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "Private_Office"
   },
   {
     "_id": {
       "$oid": "a4d9c3a5221f505b04b664df"
     },
     "name": "Event Space E1",
-    "tableType": "Event_Space",
+    "tableTypeId": {
+      "$oid": "65e6e1000000000000000005"
+    },
     "status": "Available",
     "pricePerHour": 117000,
     "pricePerDay": 690000,
@@ -966,14 +1040,17 @@
       "$date": "2026-01-19T08:00:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "Event_Space"
   },
   {
     "_id": {
       "$oid": "daae67b6b14b24377fba7a98"
     },
     "name": "Event Space E2",
-    "tableType": "Event_Space",
+    "tableTypeId": {
+      "$oid": "65e6e1000000000000000005"
+    },
     "status": "Available",
     "pricePerHour": 119000,
     "pricePerDay": 700000,
@@ -981,14 +1058,17 @@
       "$date": "2026-01-19T08:10:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "Event_Space"
   },
   {
     "_id": {
       "$oid": "ecdfcb01adb278d87ebba9a5"
     },
     "name": "Event Space E3",
-    "tableType": "Event_Space",
+    "tableTypeId": {
+      "$oid": "65e6e1000000000000000005"
+    },
     "status": "Available",
     "pricePerHour": 121000,
     "pricePerDay": 710000,
@@ -996,14 +1076,17 @@
       "$date": "2026-01-19T08:20:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "Event_Space"
   },
   {
     "_id": {
       "$oid": "7085f24d4d320d4b3e382b73"
     },
     "name": "Event Space E4",
-    "tableType": "Event_Space",
+    "tableTypeId": {
+      "$oid": "65e6e1000000000000000005"
+    },
     "status": "Available",
     "pricePerHour": 123000,
     "pricePerDay": 720000,
@@ -1011,6 +1094,8 @@
       "$date": "2026-01-19T08:30:00.000Z"
     },
     "__v": 0,
-    "description": ""
+    "description": "",
+    "tableType": "Event_Space"
   }
 ]
+

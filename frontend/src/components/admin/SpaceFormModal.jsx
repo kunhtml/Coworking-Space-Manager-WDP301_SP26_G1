@@ -60,27 +60,38 @@ export default function SpaceFormModal({
               <Form.Group>
                 <Form.Label>Gia/gio *</Form.Label>
                 <Form.Control
-                  type="number"
-                  min="0"
-                  step="1000"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={formData.pricePerHour}
                   isInvalid={!!priceError}
                   onKeyDown={(e) => {
-                    if (["-", "e", "E", "+"].includes(e.key)) {
+                    if (["-", "e", "E", "+", ".", ","].includes(e.key)) {
                       e.preventDefault();
-                      setPriceError("Gia khong duoc am");
                     }
                   }}
                   onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === "") {
-                      setFormData({ ...formData, pricePerHour: value });
+                    const digits = String(e.target.value || "").replace(/\D/g, "");
+                    if (digits === "") {
+                      setFormData({ ...formData, pricePerHour: "" });
                       setPriceError("");
-                    } else if (Number(value) >= 0) {
-                      setFormData({ ...formData, pricePerHour: value });
-                      setPriceError("");
+                      return;
+                    }
+
+                    setFormData({ ...formData, pricePerHour: digits });
+                    if (/^0+$/.test(digits)) {
+                      setPriceError("Gia/gio phai lon hon 0");
                     } else {
-                      setPriceError("Gia phai la so khong am (>= 0)");
+                      setPriceError("");
+                    }
+                  }}
+                  onBlur={() => {
+                    const raw = String(formData.pricePerHour || "").trim();
+                    if (!raw) return;
+                    const normalized = String(Number(raw));
+                    setFormData({ ...formData, pricePerHour: normalized });
+                    if (normalized === "0") {
+                      setPriceError("Gia/gio phai lon hon 0");
                     }
                   }}
                   required
