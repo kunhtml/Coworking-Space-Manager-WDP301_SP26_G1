@@ -37,32 +37,22 @@ const buildTableTypeMap = async (tables = []) => {
 const resolveCapacityFromTypeMap = (table, tableTypeMap) =>
   Number(tableTypeMap.get(toObjectIdString(table.tableTypeId))?.capacity || 0);
 
-const resolveTableTypePayload = async ({ tableTypeId, tableType }) => {
+const resolveTableTypePayload = async ({ tableTypeId }) => {
   const normalizedId = String(tableTypeId || "").trim();
-  const normalizedName = String(tableType || "").trim();
 
-  if (normalizedId) {
-    if (!mongoose.isValidObjectId(normalizedId)) {
-      return { error: "Loại bàn không hợp lệ." };
-    }
-    const type = await TableType.findById(normalizedId).lean();
-    if (!type) return { error: "Loại bàn không tồn tại." };
-    return {
-      tableTypeId: type._id,
-    };
+  if (!normalizedId) {
+    return { error: "Vui lòng chọn loại bàn." };
   }
 
-  if (normalizedName) {
-    const matchedType = await TableType.findOne({
-      name: normalizedName,
-    }).lean();
-    return {
-      tableTypeId: matchedType?._id || null,
-    };
+  if (!mongoose.isValidObjectId(normalizedId)) {
+    return { error: "Loại bàn không hợp lệ." };
   }
+
+  const type = await TableType.findById(normalizedId).lean();
+  if (!type) return { error: "Loại bàn không tồn tại." };
 
   return {
-    tableTypeId: null,
+    tableTypeId: type._id,
   };
 };
 
@@ -307,7 +297,6 @@ export const createTable = async (req, res) => {
     const {
       name,
       tableTypeId,
-      tableType,
       status,
       pricePerHour,
       pricePerDay,
@@ -316,13 +305,12 @@ export const createTable = async (req, res) => {
     if (!name) {
       return res.status(400).json({ message: "Vui lòng cung cấp tên bàn." });
     }
-    if (!tableTypeId && !tableType) {
+    if (!tableTypeId) {
       return res.status(400).json({ message: "Vui lòng chọn loại bàn." });
     }
 
     const tableTypePayload = await resolveTableTypePayload({
       tableTypeId,
-      tableType,
     });
 
     if (tableTypePayload.error) {
@@ -351,18 +339,16 @@ export const updateTable = async (req, res) => {
     const {
       name,
       tableTypeId,
-      tableType,
       status,
       pricePerHour,
       pricePerDay,
       description,
     } = req.body;
 
-    const tableTypeInputProvided =
-      tableTypeId !== undefined || tableType !== undefined;
+    const tableTypeInputProvided = tableTypeId !== undefined;
 
     const tableTypePayload = tableTypeInputProvided
-      ? await resolveTableTypePayload({ tableTypeId, tableType })
+      ? await resolveTableTypePayload({ tableTypeId })
       : null;
 
     if (tableTypePayload?.error) {

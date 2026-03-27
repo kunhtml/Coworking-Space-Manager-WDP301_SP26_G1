@@ -108,16 +108,32 @@ export default function TableManagementPage() {
     setShowAddModal(true);
   };
 
+  const parseValidPricePerHour = (rawValue) => {
+    const numeric = Number(rawValue);
+    if (!Number.isFinite(numeric) || numeric <= 0) {
+      return null;
+    }
+    return Math.round(numeric);
+  };
+
   const submitAdd = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
+
+    const pricePerHour = parseValidPricePerHour(formData.pricePerHour);
+    if (pricePerHour === null) {
+      setPriceError("Giá/giờ phải lớn hơn 0");
+      return;
+    }
+
     try {
       const selectedType = tableTypes.find(
         (type) => (type._id || type.sourceId) === formData.tableTypeId,
       );
       await api.post("/tables", {
         ...formData,
+        pricePerHour,
         tableTypeId: selectedType?._id || selectedType?.sourceId || "",
       });
       setSuccess("Thêm bàn thành công!");
@@ -130,11 +146,7 @@ export default function TableManagementPage() {
   };
 
   const openEdit = (table) => {
-    const normalizedTypeId =
-      table.tableTypeId ||
-      tableTypes.find((type) => type.name === table.tableType)?._id ||
-      tableTypes.find((type) => type.name === table.tableType)?.sourceId ||
-      "";
+    const normalizedTypeId = table.tableTypeId || "";
 
     setFormData({
       name: table.name,
@@ -151,12 +163,20 @@ export default function TableManagementPage() {
     e.preventDefault();
     setError("");
     setSuccess("");
+
+    const pricePerHour = parseValidPricePerHour(formData.pricePerHour);
+    if (pricePerHour === null) {
+      setPriceError("Giá/giờ phải lớn hơn 0");
+      return;
+    }
+
     try {
       const selectedType = tableTypes.find(
         (type) => (type._id || type.sourceId) === formData.tableTypeId,
       );
       await api.put(`/tables/${editingId}`, {
         ...formData,
+        pricePerHour,
         tableTypeId: selectedType?._id || selectedType?.sourceId || "",
       });
       setSuccess("Cập nhật bàn thành công!");
