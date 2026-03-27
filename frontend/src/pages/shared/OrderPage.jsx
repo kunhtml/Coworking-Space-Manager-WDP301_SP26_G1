@@ -109,6 +109,7 @@ export default function MenuPage() {
   const [paymentMethod, setPaymentMethod] = useState("QR");
   const [ordering, setOrdering] = useState(false);
   const [orderError, setOrderError] = useState("");
+  const [guestNotice, setGuestNotice] = useState("");
 
   useEffect(() => {
     const loadMenu = async () => {
@@ -237,6 +238,11 @@ export default function MenuPage() {
   };
 
   const addToCart = (item) => {
+    if (!isAuthenticated) {
+      setGuestNotice("Bạn cần đăng nhập tài khoản để đặt hàng.");
+      return;
+    }
+
     const existingItem = cart.find((cartItem) => cartItem.id === item.id);
     if (existingItem) {
       setCart(
@@ -335,6 +341,18 @@ export default function MenuPage() {
     <div className="min-vh-100 bg-light">
       {/* Header Navigation */}
       <GuestCustomerNavbar activeItem="menu" />
+
+      {guestNotice && (
+        <Alert
+          variant="warning"
+          dismissible
+          onClose={() => setGuestNotice("")}
+          className="mb-0 text-center border-0 rounded-0"
+        >
+          <i className="bi bi-exclamation-triangle me-2"></i>
+          {guestNotice}
+        </Alert>
+      )}
 
       {/* Success Alert */}
       {showSuccess && (

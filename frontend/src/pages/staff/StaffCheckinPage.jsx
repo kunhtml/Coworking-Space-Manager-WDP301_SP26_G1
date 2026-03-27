@@ -16,6 +16,7 @@ import CheckinConfirmModal from "../../components/staff/CheckinConfirmModal";
 import StaffBookingTable from "../../components/staff/StaffBookingTable";
 import { getAllBookingsApi } from "../../services/bookingService";
 import { staffCheckInBooking } from "../../services/staffDashboardService";
+import { getVietnamDateString } from "../../utils/timezone";
 
 // ── Config trạng thái ─────────────────────────────────────────────────────────
 const STATUS_LABEL = {
@@ -59,7 +60,7 @@ function fmtCur(v) {
 }
 
 // Today date string for default date filter
-const todayStr = () => new Date().toISOString().slice(0, 10);
+const todayStr = () => getVietnamDateString();
 
 export default function StaffCheckinPage() {
   const [bookings, setBookings]   = useState([]);

@@ -7,6 +7,8 @@ import connectDB from "./config/db.js";
 import authRoutes from "./routes/route.js";
 import { startScheduler } from "./scheduler.js";
 
+process.env.TZ = "Asia/Ho_Chi_Minh";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 

@@ -17,6 +17,10 @@ import {
   createBookingApi,
 } from "../../services/bookingService";
 import { apiClient } from "../../services/api";
+import {
+  buildVietnamDateTime,
+  getVietnamDateString,
+} from "../../utils/timezone";
 
 export function meta() {
   return [
@@ -110,7 +114,7 @@ function toTypeName(table) {
 }
 
 function startOfTodayIso() {
-  return new Date().toISOString().slice(0, 10);
+  return getVietnamDateString();
 }
 
 export default function BookingPage() {
@@ -308,6 +312,12 @@ export default function BookingPage() {
     return Array.from(map.entries());
   }, [filteredTables]);
 
+  const isPastTimeSelection = useMemo(() => {
+    const startAt = buildVietnamDateTime(selectedDate, selectedTimeStart);
+    if (!startAt) return false;
+    return startAt.getTime() <= Date.now();
+  }, [selectedDate, selectedTimeStart]);
+
   useEffect(() => {
     if (["Reserved", "Maintenance"].includes(filterStatus)) {
       setFilterStatus("all");
@@ -326,6 +336,11 @@ export default function BookingPage() {
 
     if (!selectedTable) {
       setError("Vui lòng chọn chỗ ngồi");
+      return;
+    }
+
+    if (isPastTimeSelection) {
+      setError("Không thể đặt bàn vào thời gian quá khứ. Vui lòng chọn giờ hiện tại hoặc tương lai.");
       return;
     }
 
@@ -724,7 +739,9 @@ export default function BookingPage() {
                   </div>
                   <Button
                     variant="primary"
-                    disabled={!selectedTable || bookingLoading}
+                    disabled={
+                      !selectedTable || bookingLoading || isPastTimeSelection
+                    }
                     onClick={handleBooking}
                   >
                     {bookingLoading ? "Đang đặt..." : "Xác nhận đặt bàn"}

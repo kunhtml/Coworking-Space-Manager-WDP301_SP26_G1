@@ -9,6 +9,11 @@ import User from "../models/user.js";
 import Invoice from "../models/invoice.js";
 import { createCounterOrderPayment } from "../services/payos.service.js";
 import { ORDER_STATUS, normalizeOrderStatus } from "../constants/domain.js";
+import {
+  getVietnamDateRange,
+  getVietnamDateString,
+  toVietnamISOString,
+} from "../utils/timezone.js";
 
 const STAFF_TABLE_STATUSES = new Set([
   "Available",
@@ -353,9 +358,11 @@ export const getStaffOrders = async (req, res) => {
     }
 
     if (date) {
-      const from = new Date(`${date}T00:00:00.000+07:00`);
-      const to = new Date(`${date}T23:59:59.999+07:00`);
-      orderFilter.createdAt = { $gte: from, $lte: to };
+      const range = getVietnamDateRange(date);
+      if (!range) {
+        return res.status(400).json({ message: "Ngày lọc không hợp lệ." });
+      }
+      orderFilter.createdAt = { $gte: range.from, $lte: range.to };
     }
 
     let orders = await Order.find(orderFilter).sort({ createdAt: -1 }).lean();
@@ -763,7 +770,7 @@ async function buildStaffInvoicePayload(orderId) {
 
   return {
     invoiceCode: `INV-${String(order._id).slice(-6).toUpperCase()}`,
-    generatedAt: new Date().toISOString(),
+    generatedAt: toVietnamISOString(new Date()),
     order: {
       id: order._id,
       orderCode: `#${String(order._id).slice(-6).toUpperCase()}`,
@@ -875,13 +882,10 @@ export const exportStaffOrderInvoice = async (req, res) => {
 // GET /api/staff/dashboard/stats  (Staff / Admin)
 export const getStaffDashboardStats = async (req, res) => {
   try {
-    const now = new Date();
-    const todayStart = new Date(
-      `${now.toISOString().slice(0, 10)}T00:00:00.000+07:00`,
-    );
-    const todayEnd = new Date(
-      `${now.toISOString().slice(0, 10)}T23:59:59.999+07:00`,
-    );
+    const todayInVietnam = getVietnamDateString();
+    const todayRange = getVietnamDateRange(todayInVietnam);
+    const todayStart = todayRange.from;
+    const todayEnd = todayRange.to;
 
     const [totalTables, occupiedTables, todayOrders, recentOrders] =
       await Promise.all([
