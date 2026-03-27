@@ -5,10 +5,9 @@ import MenuItem from "../models/menu_item.js";
 import Invoice from "../models/invoice.js";
 import Payment from "../models/payment.js";
 
-const BLOCKED_BOOKING_STATUSES = new Set([
-  "Cancelled",
-  "Canceled",
-]);
+const BLOCKED_BOOKING_STATUSES = new Set(["Cancelled", "Canceled"]);
+
+const UNPAID_BOOKING_STATUSES = new Set(["Pending", "Awaiting_Payment"]);
 
 function mapOrderRow(order, bookingMap, itemMap, invoiceMap) {
   const booking = bookingMap.get(order.bookingId?.toString());
@@ -27,8 +26,7 @@ function mapOrderRow(order, bookingMap, itemMap, invoiceMap) {
   }
 
   const appendOnlyEdit =
-    paymentStatus === "PAID" ||
-    currentInvoiceStatus === "Partially_Paid";
+    paymentStatus === "PAID" || currentInvoiceStatus === "Partially_Paid";
 
   return {
     id: order._id,
@@ -119,6 +117,13 @@ export const createOrder = async (req, res) => {
       return res
         .status(400)
         .json({ message: "Booking đã hủy, không thể tạo đơn hàng." });
+    }
+
+    if (UNPAID_BOOKING_STATUSES.has(String(booking.status || ""))) {
+      return res.status(400).json({
+        message:
+          "Booking đang chờ thanh toán. Vui lòng thanh toán booking trước khi tạo order đồ ăn.",
+      });
     }
 
     const menuIds = [
@@ -386,6 +391,3 @@ export const updateMyOrder = async (req, res) => {
     res.status(500).json({ message: "Lỗi server." });
   }
 };
-
-
-

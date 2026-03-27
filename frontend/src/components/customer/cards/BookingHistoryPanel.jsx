@@ -1,4 +1,12 @@
-import { Accordion, Badge, Button, Card, Col, Row, Spinner } from "react-bootstrap";
+import {
+  Accordion,
+  Badge,
+  Button,
+  Card,
+  Col,
+  Row,
+  Spinner,
+} from "react-bootstrap";
 import { Link } from "react-router";
 import ListPagination from "../../common/ListPagination";
 import StatusPill from "../../common/StatusPill";
@@ -58,55 +66,136 @@ export default function BookingHistoryPanel({
           </div>
         ) : filteredBookings.length === 0 ? (
           <div className="text-center py-5">
-            <p className="text-muted mb-3">Không tìm thấy booking phù hợp bộ lọc.</p>
-            <Button as={Link} to="/order-table" variant="primary" className="rounded-pill px-4">Đặt chỗ ngay</Button>
+            <p className="text-muted mb-3">
+              Không tìm thấy booking phù hợp bộ lọc.
+            </p>
+            <Button
+              as={Link}
+              to="/order-table"
+              variant="primary"
+              className="rounded-pill px-4"
+            >
+              Đặt chỗ ngay
+            </Button>
           </div>
         ) : (
-          <Accordion activeKey={activeBookingKey} onSelect={(k) => setActiveBookingKey(k)}>
+          <Accordion
+            activeKey={activeBookingKey}
+            onSelect={(k) => setActiveBookingKey(k)}
+          >
             {pagedBookings.map((booking) => {
               const bKey = String(booking.id);
               return (
-                <Accordion.Item eventKey={bKey} key={bKey} className="mb-3 border rounded-3 overflow-hidden">
+                <Accordion.Item
+                  eventKey={bKey}
+                  key={bKey}
+                  className="mb-3 border rounded-3 overflow-hidden"
+                >
                   <Accordion.Header>
                     <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center w-100 me-3 gap-2">
                       <div>
-                        <div className="fw-bold text-dark">{booking.bookingCode} - {booking.spaceName}</div>
-                        <small className="text-muted">{formatDateTime(booking.startTime)}</small>
+                        <div className="fw-bold text-dark">
+                          {booking.bookingCode} - {booking.spaceName}
+                        </div>
+                        <small className="text-muted">
+                          {formatDateTime(booking.startTime)}
+                        </small>
                       </div>
                       <div className="d-flex align-items-center gap-2">
-                        <StatusPill status={booking.status} map={BOOKING_STATUS_MAP} />
-                        <Badge bg="dark" pill>Orders: {orderCountByBooking.get(bKey) || 0}</Badge>
+                        <StatusPill
+                          status={booking.status}
+                          map={BOOKING_STATUS_MAP}
+                        />
+                        <Badge bg="dark" pill>
+                          Orders: {orderCountByBooking.get(bKey) || 0}
+                        </Badge>
                       </div>
                     </div>
                   </Accordion.Header>
                   <Accordion.Body className="bg-light">
                     <Row className="g-3 mb-3">
-                      <Col md={6}><div className="small text-muted">Không gian</div><div className="fw-semibold">{booking.spaceName}</div></Col>
-                      <Col md={6}><div className="small text-muted">Mã booking</div><div className="fw-semibold">{booking.bookingCode}</div></Col>
-                      <Col md={6}><div className="small text-muted">Bắt đầu</div><div className="fw-semibold">{formatDateTime(booking.startTime)}</div></Col>
-                      <Col md={6}><div className="small text-muted">Kết thúc</div><div className="fw-semibold">{formatDateTime(booking.endTime)}</div></Col>
-                      <Col md={6}><div className="small text-muted">Giá trị booking</div><div className="fw-semibold">{fmt(booking.depositAmount)}d</div></Col>
-                      <Col md={6}><div className="small text-muted">Trạng thái</div><div><StatusPill status={booking.status} map={BOOKING_STATUS_MAP} /></div></Col>
+                      <Col md={6}>
+                        <div className="small text-muted">Không gian</div>
+                        <div className="fw-semibold">{booking.spaceName}</div>
+                      </Col>
+                      <Col md={6}>
+                        <div className="small text-muted">Mã booking</div>
+                        <div className="fw-semibold">{booking.bookingCode}</div>
+                      </Col>
+                      <Col md={6}>
+                        <div className="small text-muted">Bắt đầu</div>
+                        <div className="fw-semibold">
+                          {formatDateTime(booking.startTime)}
+                        </div>
+                      </Col>
+                      <Col md={6}>
+                        <div className="small text-muted">Kết thúc</div>
+                        <div className="fw-semibold">
+                          {formatDateTime(booking.endTime)}
+                        </div>
+                      </Col>
+                      <Col md={6}>
+                        <div className="small text-muted">Giá trị booking</div>
+                        <div className="fw-semibold">
+                          {fmt(booking.depositAmount)}d
+                        </div>
+                      </Col>
+                      <Col md={6}>
+                        <div className="small text-muted">Trạng thái</div>
+                        <div>
+                          <StatusPill
+                            status={booking.status}
+                            map={BOOKING_STATUS_MAP}
+                          />
+                        </div>
+                      </Col>
                     </Row>
 
                     <div className="d-flex flex-wrap gap-2">
                       {canEditBooking(booking.status) ? (
-                        <Button size="sm" variant="outline-primary" onClick={() => openBookingEditor(booking)}>
-                          <i className="bi bi-pencil-square me-1"></i>Edit booking
+                        <Button
+                          size="sm"
+                          variant="outline-primary"
+                          onClick={() => openBookingEditor(booking)}
+                        >
+                          <i className="bi bi-pencil-square me-1"></i>Edit
+                          booking
                         </Button>
                       ) : null}
-                      <Button size="sm" variant="outline-secondary" onClick={() => {
-                        setInvoiceBooking(booking);
-                        setShowBookingInvoiceModal(true);
-                      }}>
+                      <Button
+                        size="sm"
+                        variant="outline-secondary"
+                        onClick={() => {
+                          setInvoiceBooking(booking);
+                          setShowBookingInvoiceModal(true);
+                        }}
+                      >
                         <i className="bi bi-receipt me-1"></i>Hóa đơn
                       </Button>
-                      <Button size="sm" variant="primary" onClick={() => openCreateOrder(booking.id)} disabled={booking.status === "Cancelled"}>
-                        <i className="bi bi-receipt me-1"></i>Tạo order
-                      </Button>
-                      {["Pending", "Awaiting_Payment"].includes(booking.status) ? (
-                        <Button size="sm" variant="success" onClick={() => navigate(`/payment/${booking.id}`)}>
-                          <i className="bi bi-credit-card me-1"></i>Thanh toán booking
+                      {![
+                        "Pending",
+                        "Awaiting_Payment",
+                        "Cancelled",
+                        "Canceled",
+                      ].includes(booking.status) ? (
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          onClick={() => openCreateOrder(booking.id)}
+                        >
+                          <i className="bi bi-receipt me-1"></i>Tạo order
+                        </Button>
+                      ) : null}
+                      {["Pending", "Awaiting_Payment"].includes(
+                        booking.status,
+                      ) ? (
+                        <Button
+                          size="sm"
+                          variant="success"
+                          onClick={() => navigate(`/payment/${booking.id}`)}
+                        >
+                          <i className="bi bi-credit-card me-1"></i>Thanh toán
+                          booking
                         </Button>
                       ) : null}
                     </div>
@@ -118,7 +207,11 @@ export default function BookingHistoryPanel({
         )}
 
         {!loading && filteredBookings.length > 0 ? (
-          <ListPagination page={bookingPage} totalPages={bookingTotalPages} onChange={setBookingPage} />
+          <ListPagination
+            page={bookingPage}
+            totalPages={bookingTotalPages}
+            onChange={setBookingPage}
+          />
         ) : null}
       </Card.Body>
     </Card>

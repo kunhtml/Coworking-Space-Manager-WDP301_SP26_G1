@@ -476,14 +476,6 @@ export default function StaffOrderManagementPage() {
             Xem danh sách, cập nhật trạng thái và tạo đơn hàng tại quầy
           </p>
         </div>
-        <Button
-          className="fw-bold rounded-3 d-flex align-items-center gap-2"
-          style={{ background: "#6366f1", border: "none", padding: "9px 20px" }}
-          onClick={() => setShowCreateModal(true)}
-        >
-          <i className="bi bi-plus-lg" />
-          Tạo đơn tại quầy
-        </Button>
       </div>
 
       {/* Alerts */}
