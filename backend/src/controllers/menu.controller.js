@@ -1,12 +1,8 @@
-import MenuItem from "../models/menu_item.js";
+﻿import MenuItem from "../models/menu_item.js";
 import Category from "../models/category.js";
 import jwt from "jsonwebtoken";
-import {
-  MENU_AVAILABILITY,
-  normalizeMenuAvailability,
-} from "../constants/domain.js";
 
-const normalizeRole = (role) =>
+const toRoleKey = (role) =>
   String(role || "")
     .trim()
     .toLowerCase();
@@ -19,7 +15,7 @@ const getRequesterRole = (req) => {
   try {
     const token = auth.split(" ")[1];
     const user = jwt.verify(token, process.env.JWT_SECRET);
-    return normalizeRole(user?.role);
+    return toRoleKey(user?.role);
   } catch {
     return null;
   }
@@ -36,12 +32,12 @@ const canUseAdminMenuView = (req) => {
   return role === "staff" || role === "admin";
 };
 
-const toNormalizedMenuItem = (item) => {
-  const normalizedAvailability = normalizeMenuAvailability(
-    item?.availabilityStatus,
-    item?.stockQuantity,
-  );
-  return { ...item, availabilityStatus: normalizedAvailability };
+const resolveAvailabilityStatus = (availabilityStatus, stockQuantity) => {
+  const qty = Number(stockQuantity || 0);
+  if (availabilityStatus && ["AVAILABLE", "OUT_OF_STOCK", "UNAVAILABLE"].includes(availabilityStatus)) {
+    return availabilityStatus;
+  }
+  return qty > 0 ? "AVAILABLE" : "OUT_OF_STOCK";
 };
 
 export const getMenuItems = async (req, res) => {
@@ -53,7 +49,7 @@ export const getMenuItems = async (req, res) => {
       const items = await MenuItem.find()
         .populate("categoryId", "name isActive")
         .lean();
-      return res.json(items.map(toNormalizedMenuItem));
+      return res.json(items);
     }
 
     // Public (khách hàng): chỉ lấy món của danh mục đang hiển thị
@@ -69,11 +65,9 @@ export const getMenuItems = async (req, res) => {
       .populate("categoryId", "name isActive")
       .lean();
 
-    const publicItems = items
-      .map(toNormalizedMenuItem)
-      .filter(
-        (item) => item.availabilityStatus === MENU_AVAILABILITY.AVAILABLE,
-      );
+    const publicItems = items.filter(
+      (item) => item.availabilityStatus === "AVAILABLE",
+    );
 
     return res.json(publicItems);
   } catch (err) {
@@ -118,7 +112,7 @@ export const createMenuItem = async (req, res) => {
     }
 
     const qty = Number(stockQuantity) || 0;
-    const resolvedStatus = normalizeMenuAvailability(availabilityStatus, qty);
+    const resolvedStatus = resolveAvailabilityStatus(availabilityStatus, qty);
 
     const newItem = await MenuItem.create({
       name: name.trim(),
@@ -160,7 +154,7 @@ export const updateMenuItem = async (req, res) => {
     }
 
     const qty = Number(stockQuantity) || 0;
-    const resolvedStatus = normalizeMenuAvailability(availabilityStatus, qty);
+    const resolvedStatus = resolveAvailabilityStatus(availabilityStatus, qty);
 
     const updated = await MenuItem.findByIdAndUpdate(
       req.params.id,
@@ -288,3 +282,6 @@ export const deleteCategory = async (req, res) => {
 };
 
 // ==================== USER MANAGEMENT ====================
+
+
+

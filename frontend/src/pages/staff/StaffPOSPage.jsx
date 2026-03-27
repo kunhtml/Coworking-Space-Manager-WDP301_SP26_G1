@@ -14,6 +14,7 @@ import AdminLayout from "../../components/admin/AdminLayout";
 import { apiClient } from "../../services/api";
 import {
   createCounterOrder,
+  findStaffCustomer,
   getStaffTables,
 } from "../../services/staffDashboardService";
 import { processCounterPayment } from "../../services/staffPaymentService";
@@ -61,11 +62,19 @@ function fmtCur(v) {
   return `${new Intl.NumberFormat("vi-VN").format(Number(v || 0))}đ`;
 }
 
+function getMenuStock(item) {
+  return Number(item?.stockQuantity ?? item?.quantity ?? 0);
+}
+
+function isMenuSellable(item) {
+  return normalizeMenuStatus(item) === "AVAILABLE" && getMenuStock(item) > 0;
+}
+
 function normalizeMenuStatus(item) {
   const availability = String(item?.availabilityStatus || "")
     .trim()
     .toUpperCase();
-  const stock = Number(item?.stockQuantity || 0);
+  const stock = getMenuStock(item);
   if (["UNAVAILABLE", "DISCONTINUED"].includes(availability))
     return "UNAVAILABLE";
   if (["OUT_OF_STOCK", "OUTOFSTOCK"].includes(availability))
@@ -118,6 +127,10 @@ export default function StaffPOSPage() {
   const [cart, setCart] = useState([]);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerQuery, setCustomerQuery] = useState("");
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupMessage, setLookupMessage] = useState("");
   const [durationHours, setDurationHours] = useState(2);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
@@ -204,13 +217,15 @@ export default function StaffPOSPage() {
 
   // ── Menu filtering ──
   const availableMenu = useMemo(() => {
-    let items = menuItems; // Start with all items
+    // POS counter should only display sellable items.
+    let items = menuItems.filter((item) => isMenuSellable(item));
     if (selectedCategory !== "all") {
       items = items.filter((item) => {
         const catId = String(item?.categoryId?._id || item?.categoryId || "");
         return catId === selectedCategory;
       });
     }
+
     if (menuStockFilter !== "all") {
       items = items.filter((item) => {
         const status = normalizeMenuStatus(item);
@@ -244,14 +259,21 @@ export default function StaffPOSPage() {
   );
 
   const addToCart = (menuItem) => {
+    if (!isMenuSellable(menuItem)) {
+      setError("Món này đã hết hàng hoặc tạm ngưng phục vụ.");
+      return;
+    }
+
     setCart((prev) => {
       const found = prev.find(
         (item) => String(item.menuItemId) === String(menuItem._id),
       );
+      const stock = getMenuStock(menuItem);
       if (found) {
+        const nextQty = Math.min(Number(found.quantity || 0) + 1, stock);
         return prev.map((item) =>
           String(item.menuItemId) === String(menuItem._id)
-            ? { ...item, quantity: Number(item.quantity || 0) + 1 }
+            ? { ...item, quantity: nextQty }
             : item,
         );
       }
@@ -300,6 +322,24 @@ export default function StaffPOSPage() {
     setCreating(true);
     setError("");
     try {
+      const menuMap = new Map(
+        menuItems.map((m) => [String(m._id), m]),
+      );
+      for (const c of cart) {
+        const current = menuMap.get(String(c.menuItemId));
+        const stock = getMenuStock(current);
+        if (!current || !isMenuSellable(current)) {
+          setError(`Món ${c.name || "đã chọn"} hiện không thể bán.`);
+          setCreating(false);
+          return;
+        }
+        if (Number(c.quantity || 0) > stock) {
+          setError(`Món ${c.name || "đã chọn"} chỉ còn ${stock} phần.`);
+          setCreating(false);
+          return;
+        }
+      }
+
       const orderItems = cart.map((item) => ({
         menuItemId: item.menuItemId,
         quantity: Number(item.quantity || 0),
@@ -309,6 +349,9 @@ export default function StaffPOSPage() {
       const payload = {
         customerName: customerName || undefined,
         customerPhone: customerPhone || undefined,
+        customerEmail: customerEmail || undefined,
+        customerQuery: customerQuery || undefined,
+        paymentMethod: payMethod,
         items: orderItems.length > 0 ? orderItems : undefined,
       };
       if (selectedTable) {
@@ -360,12 +403,41 @@ export default function StaffPOSPage() {
       setCart([]);
       setCustomerName("");
       setCustomerPhone("");
+      setCustomerEmail("");
+      setCustomerQuery("");
+      setLookupMessage("");
       fetchTables();
       setTimeout(() => setSuccess(""), 5000);
     } catch (err) {
       setError(err.message || "Tạo đơn thất bại.");
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleLookupCustomer = async () => {
+    const q = String(customerQuery || "").trim();
+    if (!q) {
+      setLookupMessage("Nhập số điện thoại hoặc email để tìm khách.");
+      return;
+    }
+
+    setLookupLoading(true);
+    setLookupMessage("");
+    try {
+      const result = await findStaffCustomer(q);
+      if (result?.found && result.customer) {
+        setCustomerName(result.customer.fullName || "");
+        setCustomerPhone(result.customer.phone || "");
+        setCustomerEmail(result.customer.email || "");
+        setLookupMessage("Đã tìm thấy khách trong hệ thống và tự điền thông tin.");
+      } else {
+        setLookupMessage("Không tìm thấy khách trong hệ thống. Có thể nhập thủ công.");
+      }
+    } catch (err) {
+      setLookupMessage(err.message || "Không thể tìm khách lúc này.");
+    } finally {
+      setLookupLoading(false);
     }
   };
 
@@ -586,22 +658,6 @@ export default function StaffPOSPage() {
                   <Col xs={6}>
                     <Form.Control
                       size="sm"
-                      placeholder="Tên khách"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                    />
-                  </Col>
-                  <Col xs={6}>
-                    <Form.Control
-                      size="sm"
-                      placeholder="SĐT khách"
-                      value={customerPhone}
-                      onChange={(e) => setCustomerPhone(e.target.value)}
-                    />
-                  </Col>
-                  <Col xs={6}>
-                    <Form.Control
-                      size="sm"
                       type="number"
                       min={1}
                       placeholder="Giờ"
@@ -787,8 +843,11 @@ export default function StaffPOSPage() {
                   }}
                 >
                   <Row className="g-2">
-                    {availableMenu.map((item) => (
-                      <Col md={6} xl={4} key={String(item._id)}>
+                    {availableMenu.map((item) => {
+                      if (getMenuStock(item) <= 0) return null;
+                      return (
+                        <Col md={6} xl={4} key={String(item._id)}>
+
                         <div
                           className="rounded-3 p-2 h-100 d-flex flex-column"
                           style={{
@@ -837,7 +896,7 @@ export default function StaffPOSPage() {
                                   fontWeight: 700,
                                 }}
                               >
-                                Còn: {Number(item.stockQuantity || 0)}
+                                  Còn: {getMenuStock(item)}
                               </span>
                               <span
                                 className="rounded-pill px-2"
@@ -854,7 +913,8 @@ export default function StaffPOSPage() {
                           </div>
                         </div>
                       </Col>
-                    ))}
+                      );
+                    })}
                     {availableMenu.length === 0 && (
                       <div className="text-center py-4 text-muted small fw-semibold">
                         Không có món phù hợp
@@ -1163,6 +1223,82 @@ export default function StaffPOSPage() {
                             )}
                           </strong>
                         </div>
+                      </div>
+
+                      <div className="rounded-3 border p-2 mb-2" style={{ borderColor: "#e2e8f0" }}>
+                        <div
+                          className="fw-bold mb-2"
+                          style={{ fontSize: "0.75rem", color: "#475569" }}
+                        >
+                          Khách hàng (không bắt buộc nếu chỉ mua món)
+                        </div>
+                        <div className="d-flex gap-2 mb-2">
+                          <Form.Control
+                            size="sm"
+                            placeholder="Nhập SĐT hoặc email để tìm"
+                            value={customerQuery}
+                            onChange={(e) => setCustomerQuery(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleLookupCustomer();
+                              }
+                            }}
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline-primary"
+                            className="fw-semibold"
+                            onClick={handleLookupCustomer}
+                            disabled={lookupLoading}
+                          >
+                            {lookupLoading ? "..." : "Tìm"}
+                          </Button>
+                        </div>
+                        {lookupMessage && (
+                          <div
+                            className="mb-2"
+                            style={{
+                              fontSize: "0.72rem",
+                              color: lookupMessage.includes("Không tìm")
+                                ? "#b45309"
+                                : "#15803d",
+                            }}
+                          >
+                            {lookupMessage}
+                          </div>
+                        )}
+                        <Row className="g-2">
+                          <Col xs={12}>
+                            <Form.Control
+                              size="sm"
+                              placeholder="Tên khách"
+                              value={customerName}
+                              onChange={(e) => setCustomerName(e.target.value)}
+                            />
+                          </Col>
+                          <Col xs={6}>
+                            <Form.Control
+                              size="sm"
+                              placeholder="SĐT khách"
+                              value={customerPhone}
+                              onChange={(e) => setCustomerPhone(e.target.value)}
+                            />
+                          </Col>
+                          <Col xs={6}>
+                            <Form.Control
+                              size="sm"
+                              placeholder="Email khách"
+                              value={customerEmail}
+                              onChange={(e) => setCustomerEmail(e.target.value)}
+                            />
+                          </Col>
+                        </Row>
+                        {selectedTable && (
+                          <div className="mt-2" style={{ fontSize: "0.7rem", color: "#b91c1c" }}>
+                            Đơn có bàn bắt buộc có Tên và (SĐT hoặc Email).
+                          </div>
+                        )}
                       </div>
 
                       {/* Payment buttons */}

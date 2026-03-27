@@ -9,7 +9,11 @@ const invoiceSchema = new Schema(
         discount: Number,
         totalAmount: Number,
         remainingAmount: Number,
-        status: { type: String, default: "Pending" },
+        status: {
+            type: String,
+            enum: ["Pending", "Partially_Paid", "Paid", "Cancelled"],
+            default: "Pending"
+        },
     },
     { timestamps: true }
 );

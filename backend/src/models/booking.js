@@ -18,7 +18,19 @@ const bookingSchema = new Schema({
   },
   startTime: Date,
   endTime: Date,
-  status: String,
+  status: {
+    type: String,
+    enum: [
+      "Pending",
+      "Awaiting_Payment",
+      "Confirmed",
+      "CheckedIn",
+      "Completed",
+      "Cancelled",
+      "Canceled",
+    ],
+    default: "Pending",
+  },
   depositAmount: Number,
   createdAt: {
     type: Date,
