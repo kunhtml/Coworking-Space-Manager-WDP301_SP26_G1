@@ -8,15 +8,12 @@ import MenuItem from "../models/menu_item.js";
 import User from "../models/user.js";
 import Invoice from "../models/invoice.js";
 import { createCounterOrderPayment } from "../services/payos.service.js";
-<<<<<<< HEAD
-=======
 import { ORDER_STATUS, normalizeOrderStatus } from "../constants/domain.js";
 import {
   getVietnamDateRange,
   getVietnamDateString,
   toVietnamISOString,
 } from "../utils/timezone.js";
->>>>>>> 1fcb77b0007ac0833828b8da5ea06a84a57aa7b1
 
 const STAFF_TABLE_STATUSES = new Set([
   "Available",
@@ -240,16 +237,7 @@ export const getStaffTableStatusList = async (req, res) => {
     const upcomingBookings = await Booking.find({
       tableId: { $in: tableIds },
       status: {
-<<<<<<< HEAD
-        $in: [
-          "Pending",
-          "Awaiting_Payment",
-          "Confirmed",
-          "CheckedIn",
-        ],
-=======
         $in: ["Pending", "Awaiting_Payment", "Confirmed", "CheckedIn"],
->>>>>>> 1fcb77b0007ac0833828b8da5ea06a84a57aa7b1
       },
       endTime: { $gt: now },
       startTime: { $lt: endOfTomorrow },
@@ -392,13 +380,7 @@ export const getStaffOrders = async (req, res) => {
         await Booking.updateMany(
           {
             _id: { $in: expiredBookingIds },
-<<<<<<< HEAD
-            status: {
-              $in: ["Pending", "Awaiting_Payment"],
-            },
-=======
             status: { $in: ["Pending", "Awaiting_Payment"] },
->>>>>>> 1fcb77b0007ac0833828b8da5ea06a84a57aa7b1
           },
           { $set: { status: "Cancelled" } },
         );
@@ -595,22 +577,9 @@ export const createCounterOrder = async (req, res) => {
       const overlapping = await Booking.findOne({
         tableId,
         status: {
-<<<<<<< HEAD
-          $in: [
-            "Pending",
-            "Awaiting_Payment",
-            "Confirmed",
-            "CheckedIn",
-          ],
-        },
-        $or: [
-          { startTime: { $lt: end }, endTime: { $gt: start } },
-        ],
-=======
           $in: ["Pending", "Awaiting_Payment", "Confirmed", "CheckedIn"],
         },
         $or: [{ startTime: { $lt: end }, endTime: { $gt: start } }],
->>>>>>> 1fcb77b0007ac0833828b8da5ea06a84a57aa7b1
       });
 
       if (overlapping) {
