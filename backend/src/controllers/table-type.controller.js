@@ -1,4 +1,5 @@
 import TableType from "../models/tableType.js";
+import Table from "../models/table.js";
 
 export const getTableTypes = async (req, res) => {
   try {
@@ -10,6 +11,7 @@ export const getTableTypes = async (req, res) => {
         name: t.name,
         description: t.description || "",
         capacity: t.capacity || 1,
+        isHidden: Boolean(t.isHidden),
         createdAt: t.createdAt,
       })),
     );
@@ -22,7 +24,7 @@ export const getTableTypes = async (req, res) => {
 
 export const createTableType = async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, isHidden } = req.body;
     if (!name?.trim()) {
       return res
         .status(400)
@@ -36,6 +38,7 @@ export const createTableType = async (req, res) => {
       name: name.trim(),
       description: description?.trim() || "",
       capacity: Number(req.body.capacity) || 1,
+      isHidden: Boolean(isHidden),
     });
     res.status(201).json({ message: "Thêm loại bàn thành công!", tableType });
   } catch (err) {
@@ -48,7 +51,7 @@ export const createTableType = async (req, res) => {
 
 export const updateTableType = async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, isHidden } = req.body;
     if (!name?.trim()) {
       return res
         .status(400)
@@ -67,6 +70,7 @@ export const updateTableType = async (req, res) => {
         name: name.trim(),
         description: description?.trim() || "",
         capacity: Number(req.body.capacity) || 1,
+        isHidden: Boolean(isHidden),
       },
       { returnDocument: "after", runValidators: true },
     );
@@ -83,10 +87,25 @@ export const updateTableType = async (req, res) => {
 
 export const deleteTableType = async (req, res) => {
   try {
-    const tableType = await TableType.findByIdAndDelete(req.params.id);
+    const tableType = await TableType.findById(req.params.id).lean();
     if (!tableType)
       return res.status(404).json({ message: "Không tìm thấy loại bàn." });
-    res.json({ message: "Xóa loại bàn thành công!" });
+
+    // Any table losing its type is moved to maintenance and unlinked from type.
+    await Table.updateMany(
+      { tableTypeId: tableType._id },
+      {
+        $set: { status: "Maintenance" },
+        $unset: { tableTypeId: "" },
+      },
+    );
+
+    await TableType.findByIdAndDelete(req.params.id);
+
+    res.json({
+      message:
+        "Xóa loại bàn thành công! Các bàn thuộc loại này đã chuyển sang trạng thái Bảo trì.",
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Lỗi khi xóa loại bàn." });

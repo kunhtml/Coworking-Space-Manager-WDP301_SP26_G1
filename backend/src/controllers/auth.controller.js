@@ -9,9 +9,12 @@ const userOtpCache = new Map();
 const userOtpVerifiedCache = new Map();
 const emailOtpCache = new Map();
 const emailOtpVerifiedCache = new Map();
+const userEmailOtpCache = new Map();
+const userEmailOtpVerifiedCache = new Map();
 
 const OTP_PURPOSE = {
   UPDATE_PROFILE: "UPDATE_PROFILE",
+  UPDATE_EMAIL: "UPDATE_EMAIL",
   CHANGE_PASSWORD: "CHANGE_PASSWORD",
   REGISTER: "REGISTER",
   FORGOT_PASSWORD: "FORGOT_PASSWORD",
@@ -23,6 +26,8 @@ const AUTHENTICATED_OTP_PURPOSES = [
 ];
 
 const PUBLIC_OTP_PURPOSES = [OTP_PURPOSE.REGISTER, OTP_PURPOSE.FORGOT_PASSWORD];
+const STRICT_EMAIL_REGEX =
+  /^[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*@[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)+$/;
 
 function requireJwtSecret() {
   if (!process.env.JWT_SECRET) {
@@ -36,6 +41,10 @@ function makeOtpKey(userId, purpose) {
 
 function makeEmailOtpKey(email, purpose) {
   return `${String(email).trim().toLowerCase()}:${String(purpose)}`;
+}
+
+function makeUserEmailOtpKey(userId, email, purpose) {
+  return `${String(userId)}:${String(email).trim().toLowerCase()}:${String(purpose)}`;
 }
 
 function generateOtpCode() {
@@ -59,6 +68,16 @@ function consumeEmailOtpVerified(email, purpose) {
     return false;
   }
   emailOtpVerifiedCache.delete(key);
+  return true;
+}
+
+function consumeUserEmailOtpVerified(userId, email, purpose) {
+  const key = makeUserEmailOtpKey(userId, email, purpose);
+  const verified = userEmailOtpVerifiedCache.get(key);
+  if (!verified || verified.expiresAt < Date.now()) {
+    return false;
+  }
+  userEmailOtpVerifiedCache.delete(key);
   return true;
 }
 
@@ -163,7 +182,7 @@ export const register = async (req, res) => {
     }
 
     // Validate email format
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!STRICT_EMAIL_REGEX.test(String(email).trim().toLowerCase())) {
       return res.status(400).json({ message: "Email không đúng định dạng." });
     }
 
@@ -266,7 +285,7 @@ export const updateProfile = async (req, res) => {
         .json({ message: "Họ tên và email không được để trống." });
     }
     const emailLower = email.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLower)) {
+    if (!STRICT_EMAIL_REGEX.test(emailLower)) {
       return res.status(400).json({ message: "Email không đúng định dạng." });
     }
     const currentUser = await User.findById(req.user.id).lean();
@@ -275,10 +294,15 @@ export const updateProfile = async (req, res) => {
     }
     if (
       emailLower !== String(currentUser.email || "").toLowerCase() &&
-      !ensureOtpVerified(req.user.id, OTP_PURPOSE.UPDATE_PROFILE)
+      !consumeUserEmailOtpVerified(
+        req.user.id,
+        emailLower,
+        OTP_PURPOSE.UPDATE_EMAIL,
+      )
     ) {
       return res.status(403).json({
-        message: "Vui lòng xác thực OTP trước khi thay đổi email.",
+        message:
+          "Vui lòng xác thực OTP của email mới trước khi thay đổi email.",
       });
     }
     const existing = await User.findOne({
@@ -309,6 +333,112 @@ export const updateProfile = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: "Lỗi server." });
+  }
+};
+
+export const sendProfileEmailOtp = async (req, res) => {
+  try {
+    const newEmail = String(req.body?.newEmail || "")
+      .trim()
+      .toLowerCase();
+
+    if (!newEmail) {
+      return res.status(400).json({ message: "Email mới là bắt buộc." });
+    }
+    if (!STRICT_EMAIL_REGEX.test(newEmail)) {
+      return res
+        .status(400)
+        .json({ message: "Email mới không đúng định dạng." });
+    }
+
+    const currentUser = await User.findById(req.user.id).lean();
+    if (!currentUser) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng." });
+    }
+
+    const currentEmail = String(currentUser.email || "").toLowerCase();
+    if (newEmail === currentEmail) {
+      return res
+        .status(400)
+        .json({ message: "Email mới phải khác email hiện tại." });
+    }
+
+    const existing = await User.findOne({
+      email: newEmail,
+      _id: { $ne: req.user.id },
+    }).lean();
+    if (existing) {
+      return res
+        .status(409)
+        .json({ message: "Email đã được sử dụng bởi tài khoản khác." });
+    }
+
+    const otpCode = generateOtpCode();
+    const key = makeUserEmailOtpKey(
+      req.user.id,
+      newEmail,
+      OTP_PURPOSE.UPDATE_EMAIL,
+    );
+    userEmailOtpCache.set(key, {
+      code: otpCode,
+      expiresAt: Date.now() + OTP_TTL_MS,
+    });
+
+    await sendOtpEmail({
+      to: newEmail,
+      otpCode,
+      purpose: OTP_PURPOSE.UPDATE_EMAIL,
+    });
+
+    return res.json({
+      message: "Đã gửi OTP tới email mới.",
+      expiresInSeconds: Math.floor(OTP_TTL_MS / 1000),
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Lỗi gửi OTP đổi email." });
+  }
+};
+
+export const verifyProfileEmailOtp = async (req, res) => {
+  try {
+    const newEmail = String(req.body?.newEmail || "")
+      .trim()
+      .toLowerCase();
+    const code = String(req.body?.otp || "").trim();
+
+    if (!newEmail || !/^\d{6}$/.test(code)) {
+      return res.status(400).json({ message: "Thông tin OTP không hợp lệ." });
+    }
+
+    const key = makeUserEmailOtpKey(
+      req.user.id,
+      newEmail,
+      OTP_PURPOSE.UPDATE_EMAIL,
+    );
+    const current = userEmailOtpCache.get(key);
+    if (!current || current.expiresAt < Date.now()) {
+      userEmailOtpCache.delete(key);
+      return res
+        .status(400)
+        .json({ message: "OTP đã hết hạn hoặc chưa được tạo." });
+    }
+    if (current.code !== code) {
+      return res.status(400).json({ message: "OTP không chính xác." });
+    }
+
+    userEmailOtpCache.delete(key);
+    userEmailOtpVerifiedCache.set(key, {
+      expiresAt: Date.now() + OTP_SESSION_TTL_MS,
+    });
+
+    return res.json({
+      message: "Xác thực OTP email mới thành công.",
+      validForSeconds: Math.floor(OTP_SESSION_TTL_MS / 1000),
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Lỗi xác thực OTP đổi email." });
   }
 };
 
@@ -438,7 +568,7 @@ export const sendRegisterOtp = async (req, res) => {
     if (!email) {
       return res.status(400).json({ message: "Email là bắt buộc." });
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!STRICT_EMAIL_REGEX.test(email)) {
       return res.status(400).json({ message: "Email không đúng định dạng." });
     }
 
@@ -477,7 +607,7 @@ export const verifyRegisterOtp = async (req, res) => {
       .toLowerCase();
     const code = String(req.body?.otp || "").trim();
 
-    if (!email || !/^\d{6}$/.test(code)) {
+    if (!email || !/^\d{6}$/.test(code) || !STRICT_EMAIL_REGEX.test(email)) {
       return res.status(400).json({ message: "Thông tin OTP không hợp lệ." });
     }
 
@@ -516,7 +646,7 @@ export const sendForgotPasswordOtp = async (req, res) => {
     if (!email) {
       return res.status(400).json({ message: "Email là bắt buộc." });
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!STRICT_EMAIL_REGEX.test(email)) {
       return res.status(400).json({ message: "Email không đúng định dạng." });
     }
 
@@ -553,7 +683,7 @@ export const verifyForgotPasswordOtp = async (req, res) => {
       .toLowerCase();
     const code = String(req.body?.otp || "").trim();
 
-    if (!email || !/^\d{6}$/.test(code)) {
+    if (!email || !/^\d{6}$/.test(code) || !STRICT_EMAIL_REGEX.test(email)) {
       return res.status(400).json({ message: "Thông tin OTP không hợp lệ." });
     }
 
@@ -596,6 +726,9 @@ export const resetForgotPassword = async (req, res) => {
       return res
         .status(400)
         .json({ message: "Vui lòng điền đầy đủ thông tin." });
+    }
+    if (!STRICT_EMAIL_REGEX.test(email)) {
+      return res.status(400).json({ message: "Email không đúng định dạng." });
     }
     if (newPassword.length < 6) {
       return res

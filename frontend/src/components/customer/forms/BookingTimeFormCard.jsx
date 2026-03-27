@@ -1,4 +1,5 @@
 import { Button, Card, Col, Form, Row, Spinner } from "react-bootstrap";
+import { getVietnamDateString } from "../../../utils/timezone";
 
 export default function BookingTimeFormCard({
   selectedDate,
@@ -27,7 +28,7 @@ export default function BookingTimeFormCard({
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                min={new Date().toISOString().split("T")[0]}
+                min={getVietnamDateString()}
               />
             </Form.Group>
           </Col>

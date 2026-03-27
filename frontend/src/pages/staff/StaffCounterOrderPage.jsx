@@ -2,14 +2,19 @@ import { useEffect, useMemo, useState } from "react";
 import { Alert, Button, Card, Col, Form, Row, Spinner } from "react-bootstrap";
 import AdminLayout from "../../components/admin/AdminLayout";
 import { apiClient } from "../../services/api";
-import { createCounterOrder, getStaffTables } from "../../services/staffDashboardService";
+import {
+  createCounterOrder,
+  getStaffTables,
+} from "../../services/staffDashboardService";
 
 function fmtCur(v) {
   return `${new Intl.NumberFormat("vi-VN").format(Number(v || 0))}đ`;
 }
 
 function normalizeMenuStatus(item) {
-  const availability = String(item?.availabilityStatus || "").trim().toUpperCase();
+  const availability = String(item?.availabilityStatus || "")
+    .trim()
+    .toUpperCase();
   const stock = Number(item?.stockQuantity || 0);
 
   if (["UNAVAILABLE", "DISCONTINUED"].includes(availability)) {
@@ -69,7 +74,8 @@ export default function StaffCounterOrderPage() {
   const cartTotal = useMemo(
     () =>
       cart.reduce(
-        (sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0),
+        (sum, item) =>
+          sum + Number(item.price || 0) * Number(item.quantity || 0),
         0,
       ),
     [cart],
@@ -77,7 +83,9 @@ export default function StaffCounterOrderPage() {
 
   const addToCart = (menuItem) => {
     setCart((prev) => {
-      const found = prev.find((item) => String(item.menuItemId) === String(menuItem._id));
+      const found = prev.find(
+        (item) => String(item.menuItemId) === String(menuItem._id),
+      );
       if (found) {
         return prev.map((item) =>
           String(item.menuItemId) === String(menuItem._id)
@@ -100,7 +108,9 @@ export default function StaffCounterOrderPage() {
   const updateQty = (menuItemId, qty) => {
     const nextQty = Number(qty || 0);
     if (nextQty <= 0) {
-      setCart((prev) => prev.filter((item) => String(item.menuItemId) !== String(menuItemId)));
+      setCart((prev) =>
+        prev.filter((item) => String(item.menuItemId) !== String(menuItemId)),
+      );
       return;
     }
     setCart((prev) =>
@@ -134,7 +144,9 @@ export default function StaffCounterOrderPage() {
       };
 
       const result = await createCounterOrder(payload);
-      setSuccess(`Tạo đơn thành công: ${result.orderCode} - ${fmtCur(result.totalAmount)}`);
+      setSuccess(
+        `Tạo đơn thành công: ${result.orderCode} - ${fmtCur(result.totalAmount)}`,
+      );
       const checkoutUrl =
         result?.payment?.checkoutUrl ||
         result?.payment?.payment?.payos?.checkoutUrl;
@@ -156,19 +168,25 @@ export default function StaffCounterOrderPage() {
     <AdminLayout>
       <div className="mb-4">
         <h2 className="fw-bold mb-1">POS tại quầy</h2>
-        <p className="text-muted mb-0">Tạo đơn nhanh theo kiểu VietKiot cho nhân viên</p>
+        <p className="text-muted mb-0">
+          Tạo đơn nhanh theo kiểu VietKiot cho nhân viên
+        </p>
       </div>
 
       {error && <Alert variant="danger">{error}</Alert>}
       {success && <Alert variant="success">{success}</Alert>}
 
       {loading ? (
-        <div className="text-center py-5"><Spinner /> Đang tải dữ liệu...</div>
+        <div className="text-center py-5">
+          <Spinner /> Đang tải dữ liệu...
+        </div>
       ) : (
         <Row className="g-3">
           <Col lg={8}>
             <Card className="border-0 shadow-sm">
-              <Card.Header className="bg-white fw-bold">Danh sách món</Card.Header>
+              <Card.Header className="bg-white fw-bold">
+                Danh sách món
+              </Card.Header>
               <Card.Body>
                 <Row className="g-2">
                   {availableMenu.map((item) => (
@@ -176,10 +194,16 @@ export default function StaffCounterOrderPage() {
                       <Card className="h-100 border">
                         <Card.Body className="d-flex flex-column">
                           <div className="fw-bold">{item.name}</div>
-                          <div className="text-muted small mb-2">{item.description || "--"}</div>
+                          <div className="text-muted small mb-2">
+                            {item.description || "--"}
+                          </div>
                           <div className="mt-auto d-flex justify-content-between align-items-center">
-                            <span className="fw-bold text-success">{fmtCur(item.price)}</span>
-                            <Button size="sm" onClick={() => addToCart(item)}>Thêm</Button>
+                            <span className="fw-bold text-success">
+                              {fmtCur(item.price)}
+                            </span>
+                            <Button size="sm" onClick={() => addToCart(item)}>
+                              Thêm
+                            </Button>
                           </div>
                         </Card.Body>
                       </Card>
@@ -192,11 +216,16 @@ export default function StaffCounterOrderPage() {
 
           <Col lg={4}>
             <Card className="border-0 shadow-sm mb-3">
-              <Card.Header className="bg-white fw-bold">Thông tin đơn</Card.Header>
+              <Card.Header className="bg-white fw-bold">
+                Thông tin đơn
+              </Card.Header>
               <Card.Body>
                 <Form.Group className="mb-2">
                   <Form.Label>Bàn (tuỳ chọn)</Form.Label>
-                  <Form.Select value={tableId} onChange={(e) => setTableId(e.target.value)}>
+                  <Form.Select
+                    value={tableId}
+                    onChange={(e) => setTableId(e.target.value)}
+                  >
                     <option value="">Không chọn bàn</option>
                     {tables.map((table) => (
                       <option key={String(table.id)} value={String(table.id)}>
@@ -208,17 +237,26 @@ export default function StaffCounterOrderPage() {
 
                 <Form.Group className="mb-2">
                   <Form.Label>Tên khách</Form.Label>
-                  <Form.Control value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+                  <Form.Control
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                  />
                 </Form.Group>
 
                 <Form.Group className="mb-2">
                   <Form.Label>SĐT khách</Form.Label>
-                  <Form.Control value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
+                  <Form.Control
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                  />
                 </Form.Group>
 
                 <Form.Group>
                   <Form.Label>Thanh toán</Form.Label>
-                  <Form.Select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+                  <Form.Select
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  >
                     <option value="CASH">CASH</option>
                     <option value="QR_PAYOS">QR_PAYOS</option>
                   </Form.Select>
@@ -233,17 +271,27 @@ export default function StaffCounterOrderPage() {
                   <div className="text-muted">Chưa có món</div>
                 ) : (
                   cart.map((item) => (
-                    <div key={String(item.menuItemId)} className="mb-2 pb-2 border-bottom">
+                    <div
+                      key={String(item.menuItemId)}
+                      className="mb-2 pb-2 border-bottom"
+                    >
                       <div className="fw-semibold">{item.name}</div>
                       <div className="d-flex justify-content-between align-items-center mt-1">
                         <Form.Control
                           type="number"
                           min={1}
                           value={item.quantity}
-                          onChange={(e) => updateQty(item.menuItemId, e.target.value)}
+                          onChange={(e) =>
+                            updateQty(item.menuItemId, e.target.value)
+                          }
                           style={{ width: 90 }}
                         />
-                        <span>{fmtCur(Number(item.price || 0) * Number(item.quantity || 0))}</span>
+                        <span>
+                          {fmtCur(
+                            Number(item.price || 0) *
+                              Number(item.quantity || 0),
+                          )}
+                        </span>
                       </div>
                     </div>
                   ))
@@ -255,7 +303,11 @@ export default function StaffCounterOrderPage() {
                   <span>{fmtCur(cartTotal)}</span>
                 </div>
 
-                <Button className="w-100" disabled={creating || !cart.length} onClick={submitCounterOrder}>
+                <Button
+                  className="w-100"
+                  disabled={creating || !cart.length}
+                  onClick={submitCounterOrder}
+                >
                   {creating ? "Đang tạo..." : "Tạo đơn tại quầy"}
                 </Button>
               </Card.Body>

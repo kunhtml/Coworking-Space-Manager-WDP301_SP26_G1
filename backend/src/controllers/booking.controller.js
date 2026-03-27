@@ -3,23 +3,17 @@ import Table from "../models/table.js";
 import User from "../models/user.js";
 import Invoice from "../models/invoice.js";
 import Payment from "../models/payment.js";
+import {
+  getVietnamDateRange,
+  parseVietnamDateTime,
+} from "../utils/timezone.js";
 
 const parseDateTimeInput = (dateValue, timeValue) => {
   if (!timeValue && !dateValue) return null;
 
   const timeText = String(timeValue || "").trim();
   const dateText = String(dateValue || "").trim();
-
-  // Accept ISO datetime payload directly from FE.
-  if (timeText.includes("T")) {
-    const isoDate = new Date(timeText);
-    return isFinite(isoDate.getTime()) ? isoDate : null;
-  }
-
-  if (!dateText || !timeText) return null;
-  const fullTime = /^\d{2}:\d{2}$/.test(timeText) ? `${timeText}:00` : timeText;
-  const value = new Date(`${dateText}T${fullTime}`);
-  return isFinite(value.getTime()) ? value : null;
+  return parseVietnamDateTime(dateText, timeText);
 };
 
 export const createBooking = async (req, res) => {
@@ -68,6 +62,13 @@ export const createBooking = async (req, res) => {
       return res
         .status(400)
         .json({ message: "Vui lòng cung cấp đủ thông tin đặt bàn." });
+    }
+
+    const now = new Date();
+    if (startTime.getTime() <= now.getTime()) {
+      return res.status(400).json({
+        message: "Không thể đặt bàn vào thời gian quá khứ.",
+      });
     }
 
     const endTime = new Date(startTime.getTime() + bookingDuration * 3600000);
@@ -228,6 +229,14 @@ export const updateMyBooking = async (req, res) => {
         .status(400)
         .json({ message: "Thông tin ngày giờ hoặc thời lượng không hợp lệ." });
     }
+
+    const now = new Date();
+    if (nextStart.getTime() <= now.getTime()) {
+      return res.status(400).json({
+        message: "Không thể đặt bàn vào thời gian quá khứ.",
+      });
+    }
+
     const nextEnd = new Date(nextStart.getTime() + effectiveDuration * 3600000);
     const oldDepositAmount = Math.round(Number(booking.depositAmount || 0));
 
@@ -308,9 +317,11 @@ export const getAllBookings = async (req, res) => {
 
     // Filter by date (startTime falls within that day in Vietnam timezone)
     if (date) {
-      const from = new Date(date + "T00:00:00+07:00");
-      const to = new Date(date + "T23:59:59+07:00");
-      filter.startTime = { $gte: from, $lte: to };
+      const range = getVietnamDateRange(date);
+      if (!range) {
+        return res.status(400).json({ message: "Ngày lọc không hợp lệ." });
+      }
+      filter.startTime = { $gte: range.from, $lte: range.to };
     }
 
     // Auto-cancel expired bookings (endTime already passed but still not checked-in)

@@ -53,23 +53,35 @@ const resolveTableTypePayload = async ({ tableTypeId, tableType }) => {
 
 export const getTables = async (req, res) => {
   try {
+    const excludeHiddenTypes =
+      String(req.query?.excludeHiddenTypes || "").toLowerCase() === "true";
     const tables = await Table.find().sort({ name: 1 }).lean();
     const tableTypeMap = await buildTableTypeMap(tables);
 
     res.json(
-      tables.map((t) => ({
-        _id: t._id.toString(),
-        sourceId: t._id.toString(),
-        name: t.name,
-        tableTypeId: toObjectIdString(t.tableTypeId),
-        tableType:
-          tableTypeMap.get(toObjectIdString(t.tableTypeId))?.name || "",
-        capacity: resolveCapacityFromTypeMap(t, tableTypeMap),
-        status: t.status,
-        description: t.description || "",
-        pricePerHour: t.pricePerHour || 0,
-        pricePerDay: t.pricePerDay || 0,
-      })),
+      tables
+        .map((t) => {
+          const mappedType = tableTypeMap.get(toObjectIdString(t.tableTypeId));
+          const hasValidType = Boolean(mappedType);
+          if (excludeHiddenTypes && mappedType?.isHidden) {
+            return null;
+          }
+
+          return {
+            _id: t._id.toString(),
+            sourceId: t._id.toString(),
+            name: t.name,
+            tableTypeId: toObjectIdString(t.tableTypeId),
+            tableType: mappedType?.name || "",
+            tableTypeHidden: Boolean(mappedType?.isHidden),
+            capacity: resolveCapacityFromTypeMap(t, tableTypeMap),
+            status: hasValidType ? t.status : "Maintenance",
+            description: t.description || "",
+            pricePerHour: t.pricePerHour || 0,
+            pricePerDay: t.pricePerDay || 0,
+          };
+        })
+        .filter(Boolean),
     );
   } catch (err) {
     console.error("getTables error:", err);
@@ -195,6 +207,12 @@ export const getAvailableTables = async (req, res) => {
           .includes(normalizedType),
       );
     }
+
+    // Hidden table types are not exposed to seat-map availability endpoints.
+    tables = tables.filter((t) => {
+      const mappedType = tableTypeMap.get(toObjectIdString(t.tableTypeId));
+      return Boolean(mappedType) && !mappedType.isHidden;
+    });
 
     const available = tables.filter((t) => !bookedIds.has(t._id.toString()));
 

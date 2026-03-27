@@ -8,6 +8,15 @@ import MenuItem from "../models/menu_item.js";
 import User from "../models/user.js";
 import Invoice from "../models/invoice.js";
 import { createCounterOrderPayment } from "../services/payos.service.js";
+<<<<<<< HEAD
+=======
+import { ORDER_STATUS, normalizeOrderStatus } from "../constants/domain.js";
+import {
+  getVietnamDateRange,
+  getVietnamDateString,
+  toVietnamISOString,
+} from "../utils/timezone.js";
+>>>>>>> 1fcb77b0007ac0833828b8da5ea06a84a57aa7b1
 
 const STAFF_TABLE_STATUSES = new Set([
   "Available",
@@ -170,7 +179,9 @@ export const getStaffTableStatusList = async (req, res) => {
         .select("tableId")
         .lean();
       const activeSet = new Set(stillActive.map((b) => b.tableId?.toString()));
-      const toRelease = occupiedIds.filter((id) => !activeSet.has(id.toString()));
+      const toRelease = occupiedIds.filter(
+        (id) => !activeSet.has(id.toString()),
+      );
       if (toRelease.length > 0) {
         await Table.updateMany(
           { _id: { $in: toRelease } },
@@ -229,12 +240,16 @@ export const getStaffTableStatusList = async (req, res) => {
     const upcomingBookings = await Booking.find({
       tableId: { $in: tableIds },
       status: {
+<<<<<<< HEAD
         $in: [
           "Pending",
           "Awaiting_Payment",
           "Confirmed",
           "CheckedIn",
         ],
+=======
+        $in: ["Pending", "Awaiting_Payment", "Confirmed", "CheckedIn"],
+>>>>>>> 1fcb77b0007ac0833828b8da5ea06a84a57aa7b1
       },
       endTime: { $gt: now },
       startTime: { $lt: endOfTomorrow },
@@ -257,7 +272,8 @@ export const getStaffTableStatusList = async (req, res) => {
       if (!upcomingMap.has(key)) upcomingMap.set(key, []);
       upcomingMap.get(key).push({
         id: b._id,
-        bookingCode: b.bookingCode || `#${String(b._id).slice(-6).toUpperCase()}`,
+        bookingCode:
+          b.bookingCode || `#${String(b._id).slice(-6).toUpperCase()}`,
         status: b.status,
         startTime: b.startTime,
         endTime: b.endTime,
@@ -368,15 +384,21 @@ export const getStaffOrders = async (req, res) => {
 
       // Release tables if no other active bookings
       const expiredBookingIds = [
-        ...new Set(expiredOrders.map((o) => o.bookingId?.toString()).filter(Boolean)),
+        ...new Set(
+          expiredOrders.map((o) => o.bookingId?.toString()).filter(Boolean),
+        ),
       ];
       if (expiredBookingIds.length > 0) {
         await Booking.updateMany(
           {
             _id: { $in: expiredBookingIds },
+<<<<<<< HEAD
             status: {
               $in: ["Pending", "Awaiting_Payment"],
             },
+=======
+            status: { $in: ["Pending", "Awaiting_Payment"] },
+>>>>>>> 1fcb77b0007ac0833828b8da5ea06a84a57aa7b1
           },
           { $set: { status: "Cancelled" } },
         );
@@ -394,9 +416,11 @@ export const getStaffOrders = async (req, res) => {
     }
 
     if (date) {
-      const from = new Date(`${date}T00:00:00.000+07:00`);
-      const to = new Date(`${date}T23:59:59.999+07:00`);
-      orderFilter.createdAt = { $gte: from, $lte: to };
+      const range = getVietnamDateRange(date);
+      if (!range) {
+        return res.status(400).json({ message: "Ngày lọc không hợp lệ." });
+      }
+      orderFilter.createdAt = { $gte: range.from, $lte: range.to };
     }
 
     let orders = await Order.find(orderFilter).sort({ createdAt: -1 }).lean();
@@ -515,7 +539,9 @@ export const createCounterOrder = async (req, res) => {
 
     // Must have either a table or menu items
     if (!hasTable && !hasMenuItems && !bookingId) {
-      return res.status(400).json({ message: "Vui lòng chọn bàn hoặc ít nhất 1 món." });
+      return res
+        .status(400)
+        .json({ message: "Vui lòng chọn bàn hoặc ít nhất 1 món." });
     }
 
     let booking = null;
@@ -569,6 +595,7 @@ export const createCounterOrder = async (req, res) => {
       const overlapping = await Booking.findOne({
         tableId,
         status: {
+<<<<<<< HEAD
           $in: [
             "Pending",
             "Awaiting_Payment",
@@ -579,6 +606,11 @@ export const createCounterOrder = async (req, res) => {
         $or: [
           { startTime: { $lt: end }, endTime: { $gt: start } },
         ],
+=======
+          $in: ["Pending", "Awaiting_Payment", "Confirmed", "CheckedIn"],
+        },
+        $or: [{ startTime: { $lt: end }, endTime: { $gt: start } }],
+>>>>>>> 1fcb77b0007ac0833828b8da5ea06a84a57aa7b1
       });
 
       if (overlapping) {
@@ -763,7 +795,12 @@ export const createCounterOrder = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Lỗi tạo counter order: " + err.message, stack: err.stack });
+    res
+      .status(500)
+      .json({
+        message: "Lỗi tạo counter order: " + err.message,
+        stack: err.stack,
+      });
   }
 };
 
@@ -917,7 +954,7 @@ async function buildStaffInvoicePayload(orderId) {
 
   return {
     invoiceCode: `INV-${String(order._id).slice(-6).toUpperCase()}`,
-    generatedAt: new Date().toISOString(),
+    generatedAt: toVietnamISOString(new Date()),
     order: {
       id: order._id,
       orderCode: `#${String(order._id).slice(-6).toUpperCase()}`,
@@ -1029,13 +1066,10 @@ export const exportStaffOrderInvoice = async (req, res) => {
 // GET /api/staff/dashboard/stats  (Staff / Admin)
 export const getStaffDashboardStats = async (req, res) => {
   try {
-    const now = new Date();
-    const todayStart = new Date(
-      `${now.toISOString().slice(0, 10)}T00:00:00.000+07:00`,
-    );
-    const todayEnd = new Date(
-      `${now.toISOString().slice(0, 10)}T23:59:59.999+07:00`,
-    );
+    const todayInVietnam = getVietnamDateString();
+    const todayRange = getVietnamDateRange(todayInVietnam);
+    const todayStart = todayRange.from;
+    const todayEnd = todayRange.to;
 
     const [totalTables, occupiedTables, todayOrders, recentOrders] =
       await Promise.all([

@@ -230,7 +230,8 @@ export default function StaffPOSPage() {
       items = items.filter((item) => {
         const status = normalizeMenuStatus(item);
         if (menuStockFilter === "AVAILABLE") return status === "AVAILABLE";
-        if (menuStockFilter === "OUT_OF_STOCK") return status === "OUT_OF_STOCK";
+        if (menuStockFilter === "OUT_OF_STOCK")
+          return status === "OUT_OF_STOCK";
         if (menuStockFilter === "UNAVAILABLE") return status === "UNAVAILABLE";
         return true;
       });

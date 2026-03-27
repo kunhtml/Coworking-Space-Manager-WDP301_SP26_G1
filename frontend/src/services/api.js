@@ -104,6 +104,12 @@ export const getMeApi = () => apiClient.get("/auth/me");
 
 export const updateProfileApi = (data) => apiClient.put("/auth/profile", data);
 
+export const sendProfileEmailOtpApi = (newEmail) =>
+  apiClient.post("/auth/profile/send-email-otp", { newEmail });
+
+export const verifyProfileEmailOtpApi = (newEmail, otp) =>
+  apiClient.post("/auth/profile/verify-email-otp", { newEmail, otp });
+
 export const changePasswordApi = (data) =>
   apiClient.put("/auth/password", data);
 

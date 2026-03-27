@@ -1,9 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  Row,
-  Col,
-  Alert,
-} from "react-bootstrap";
+import { Row, Col, Alert } from "react-bootstrap";
 import { useAuth } from "../../hooks/useAuth";
 import AdminLayout from "../../components/admin/AdminLayout";
 import AdminAccountStatusCard from "../../components/admin/AdminAccountStatusCard";
@@ -13,7 +9,9 @@ import LoadingSpinner from "../../components/common/LoadingSpinner";
 import {
   changePasswordApi,
   getMeApi,
+  sendProfileEmailOtpApi,
   updateProfileApi,
+  verifyProfileEmailOtpApi,
 } from "../../services/api";
 
 export function meta() {
@@ -55,6 +53,20 @@ export default function AdminProfile() {
     type: "",
     content: "",
   });
+  const [emailOtp, setEmailOtp] = useState("");
+  const [emailOtpVerified, setEmailOtpVerified] = useState(false);
+  const [emailOtpRequested, setEmailOtpRequested] = useState(false);
+  const [emailOtpCooldown, setEmailOtpCooldown] = useState(0);
+  const [emailOtpSending, setEmailOtpSending] = useState(false);
+  const [emailOtpVerifying, setEmailOtpVerifying] = useState(false);
+
+  useEffect(() => {
+    if (emailOtpCooldown <= 0) return;
+    const timerId = setTimeout(() => {
+      setEmailOtpCooldown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearTimeout(timerId);
+  }, [emailOtpCooldown]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -73,6 +85,9 @@ export default function AdminProfile() {
       setFullName(nextProfile.fullName || "");
       setEmail(nextProfile.email || "");
       setPhone(nextProfile.phone || "");
+      setEmailOtp("");
+      setEmailOtpVerified(false);
+      setEmailOtpRequested(false);
     } catch (error) {
       setMessage({
         type: "danger",
@@ -89,6 +104,19 @@ export default function AdminProfile() {
       setUpdateLoading(true);
       setMessage({ type: "", content: "" });
 
+      const currentEmail = String(profile?.email || "").toLowerCase();
+      const nextEmail = String(email || "")
+        .trim()
+        .toLowerCase();
+      const emailChanged = nextEmail !== currentEmail;
+      if (emailChanged && !emailOtpVerified) {
+        setMessage({
+          type: "danger",
+          content: "Vui lòng xác thực OTP gửi tới email mới trước khi lưu.",
+        });
+        return;
+      }
+
       const updated = await updateProfileApi({
         fullName,
         email,
@@ -104,6 +132,16 @@ export default function AdminProfile() {
       setFullName(updated.fullName || fullName);
       setEmail(updated.email || email);
       setPhone(updated.phone || phone);
+      setEmailOtp("");
+      setEmailOtpVerified(false);
+      setEmailOtpRequested(false);
+
+      const rawUser = localStorage.getItem("user");
+      const existingUser = rawUser ? JSON.parse(rawUser) : {};
+      localStorage.setItem(
+        "user",
+        JSON.stringify({ ...existingUser, ...updated }),
+      );
 
       setEditMode(false);
     } catch (error) {
@@ -118,9 +156,100 @@ export default function AdminProfile() {
 
   const cancelEdit = () => {
     setFullName(profile?.fullName || "");
+    setEmail(profile?.email || "");
     setPhone(profile?.phone || "");
+    setEmailOtp("");
+    setEmailOtpVerified(false);
+    setEmailOtpRequested(false);
     setEditMode(false);
     setMessage({ type: "", content: "" });
+  };
+
+  const handleSendEmailOtp = async () => {
+    try {
+      if (emailOtpCooldown > 0) {
+        setMessage({
+          type: "danger",
+          content: `Vui lòng chờ ${emailOtpCooldown}s để gửi lại OTP.`,
+        });
+        return;
+      }
+
+      const currentEmail = String(profile?.email || "").toLowerCase();
+      const nextEmail = String(email || "")
+        .trim()
+        .toLowerCase();
+      if (!nextEmail) {
+        setMessage({ type: "danger", content: "Vui lòng nhập email mới." });
+        return;
+      }
+      if (nextEmail === currentEmail) {
+        setMessage({
+          type: "danger",
+          content: "Email mới phải khác email hiện tại.",
+        });
+        return;
+      }
+
+      setEmailOtpSending(true);
+      setMessage({ type: "", content: "" });
+      await sendProfileEmailOtpApi(nextEmail);
+      setEmailOtp("");
+      setEmailOtpRequested(true);
+      setEmailOtpCooldown(60);
+      setEmailOtpVerified(false);
+      setMessage({
+        type: "success",
+        content: "Đã gửi OTP tới email mới. Vui lòng nhập mã để xác nhận.",
+      });
+    } catch (error) {
+      setMessage({
+        type: "danger",
+        content: error.message || "Không gửi được OTP tới email mới.",
+      });
+    } finally {
+      setEmailOtpSending(false);
+    }
+  };
+
+  const handleVerifyEmailOtp = async () => {
+    try {
+      const nextEmail = String(email || "")
+        .trim()
+        .toLowerCase();
+      if (!nextEmail) {
+        setMessage({ type: "danger", content: "Vui lòng nhập email mới." });
+        return;
+      }
+      if (!/^\d{6}$/.test(String(emailOtp || "").trim())) {
+        setMessage({ type: "danger", content: "OTP phải gồm 6 chữ số." });
+        return;
+      }
+
+      setEmailOtpVerifying(true);
+      setMessage({ type: "", content: "" });
+      await verifyProfileEmailOtpApi(nextEmail, String(emailOtp).trim());
+      setEmailOtpVerified(true);
+      setMessage({
+        type: "success",
+        content: "Xác thực OTP email mới thành công. Bạn có thể lưu thay đổi.",
+      });
+    } catch (error) {
+      setEmailOtpVerified(false);
+      setMessage({
+        type: "danger",
+        content: error.message || "Xác thực OTP không thành công.",
+      });
+    } finally {
+      setEmailOtpVerifying(false);
+    }
+  };
+
+  const handleEmailChange = (value) => {
+    setEmail(value);
+    setEmailOtp("");
+    setEmailOtpRequested(false);
+    setEmailOtpVerified(false);
   };
 
   const onPasswordChange = (field, value) => {
@@ -251,6 +380,17 @@ export default function AdminProfile() {
                   fullName={fullName}
                   setFullName={setFullName}
                   email={email}
+                  setEmail={handleEmailChange}
+                  emailOtp={emailOtp}
+                  setEmailOtp={setEmailOtp}
+                  emailOtpVerified={emailOtpVerified}
+                  emailOtpRequested={emailOtpRequested}
+                  emailOtpCooldown={emailOtpCooldown}
+                  emailOtpSending={emailOtpSending}
+                  emailOtpVerifying={emailOtpVerifying}
+                  handleSendEmailOtp={handleSendEmailOtp}
+                  handleVerifyEmailOtp={handleVerifyEmailOtp}
+                  originalEmail={profile?.email || ""}
                   phone={phone}
                   setPhone={setPhone}
                   profile={profile}
@@ -260,7 +400,11 @@ export default function AdminProfile() {
 
               {/* Account Status Card */}
               <Col lg={4}>
-                <AdminAccountStatusCard statusInfo={statusInfo} formatDate={formatDate} profile={profile} />
+                <AdminAccountStatusCard
+                  statusInfo={statusInfo}
+                  formatDate={formatDate}
+                  profile={profile}
+                />
               </Col>
             </Row>
 

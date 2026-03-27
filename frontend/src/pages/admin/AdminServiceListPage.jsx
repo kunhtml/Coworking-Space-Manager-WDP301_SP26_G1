@@ -26,13 +26,16 @@ import SearchInput from "../../components/common/SearchInput";
 export function meta() {
   return [
     { title: "Quản lý Menu | Nexus Admin" },
-    { name: "description", content: "Quản lý menu và danh mục Nexus Coworking" },
+    {
+      name: "description",
+      content: "Quản lý menu và danh mục Nexus Coworking",
+    },
   ];
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const STATUS_OPTIONS = [
-  { value: "AVAILABLE",   label: "Còn hàng", bg: "success" },
+  { value: "AVAILABLE", label: "Còn hàng", bg: "success" },
   { value: "OUT_OF_STOCK", label: "Tạm hết", bg: "warning" },
   { value: "UNAVAILABLE", label: "Hết hàng", bg: "danger" },
 ];
@@ -51,7 +54,9 @@ const EMPTY_ITEM_FORM = {
 const EMPTY_CAT_FORM = { name: "", description: "", isActive: true };
 
 function normalizeMenuStatus(item) {
-  const availability = String(item?.availabilityStatus || "").trim().toUpperCase();
+  const availability = String(item?.availabilityStatus || "")
+    .trim()
+    .toUpperCase();
   const stock = Number(item?.stockQuantity || 0);
 
   if (["UNAVAILABLE", "DISCONTINUED"].includes(availability)) {
@@ -75,8 +80,7 @@ const validateItem = (form) => {
   if (!form.name.trim()) errs.name = "Tên món không được để trống.";
   if (form.price === "" || form.price === null || form.price === undefined)
     errs.price = "Giá không được để trống.";
-  else if (Number(form.price) < 0)
-    errs.price = "Giá không được âm.";
+  else if (Number(form.price) < 0) errs.price = "Giá không được âm.";
   if (form.stockQuantity !== "" && Number(form.stockQuantity) < 0)
     errs.stockQuantity = "Số lượng không được âm.";
   return errs;
@@ -90,45 +94,47 @@ const validateCat = (form) => {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmtPrice = (n) =>
-  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n || 0);
+  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(
+    n || 0,
+  );
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function AdminServiceListPage() {
   const [tab, setTab] = useState("items");
 
   // Items
-  const [items,        setItems]        = useState([]);
+  const [items, setItems] = useState([]);
   const [itemsLoading, setItemsLoading] = useState(false);
-  const [searchItem,   setSearchItem]   = useState("");
-  const [filterCat,    setFilterCat]    = useState("");
+  const [searchItem, setSearchItem] = useState("");
+  const [filterCat, setFilterCat] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
 
   // Categories
-  const [categories,  setCategories]  = useState([]);
+  const [categories, setCategories] = useState([]);
   const [catsLoading, setCatsLoading] = useState(false);
 
   // Feedback
-  const [error,   setError]   = useState("");
+  const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
   // Item modals
-  const [showItemAdd,     setShowItemAdd]     = useState(false);
-  const [showItemEdit,    setShowItemEdit]    = useState(false);
-  const [showItemDelete,  setShowItemDelete]  = useState(false);
-  const [itemForm,        setItemForm]        = useState(EMPTY_ITEM_FORM);
-  const [itemErrors,      setItemErrors]      = useState({});
-  const [editingItemId,   setEditingItemId]   = useState(null);
-  const [deletingItem,    setDeletingItem]    = useState(null);
+  const [showItemAdd, setShowItemAdd] = useState(false);
+  const [showItemEdit, setShowItemEdit] = useState(false);
+  const [showItemDelete, setShowItemDelete] = useState(false);
+  const [itemForm, setItemForm] = useState(EMPTY_ITEM_FORM);
+  const [itemErrors, setItemErrors] = useState({});
+  const [editingItemId, setEditingItemId] = useState(null);
+  const [deletingItem, setDeletingItem] = useState(null);
   const [itemFormLoading, setItemFormLoading] = useState(false);
 
   // Category modals
-  const [showCatAdd,     setShowCatAdd]     = useState(false);
-  const [showCatEdit,    setShowCatEdit]    = useState(false);
-  const [showCatDelete,  setShowCatDelete]  = useState(false);
-  const [catForm,        setCatForm]        = useState(EMPTY_CAT_FORM);
-  const [catErrors,      setCatErrors]      = useState({});
-  const [editingCatId,   setEditingCatId]   = useState(null);
-  const [deletingCat,    setDeletingCat]    = useState(null);
+  const [showCatAdd, setShowCatAdd] = useState(false);
+  const [showCatEdit, setShowCatEdit] = useState(false);
+  const [showCatDelete, setShowCatDelete] = useState(false);
+  const [catForm, setCatForm] = useState(EMPTY_CAT_FORM);
+  const [catErrors, setCatErrors] = useState({});
+  const [editingCatId, setEditingCatId] = useState(null);
+  const [deletingCat, setDeletingCat] = useState(null);
   const [catFormLoading, setCatFormLoading] = useState(false);
 
   // ─── Load data ────────────────────────────────────────────────────────────
@@ -174,22 +180,33 @@ export default function AdminServiceListPage() {
       !searchItem ||
       item.name?.toLowerCase().includes(searchItem.toLowerCase()) ||
       item.description?.toLowerCase().includes(searchItem.toLowerCase());
-    const matchCat    = !filterCat    || item.categoryId?._id === filterCat;
+    const matchCat = !filterCat || item.categoryId?._id === filterCat;
     const matchStatus = !filterStatus || normalizedStatus === filterStatus;
     return matchSearch && matchCat && matchStatus;
   });
 
   // ─── Stats ────────────────────────────────────────────────────────────────
-  const statsAvailable = items.filter((i) => normalizeMenuStatus(i) === "AVAILABLE").length;
-  const statsOutOfStock = items.filter((i) => normalizeMenuStatus(i) === "OUT_OF_STOCK").length;
-  const statsUnavailable = items.filter((i) => normalizeMenuStatus(i) === "UNAVAILABLE").length;
+  const statsAvailable = items.filter(
+    (i) => normalizeMenuStatus(i) === "AVAILABLE",
+  ).length;
+  const statsOutOfStock = items.filter(
+    (i) => normalizeMenuStatus(i) === "OUT_OF_STOCK",
+  ).length;
+  const statsUnavailable = items.filter(
+    (i) => normalizeMenuStatus(i) === "UNAVAILABLE",
+  ).length;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // ITEM CRUD
   // Helper cập nhật 1 field + xoá lỗi của field đó
   const setItemField = (field, value) => {
     setItemForm((prev) => ({ ...prev, [field]: value }));
-    if (itemErrors[field]) setItemErrors((prev) => { const n = { ...prev }; delete n[field]; return n; });
+    if (itemErrors[field])
+      setItemErrors((prev) => {
+        const n = { ...prev };
+        delete n[field];
+        return n;
+      });
   };
 
   const openItemAdd = () => {
@@ -202,11 +219,11 @@ export default function AdminServiceListPage() {
   const openItemEdit = (item) => {
     setEditingItemId(item._id);
     setItemForm({
-      name:               item.name || "",
-      categoryId:         item.categoryId?._id || item.categoryId || "",
-      description:        item.description || "",
-      price:              item.price ?? "",
-      stockQuantity:      item.stockQuantity ?? "",
+      name: item.name || "",
+      categoryId: item.categoryId?._id || item.categoryId || "",
+      description: item.description || "",
+      price: item.price ?? "",
+      stockQuantity: item.stockQuantity ?? "",
       availabilityStatus: normalizeMenuStatus(item),
     });
     setItemErrors({});
@@ -222,14 +239,17 @@ export default function AdminServiceListPage() {
   const submitItemAdd = async (e) => {
     e.preventDefault();
     const errs = validateItem(itemForm);
-    if (Object.keys(errs).length) { setItemErrors(errs); return; }
+    if (Object.keys(errs).length) {
+      setItemErrors(errs);
+      return;
+    }
     setItemFormLoading(true);
     try {
       const res = await api.post("/menu/items", {
         ...itemForm,
-        price:         Number(itemForm.price),
+        price: Number(itemForm.price),
         stockQuantity: Number(itemForm.stockQuantity) || 0,
-        categoryId:    itemForm.categoryId || null,
+        categoryId: itemForm.categoryId || null,
       });
       showSuccessMsg(res.message || "Thêm món thành công!");
       setShowItemAdd(false);
@@ -244,14 +264,17 @@ export default function AdminServiceListPage() {
   const submitItemEdit = async (e) => {
     e.preventDefault();
     const errs = validateItem(itemForm);
-    if (Object.keys(errs).length) { setItemErrors(errs); return; }
+    if (Object.keys(errs).length) {
+      setItemErrors(errs);
+      return;
+    }
     setItemFormLoading(true);
     try {
       const res = await api.put(`/menu/items/${editingItemId}`, {
         ...itemForm,
-        price:         Number(itemForm.price),
+        price: Number(itemForm.price),
         stockQuantity: Number(itemForm.stockQuantity) || 0,
-        categoryId:    itemForm.categoryId || null,
+        categoryId: itemForm.categoryId || null,
       });
       showSuccessMsg(res.message || "Cập nhật món thành công!");
       setShowItemEdit(false);
@@ -286,7 +309,12 @@ export default function AdminServiceListPage() {
 
   const setCatField = (field, value) => {
     setCatForm((prev) => ({ ...prev, [field]: value }));
-    if (catErrors[field]) setCatErrors((prev) => { const n = { ...prev }; delete n[field]; return n; });
+    if (catErrors[field])
+      setCatErrors((prev) => {
+        const n = { ...prev };
+        delete n[field];
+        return n;
+      });
   };
 
   const openCatAdd = () => {
@@ -299,9 +327,9 @@ export default function AdminServiceListPage() {
   const openCatEdit = (cat) => {
     setEditingCatId(cat._id);
     setCatForm({
-      name:        cat.name || "",
+      name: cat.name || "",
       description: cat.description || "",
-      isActive:    cat.isActive !== false,
+      isActive: cat.isActive !== false,
     });
     setCatErrors({});
     setError("");
@@ -316,7 +344,10 @@ export default function AdminServiceListPage() {
   const submitCatAdd = async (e) => {
     e.preventDefault();
     const errs = validateCat(catForm);
-    if (Object.keys(errs).length) { setCatErrors(errs); return; }
+    if (Object.keys(errs).length) {
+      setCatErrors(errs);
+      return;
+    }
     setCatFormLoading(true);
     try {
       const res = await api.post("/menu/categories", catForm);
@@ -333,7 +364,10 @@ export default function AdminServiceListPage() {
   const submitCatEdit = async (e) => {
     e.preventDefault();
     const errs = validateCat(catForm);
-    if (Object.keys(errs).length) { setCatErrors(errs); return; }
+    if (Object.keys(errs).length) {
+      setCatErrors(errs);
+      return;
+    }
     setCatFormLoading(true);
     try {
       const res = await api.put(`/menu/categories/${editingCatId}`, catForm);
@@ -376,15 +410,27 @@ export default function AdminServiceListPage() {
             <i className="bi bi-cup-hot-fill me-2 text-warning"></i>
             Quản lý Menu
           </h2>
-          <p className="text-muted mb-0">Quản lý món ăn, đồ uống và danh mục trong thực đơn</p>
+          <p className="text-muted mb-0">
+            Quản lý món ăn, đồ uống và danh mục trong thực đơn
+          </p>
         </Col>
         <Col xs="auto">
           {tab === "items" ? (
-            <Button variant="warning" size="lg" className="rounded-pill shadow-sm text-white" onClick={openItemAdd}>
+            <Button
+              variant="warning"
+              size="lg"
+              className="rounded-pill shadow-sm text-white"
+              onClick={openItemAdd}
+            >
               <i className="bi bi-plus-circle-fill me-2"></i>Thêm món mới
             </Button>
           ) : (
-            <Button variant="primary" size="lg" className="rounded-pill shadow-sm" onClick={openCatAdd}>
+            <Button
+              variant="primary"
+              size="lg"
+              className="rounded-pill shadow-sm"
+              onClick={openCatAdd}
+            >
               <i className="bi bi-plus-circle-fill me-2"></i>Thêm danh mục
             </Button>
           )}
@@ -394,34 +440,85 @@ export default function AdminServiceListPage() {
       {/* Alerts */}
       {error && (
         <Alert variant="danger" dismissible onClose={() => setError("")}>
-          <i className="bi bi-exclamation-triangle-fill me-2"></i>{error}
+          <i className="bi bi-exclamation-triangle-fill me-2"></i>
+          {error}
         </Alert>
       )}
       {success && (
         <Alert variant="success" dismissible onClose={() => setSuccess("")}>
-          <i className="bi bi-check-circle-fill me-2"></i>{success}
+          <i className="bi bi-check-circle-fill me-2"></i>
+          {success}
         </Alert>
       )}
 
       {/* Stats */}
       <Row className="mb-4 g-3">
         {[
-          { label: "Tổng số món",  value: items.length,     icon: "bi-journal-text",         color: "#3b82f6", bg: "#eff6ff" },
-          { label: "Còn hàng", value: statsAvailable, icon: "bi-check-circle", color: "#10b981", bg: "#ecfdf5" },
-          { label: "Tạm hết", value: statsOutOfStock, icon: "bi-exclamation-circle", color: "#f59e0b", bg: "#fffbeb" },
-          { label: "Hết hàng", value: statsUnavailable, icon: "bi-x-circle", color: "#ef4444", bg: "#fee2e2" },
-          { label: "Danh mục", value: categories.length, icon: "bi-tags", color: "#8b5cf6", bg: "#f5f3ff" },
+          {
+            label: "Tổng số món",
+            value: items.length,
+            icon: "bi-journal-text",
+            color: "#3b82f6",
+            bg: "#eff6ff",
+          },
+          {
+            label: "Còn hàng",
+            value: statsAvailable,
+            icon: "bi-check-circle",
+            color: "#10b981",
+            bg: "#ecfdf5",
+          },
+          {
+            label: "Tạm hết",
+            value: statsOutOfStock,
+            icon: "bi-exclamation-circle",
+            color: "#f59e0b",
+            bg: "#fffbeb",
+          },
+          {
+            label: "Hết hàng",
+            value: statsUnavailable,
+            icon: "bi-x-circle",
+            color: "#ef4444",
+            bg: "#fee2e2",
+          },
+          {
+            label: "Danh mục",
+            value: categories.length,
+            icon: "bi-tags",
+            color: "#8b5cf6",
+            bg: "#f5f3ff",
+          },
         ].map((s, i) => (
           <Col key={i} style={{ minWidth: 150 }}>
-            <Card className="border-0 h-100" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08)", borderRadius: 12 }}>
+            <Card
+              className="border-0 h-100"
+              style={{
+                boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                borderRadius: 12,
+              }}
+            >
               <Card.Body className="p-3 d-flex align-items-center gap-3">
-                <div className="d-flex align-items-center justify-content-center rounded-3"
-                  style={{ width: 48, height: 48, backgroundColor: s.bg }}>
-                  <i className={`bi ${s.icon}`} style={{ fontSize: 22, color: s.color }}></i>
+                <div
+                  className="d-flex align-items-center justify-content-center rounded-3"
+                  style={{ width: 48, height: 48, backgroundColor: s.bg }}
+                >
+                  <i
+                    className={`bi ${s.icon}`}
+                    style={{ fontSize: 22, color: s.color }}
+                  ></i>
                 </div>
                 <div>
-                  <div style={{ fontSize: 12, color: "#64748b", fontWeight: 600 }}>{s.label}</div>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: "#1e293b" }}>{s.value}</div>
+                  <div
+                    style={{ fontSize: 12, color: "#64748b", fontWeight: 600 }}
+                  >
+                    {s.label}
+                  </div>
+                  <div
+                    style={{ fontSize: 22, fontWeight: 700, color: "#1e293b" }}
+                  >
+                    {s.value}
+                  </div>
                 </div>
               </Card.Body>
             </Card>
@@ -435,13 +532,23 @@ export default function AdminServiceListPage() {
           <Card.Header className="bg-white border-0 px-4 pt-3 pb-0">
             <Nav variant="tabs" className="border-0">
               <Nav.Item>
-                <Nav.Link eventKey="items" className="fw-semibold" style={{ fontSize: 14 }}>
-                  <i className="bi bi-list-ul me-2"></i>Danh sách món ({items.length})
+                <Nav.Link
+                  eventKey="items"
+                  className="fw-semibold"
+                  style={{ fontSize: 14 }}
+                >
+                  <i className="bi bi-list-ul me-2"></i>Danh sách món (
+                  {items.length})
                 </Nav.Link>
               </Nav.Item>
               <Nav.Item>
-                <Nav.Link eventKey="categories" className="fw-semibold" style={{ fontSize: 14 }}>
-                  <i className="bi bi-tags me-2"></i>Danh mục ({categories.length})
+                <Nav.Link
+                  eventKey="categories"
+                  className="fw-semibold"
+                  style={{ fontSize: 14 }}
+                >
+                  <i className="bi bi-tags me-2"></i>Danh mục (
+                  {categories.length})
                 </Nav.Link>
               </Nav.Item>
             </Nav>
@@ -461,25 +568,41 @@ export default function AdminServiceListPage() {
                     />
                   </Col>
                   <Col md={3}>
-                    <Form.Select value={filterCat} onChange={(e) => setFilterCat(e.target.value)}>
+                    <Form.Select
+                      value={filterCat}
+                      onChange={(e) => setFilterCat(e.target.value)}
+                    >
                       <option value="">Tất cả danh mục</option>
                       {categories.map((c) => (
-                        <option key={c._id} value={c._id}>{c.name}</option>
+                        <option key={c._id} value={c._id}>
+                          {c.name}
+                        </option>
                       ))}
                     </Form.Select>
                   </Col>
                   <Col md={3}>
-                    <Form.Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                    <Form.Select
+                      value={filterStatus}
+                      onChange={(e) => setFilterStatus(e.target.value)}
+                    >
                       <option value="">Tất cả trạng thái</option>
                       {STATUS_OPTIONS.map((s) => (
-                        <option key={s.value} value={s.value}>{s.label}</option>
+                        <option key={s.value} value={s.value}>
+                          {s.label}
+                        </option>
                       ))}
                     </Form.Select>
                   </Col>
                   <Col md={1} className="text-end">
-                    <Button variant="outline-secondary"
-                      onClick={() => { setSearchItem(""); setFilterCat(""); setFilterStatus(""); }}
-                      title="Xóa bộ lọc">
+                    <Button
+                      variant="outline-secondary"
+                      onClick={() => {
+                        setSearchItem("");
+                        setFilterCat("");
+                        setFilterStatus("");
+                      }}
+                      title="Xóa bộ lọc"
+                    >
                       <i className="bi bi-arrow-counterclockwise"></i>
                     </Button>
                   </Col>
@@ -488,11 +611,27 @@ export default function AdminServiceListPage() {
 
               {/* Items Table */}
               {itemsLoading ? (
-                <LoadingSpinner text="Đang tải danh sách món..." color="#f59e0b" />
+                <LoadingSpinner
+                  text="Đang tải danh sách món..."
+                  color="#f59e0b"
+                />
               ) : filteredItems.length === 0 ? (
                 <div className="text-center py-4">
-                  <EmptyState icon="🍽️" title={items.length === 0 ? "Chưa có món nào trong menu." : "Không tìm thấy món phù hợp."} />
-                  <Button variant="warning" className="text-white" onClick={openItemAdd}>Thêm món đầu tiên</Button>
+                  <EmptyState
+                    icon="🍽️"
+                    title={
+                      items.length === 0
+                        ? "Chưa có món nào trong menu."
+                        : "Không tìm thấy món phù hợp."
+                    }
+                  />
+                  <Button
+                    variant="warning"
+                    className="text-white"
+                    onClick={openItemAdd}
+                  >
+                    Thêm món đầu tiên
+                  </Button>
                 </div>
               ) : (
                 <AdminServiceTable
@@ -515,9 +654,14 @@ export default function AdminServiceListPage() {
                 </div>
               ) : categories.length === 0 ? (
                 <div className="text-center py-5">
-                  <i className="bi bi-tags text-muted" style={{ fontSize: "3rem" }}></i>
+                  <i
+                    className="bi bi-tags text-muted"
+                    style={{ fontSize: "3rem" }}
+                  ></i>
                   <p className="text-muted mt-3 mb-2">Chưa có danh mục nào.</p>
-                  <Button variant="primary" onClick={openCatAdd}>Thêm danh mục đầu tiên</Button>
+                  <Button variant="primary" onClick={openCatAdd}>
+                    Thêm danh mục đầu tiên
+                  </Button>
                 </div>
               ) : (
                 <Table responsive hover className="mb-0 align-middle">
@@ -534,15 +678,23 @@ export default function AdminServiceListPage() {
                   <tbody>
                     {categories.map((cat, idx) => {
                       const itemCount = items.filter(
-                        (i) => i.categoryId?._id === cat._id || i.categoryId === cat._id
+                        (i) =>
+                          i.categoryId?._id === cat._id ||
+                          i.categoryId === cat._id,
                       ).length;
                       return (
                         <tr key={cat._id}>
-                          <td className="px-4 py-3 text-muted small">{idx + 1}</td>
+                          <td className="px-4 py-3 text-muted small">
+                            {idx + 1}
+                          </td>
                           <td className="px-4 py-3 fw-semibold">{cat.name}</td>
-                          <td className="px-4 py-3 text-muted">{cat.description || "—"}</td>
+                          <td className="px-4 py-3 text-muted">
+                            {cat.description || "—"}
+                          </td>
                           <td className="px-4 py-3">
-                            <Badge bg="info" text="dark">{itemCount} món</Badge>
+                            <Badge bg="info" text="dark">
+                              {itemCount} món
+                            </Badge>
                           </td>
                           <td className="px-4 py-3">
                             {cat.isActive !== false ? (
@@ -557,7 +709,11 @@ export default function AdminServiceListPage() {
                           </td>
                           <td className="px-4 py-3 text-center">
                             <div className="d-flex gap-2 justify-content-center">
-                              <Button variant="outline-primary" size="sm" onClick={() => openCatEdit(cat)}>
+                              <Button
+                                variant="outline-primary"
+                                size="sm"
+                                onClick={() => openCatEdit(cat)}
+                              >
                                 <i className="bi bi-pencil me-1"></i>Sửa
                               </Button>
                               <Button
@@ -565,7 +721,11 @@ export default function AdminServiceListPage() {
                                 size="sm"
                                 onClick={() => openCatDelete(cat)}
                                 disabled={itemCount > 0}
-                                title={itemCount > 0 ? "Không thể xóa danh mục đang có món" : "Xóa danh mục"}
+                                title={
+                                  itemCount > 0
+                                    ? "Không thể xóa danh mục đang có món"
+                                    : "Xóa danh mục"
+                                }
                               >
                                 <i className="bi bi-trash me-1"></i>Xóa
                               </Button>
@@ -637,7 +797,11 @@ export default function AdminServiceListPage() {
         setCatField={setCatField}
         submitText="Thêm danh mục"
         switchId="cat-add-isActive"
-        switchDescription={catForm.isActive ? "Khách hàng sẽ thấy danh mục và các món bên trong" : "Khách hàng sẽ không thấy danh mục này trên menu"}
+        switchDescription={
+          catForm.isActive
+            ? "Khách hàng sẽ thấy danh mục và các món bên trong"
+            : "Khách hàng sẽ không thấy danh mục này trên menu"
+        }
       />
 
       <CategoryFormModal
@@ -656,7 +820,11 @@ export default function AdminServiceListPage() {
         setCatField={setCatField}
         submitText="Lưu thay đổi"
         switchId="cat-edit-isActive"
-        switchDescription={catForm.isActive ? "Khách hàng sẽ thấy danh mục và các món bên trong" : "Khách hàng sẽ không thấy danh mục này dù món vẫn có trong hệ thống"}
+        switchDescription={
+          catForm.isActive
+            ? "Khách hàng sẽ thấy danh mục và các món bên trong"
+            : "Khách hàng sẽ không thấy danh mục này dù món vẫn có trong hệ thống"
+        }
       />
 
       <ConfirmDialog

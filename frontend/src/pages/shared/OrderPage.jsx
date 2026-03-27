@@ -30,11 +30,12 @@ export function meta() {
 }
 
 const getCategoryVisuals = (categoryName) => {
+  const unifiedColor = "rgba(99, 102, 241, 0.1)";
   const name = categoryName.toLowerCase();
 
   // Nhóm Cà phê
   if (name.includes("cà phê") || name.includes("coffee")) {
-    return { icon: "bi-cup-hot", color: "rgba(139, 92, 246, 0.1)" }; // Tím nhạt
+    return { icon: "bi bi-cup-hot", color: unifiedColor };
   }
   // Nhóm Bánh / Đồ ăn nhẹ
   if (
@@ -42,7 +43,7 @@ const getCategoryVisuals = (categoryName) => {
     name.includes("bánh") ||
     name.includes("muffin")
   ) {
-    return { icon: "bi-basket", color: "rgba(251, 191, 36, 0.1)" }; // Vàng nhạt
+    return { icon: "bi bi-cup-hot", color: unifiedColor };
   }
   // Nhóm Trà & Trái cây
   if (
@@ -50,7 +51,7 @@ const getCategoryVisuals = (categoryName) => {
     name.includes("trái cây") ||
     name.includes("nước ép")
   ) {
-    return { icon: "bi-cup-straw", color: "rgba(34, 197, 94, 0.1)" }; // Xanh lá nhạt
+    return { icon: "bi bi-cup-hot", color: unifiedColor };
   }
   // Nhóm Đá xay / Sinh tố
   if (
@@ -58,7 +59,7 @@ const getCategoryVisuals = (categoryName) => {
     name.includes("frappuccino") ||
     name.includes("sinh tố")
   ) {
-    return { icon: "bi-cup", color: "rgba(59, 130, 246, 0.1)" }; // Xanh dương nhạt (cảm giác lạnh)
+    return { icon: "bi bi-cup-hot", color: unifiedColor };
   }
   // Nhóm Dịch vụ / Khác (In ấn, văn phòng phẩm...)
   if (
@@ -66,15 +67,17 @@ const getCategoryVisuals = (categoryName) => {
     name.includes("in ấn") ||
     name.includes("thiết bị")
   ) {
-    return { icon: "bi-printer", color: "rgba(99, 102, 241, 0.1)" }; // Chàm
+    return { icon: "bi bi-cup-hot", color: unifiedColor };
   }
 
   // Mặc định nếu không khớp nhóm nào
-  return { icon: "bi-tag", color: "rgba(108, 117, 125, 0.1)" }; // Xám
+  return { icon: "bi bi-cup-hot", color: unifiedColor };
 };
 
 function normalizeMenuStatus(item) {
-  const availability = String(item?.availabilityStatus || "").trim().toUpperCase();
+  const availability = String(item?.availabilityStatus || "")
+    .trim()
+    .toUpperCase();
   const stock = Number(item?.stockQuantity || 0);
 
   if (["UNAVAILABLE", "DISCONTINUED"].includes(availability)) {
@@ -106,6 +109,7 @@ export default function MenuPage() {
   const [paymentMethod, setPaymentMethod] = useState("QR");
   const [ordering, setOrdering] = useState(false);
   const [orderError, setOrderError] = useState("");
+  const [guestNotice, setGuestNotice] = useState("");
 
   useEffect(() => {
     const loadMenu = async () => {
@@ -117,8 +121,9 @@ export default function MenuPage() {
           apiClient.get("/menu/items"),
         ]);
 
-        const categories = (Array.isArray(categoriesRes) ? categoriesRes : [])
-          .filter((c) => c?.isActive !== false);
+        const categories = (
+          Array.isArray(categoriesRes) ? categoriesRes : []
+        ).filter((c) => c?.isActive !== false);
         const items = Array.isArray(itemsRes) ? itemsRes : [];
 
         const catMap = new Map(
@@ -174,10 +179,10 @@ export default function MenuPage() {
         const rows = await getBookings();
         const nowMs = new Date().getTime();
         const active = (rows || []).filter(
-          (b) => 
-            b.status !== "Cancelled" && 
-            b.status !== "Pending" && 
-            new Date(b.endTime).getTime() >= nowMs
+          (b) =>
+            b.status !== "Cancelled" &&
+            b.status !== "Pending" &&
+            new Date(b.endTime).getTime() >= nowMs,
         );
         setMyBookings(active);
         setSelectedBookingId((prev) => prev || String(active[0]?.id || ""));
@@ -209,7 +214,7 @@ export default function MenuPage() {
       base.push({
         id,
         label: category.name || "Khác",
-        icon: "bi-tag",
+        icon: "bi bi-cup-hot",
         count: menuItems.filter((item) => item.categoryId === id).length,
       });
     }
@@ -233,6 +238,11 @@ export default function MenuPage() {
   };
 
   const addToCart = (item) => {
+    if (!isAuthenticated) {
+      setGuestNotice("Bạn cần đăng nhập tài khoản để đặt hàng.");
+      return;
+    }
+
     const existingItem = cart.find((cartItem) => cartItem.id === item.id);
     if (existingItem) {
       setCart(
@@ -306,7 +316,7 @@ export default function MenuPage() {
       setShowCartModal(false);
 
       const orderId = result?.orderId || result?.data?.orderId;
-      
+
       if (paymentMethod === "QR") {
         if (orderId) {
           navigate(`/payment/order/${orderId}`);
@@ -331,6 +341,18 @@ export default function MenuPage() {
     <div className="min-vh-100 bg-light">
       {/* Header Navigation */}
       <GuestCustomerNavbar activeItem="menu" />
+
+      {guestNotice && (
+        <Alert
+          variant="warning"
+          dismissible
+          onClose={() => setGuestNotice("")}
+          className="mb-0 text-center border-0 rounded-0"
+        >
+          <i className="bi bi-exclamation-triangle me-2"></i>
+          {guestNotice}
+        </Alert>
+      )}
 
       {/* Success Alert */}
       {showSuccess && (

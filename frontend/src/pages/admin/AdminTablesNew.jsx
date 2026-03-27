@@ -65,6 +65,7 @@ export default function TableManagementPage() {
     name: "",
     description: "",
     capacity: "1",
+    isHidden: false,
   });
 
   // Validation error states
@@ -191,6 +192,7 @@ export default function TableManagementPage() {
       name: "",
       description: "",
       capacity: "1",
+      isHidden: false,
     });
     setEditingTableTypeId(null);
   };
@@ -205,6 +207,7 @@ export default function TableManagementPage() {
       name: type.name || "",
       description: type.description || "",
       capacity: String(type.capacity || 1),
+      isHidden: Boolean(type.isHidden),
     });
     setEditingTableTypeId(type._id || type.sourceId);
     setShowTableTypeModal(true);
@@ -220,6 +223,7 @@ export default function TableManagementPage() {
         name: tableTypeForm.name,
         description: tableTypeForm.description,
         capacity: Number(tableTypeForm.capacity || 1),
+        isHidden: Boolean(tableTypeForm.isHidden),
       };
 
       if (editingTableTypeId) {
@@ -575,6 +579,26 @@ export default function TableManagementPage() {
                       }
                       required
                     />
+                  </Form.Group>
+                </Col>
+                <Col md={12}>
+                  <Form.Group>
+                    <Form.Check
+                      type="switch"
+                      id="table-type-hidden-switch"
+                      label="Tạm ẩn loại bàn này"
+                      checked={Boolean(tableTypeForm.isHidden)}
+                      onChange={(e) =>
+                        setTableTypeForm((prev) => ({
+                          ...prev,
+                          isHidden: e.target.checked,
+                        }))
+                      }
+                    />
+                    <Form.Text className="text-muted">
+                      Khi bật, toàn bộ bàn thuộc loại này sẽ bị ẩn khỏi sơ đồ
+                      chỗ ngồi ở trang đặt bàn.
+                    </Form.Text>
                   </Form.Group>
                 </Col>
                 <Col md={12}>

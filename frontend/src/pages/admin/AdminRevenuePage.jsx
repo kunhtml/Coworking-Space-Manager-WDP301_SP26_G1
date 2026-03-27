@@ -159,25 +159,19 @@ export default function AdminRevenuePage() {
       {error && <Alert variant="danger">{error}</Alert>}
 
       <Row className="g-3 mb-4">
-        <Col xl={3} md={6}>
+        <Col xl={4} md={6}>
           <SummaryCard
             label="Tổng doanh thu"
             value={loading ? "..." : formatVND(filteredRevenue)}
           />
         </Col>
-        <Col xl={3} md={6}>
-          <SummaryCard
-            label="Doanh thu cọc"
-            value={loading ? "..." : formatVND(summary.depositRevenue)}
-          />
-        </Col>
-        <Col xl={3} md={6}>
+        <Col xl={4} md={6}>
           <SummaryCard
             label="Doanh thu đơn dịch vụ"
             value={loading ? "..." : formatVND(summary.totalOrderRevenue)}
           />
         </Col>
-        <Col xl={3} md={6}>
+        <Col xl={4} md={6}>
           <SummaryCard
             label={`Tổng booking theo ${FILTER_LABEL[timeFilter]}`}
             value={

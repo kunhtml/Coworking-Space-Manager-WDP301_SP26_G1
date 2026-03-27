@@ -5,6 +5,7 @@ import Order from "../models/order.js";
 import Invoice from "../models/invoice.js";
 import TableType from "../models/tableType.js";
 import User from "../models/user.js";
+import { toVietnamISOString } from "../utils/timezone.js";
 
 const buildTableTypeMetaMap = async (tables = []) => {
   const typeIds = [
@@ -507,8 +508,8 @@ export const getHourlyOccupancyAnalytics = async (req, res) => {
     return res.json({
       date: `${dayStart.getFullYear()}-${String(dayStart.getMonth() + 1).padStart(2, "0")}-${String(dayStart.getDate()).padStart(2, "0")}`,
       period,
-      rangeStart: rangeStart.toISOString(),
-      rangeEnd: rangeEnd.toISOString(),
+      rangeStart: toVietnamISOString(rangeStart),
+      rangeEnd: toVietnamISOString(rangeEnd),
       dayCount,
       openingHour,
       closingHour,
@@ -673,8 +674,8 @@ export const getDailyTableUsage = async (req, res) => {
     return res.json({
       year: targetYear,
       month: targetMonth + 1,
-      monthStart: monthStart.toISOString(),
-      monthEnd: monthEnd.toISOString(),
+      monthStart: toVietnamISOString(monthStart),
+      monthEnd: toVietnamISOString(monthEnd),
       totalTables,
       daysInMonth,
       dailyUsage,
