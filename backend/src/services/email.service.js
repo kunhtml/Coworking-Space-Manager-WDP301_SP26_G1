@@ -30,6 +30,22 @@ const getPurposeText = (purpose) => {
   return "xác thực";
 };
 
+const formatVnd = (amount) =>
+  `${new Intl.NumberFormat("vi-VN").format(Math.round(Number(amount || 0)))}đ`;
+
+const formatDateTimeVi = (dateValue) => {
+  if (!dateValue) return "--";
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return "--";
+  return date.toLocaleString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
+
 const sendEmail = async ({ to, subject, text, html }) => {
   const transporter = createGmailTransporter();
 
@@ -99,6 +115,80 @@ export const sendWelcomeEmail = async ({ to, fullName }) => {
   return sendEmail({ to, subject, text, html });
 };
 
+export const sendStaffAccountCreatedEmail = async ({
+  to,
+  fullName,
+  loginEmail,
+  temporaryPassword,
+  createdBy,
+}) => {
+  const appName = process.env.APP_NAME || "Coworking Space";
+  const loginUrl = `${process.env.FRONTEND_URL || "http://localhost:5173"}/login`;
+  const safeName = String(fullName || "Bạn").trim();
+  const creatorName = String(createdBy || "Quản trị viên").trim();
+
+  const subject = `[${appName}] Tài khoản Staff của bạn đã được tạo`;
+  const text = `Xin chào ${safeName},\n\n${creatorName} vừa tạo tài khoản Staff cho bạn tại ${appName}.\nThông tin đăng nhập:\n- Email: ${loginEmail}\n- Mật khẩu tạm thời: ${temporaryPassword}\n\nVui lòng đăng nhập tại ${loginUrl} và đổi mật khẩu ngay sau lần đăng nhập đầu tiên.`;
+  const html = `
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
+      <h2 style="margin-bottom:8px">${appName}</h2>
+      <p>Xin chào <strong>${safeName}</strong>,</p>
+      <p><strong>${creatorName}</strong> vừa tạo tài khoản <strong>Staff</strong> cho bạn.</p>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin:14px 0">
+        <p style="margin:0 0 6px 0"><strong>Email đăng nhập:</strong> ${loginEmail}</p>
+        <p style="margin:0"><strong>Mật khẩu tạm thời:</strong> ${temporaryPassword}</p>
+      </div>
+      <p>Vui lòng đổi mật khẩu ngay sau khi đăng nhập để bảo mật tài khoản.</p>
+      <p>
+        <a href="${loginUrl}" style="display:inline-block;padding:10px 16px;background:#2563eb;color:#fff;text-decoration:none;border-radius:6px">
+          Đăng nhập ngay
+        </a>
+      </p>
+    </div>
+  `;
+
+  return sendEmail({ to, subject, text, html });
+};
+
+export const sendPaymentSuccessEmail = async ({
+  to,
+  customerName,
+  paymentType,
+  bookingCode,
+  orderCode,
+  amount,
+  paymentMethod,
+  paidAt,
+}) => {
+  const appName = process.env.APP_NAME || "Coworking Space";
+  const safeName = String(customerName || "Khách hàng").trim();
+  const normalizedType = String(paymentType || "ORDER").trim().toUpperCase();
+  const typeLabel = normalizedType === "BOOKING" ? "đặt bàn" : "đơn dịch vụ";
+  const referenceCode =
+    normalizedType === "BOOKING"
+      ? bookingCode || "--"
+      : orderCode || bookingCode || "--";
+
+  const subject = `[${appName}] Thanh toán ${typeLabel} thành công`;
+  const text = `Xin chào ${safeName},\n\nHệ thống xác nhận bạn đã thanh toán thành công ${typeLabel}.\n- Mã tham chiếu: ${referenceCode}\n- Số tiền: ${formatVnd(amount)}\n- Phương thức: ${paymentMethod || "--"}\n- Thời gian: ${formatDateTimeVi(paidAt)}\n\nCảm ơn bạn đã sử dụng dịch vụ.`;
+  const html = `
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
+      <h2 style="margin-bottom:8px">${appName}</h2>
+      <p>Xin chào <strong>${safeName}</strong>,</p>
+      <p>Bạn đã thanh toán <strong>thành công</strong> cho ${typeLabel}.</p>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin:14px 0">
+        <p style="margin:0 0 6px 0"><strong>Mã tham chiếu:</strong> ${referenceCode}</p>
+        <p style="margin:0 0 6px 0"><strong>Số tiền:</strong> ${formatVnd(amount)}</p>
+        <p style="margin:0 0 6px 0"><strong>Phương thức:</strong> ${paymentMethod || "--"}</p>
+        <p style="margin:0"><strong>Thời gian:</strong> ${formatDateTimeVi(paidAt)}</p>
+      </div>
+      <p>Cảm ơn bạn đã sử dụng dịch vụ.</p>
+    </div>
+  `;
+
+  return sendEmail({ to, subject, text, html });
+};
+
 export const sendRegistrationEmail = async ({ to, fullName }) => {
   return sendWelcomeEmail({ to, fullName });
 };
@@ -110,6 +200,8 @@ export const isEmailConfigured = () => {
 export default {
   sendRegistrationEmail,
   sendWelcomeEmail,
+  sendStaffAccountCreatedEmail,
+  sendPaymentSuccessEmail,
   isEmailConfigured,
   sendOtpEmail,
 };

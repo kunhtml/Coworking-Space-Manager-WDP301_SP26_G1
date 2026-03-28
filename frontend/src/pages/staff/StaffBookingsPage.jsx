@@ -46,6 +46,18 @@ function fmtMoney(v) {
   return new Intl.NumberFormat("vi-VN").format(Number(v || 0)) + "đ";
 }
 
+function formatCheckinInfo(staffName, checkedInAt) {
+  if (!staffName && !checkedInAt) return "--";
+  if (!checkedInAt) return staffName || "--";
+  const checkedInText = new Date(checkedInAt).toLocaleString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    day: "2-digit",
+    month: "2-digit",
+  });
+  return `${staffName || "--"} (${checkedInText})`;
+}
+
 export default function StaffBookingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -196,6 +208,7 @@ export default function StaffBookingsPage() {
                     <th>BÀN</th>
                     <th>THỜI GIAN THEO LỊCH</th>
                     <th>TRỊ GIÁ</th>
+                    <th>STAFF CHECK-IN</th>
                     <th>TRẠNG THÁI</th>
                   </tr>
                 </thead>
@@ -231,6 +244,9 @@ export default function StaffBookingsPage() {
                         </td>
                         <td className="fw-semibold text-dark">
                           {fmtMoney(b.depositAmount)}
+                        </td>
+                        <td className="fw-semibold text-dark">
+                          {formatCheckinInfo(b.checkedInByName, b.checkedInAt)}
                         </td>
                         <td>
                           <Badge

@@ -36,9 +36,58 @@ const resolveTableCapacity = (table, tableTypeMetaMap) =>
 const resolveTableTypeName = (table, tableTypeMetaMap) =>
   resolveTableTypeMeta(table, tableTypeMetaMap)?.name || "Unknown";
 
+const formatMonthLabel = (date) =>
+  `${String(date.getMonth() + 1).padStart(2, "0")}/${date.getFullYear()}`;
+
+const parseSelectedMonthStart = (yearValue, monthValue, fallbackDate) => {
+  const fallback = new Date(
+    fallbackDate.getFullYear(),
+    fallbackDate.getMonth(),
+    1,
+    0,
+    0,
+    0,
+    0,
+  );
+
+  const parsedYear = Number.parseInt(yearValue, 10);
+  const parsedMonth = Number.parseInt(monthValue, 10);
+  if (
+    !Number.isFinite(parsedYear) ||
+    !Number.isFinite(parsedMonth) ||
+    parsedMonth < 1 ||
+    parsedMonth > 12
+  ) {
+    return fallback;
+  }
+
+  return new Date(parsedYear, parsedMonth - 1, 1, 0, 0, 0, 0);
+};
+
+const buildMonthRange = (monthStart) => {
+  const from = new Date(monthStart.getFullYear(), monthStart.getMonth(), 1, 0, 0, 0, 0);
+  const to = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1, 0, 0, 0, 0);
+  return { from, to };
+};
+
+const aggregateRevenueInRange = (payments, from, to) => {
+  return payments.reduce(
+    (acc, payment) => {
+      const paidDate = new Date(payment.paidAt || payment.createdAt || Date.now());
+      if (Number.isNaN(paidDate.getTime())) return acc;
+      if (paidDate < from || paidDate >= to) return acc;
+
+      acc.revenue += Number(payment.amount) || 0;
+      acc.transactions += 1;
+      return acc;
+    },
+    { revenue: 0, transactions: 0 },
+  );
+};
+
 export const getReportAnalytics = async (req, res) => {
   try {
-    const { timeFilter = "Ngày" } = req.query;
+    const { timeFilter = "Ngày", year, month } = req.query;
     console.log("📊 Analytics request with timeFilter:", timeFilter);
 
     const [payments, bookings, tables, orders, invoices] = await Promise.all([
@@ -54,6 +103,17 @@ export const getReportAnalytics = async (req, res) => {
     const tableTypeMetaMap = await buildTableTypeMetaMap(tables);
 
     const now = new Date();
+    const selectedMonthStart = parseSelectedMonthStart(year, month, now);
+    const previousMonthStart = new Date(
+      selectedMonthStart.getFullYear(),
+      selectedMonthStart.getMonth() - 1,
+      1,
+      0,
+      0,
+      0,
+      0,
+    );
+
     let revenueData = [];
     let periodLabel = "";
 
@@ -83,7 +143,11 @@ export const getReportAnalytics = async (req, res) => {
       periodLabel = "tháng";
       // Last 6 months
       for (let i = 5; i >= 0; i--) {
-        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const date = new Date(
+          selectedMonthStart.getFullYear(),
+          selectedMonthStart.getMonth() - i,
+          1,
+        );
         const key = `${String(date.getMonth() + 1).padStart(2, "0")}/${date.getFullYear()}`;
         revenueData.push({ _id: key, total: 0, count: 0 });
       }
@@ -108,6 +172,28 @@ export const getReportAnalytics = async (req, res) => {
       .filter((p) => p.type === "Deposit")
       .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
     const otherRevenue = totalRevenue - depositRevenue;
+
+    const selectedMonthRange = buildMonthRange(selectedMonthStart);
+    const previousMonthRange = buildMonthRange(previousMonthStart);
+    const selectedMonthRevenue = aggregateRevenueInRange(
+      successfulPayments,
+      selectedMonthRange.from,
+      selectedMonthRange.to,
+    );
+    const previousMonthRevenue = aggregateRevenueInRange(
+      successfulPayments,
+      previousMonthRange.from,
+      previousMonthRange.to,
+    );
+    const monthDelta =
+      selectedMonthRevenue.revenue - previousMonthRevenue.revenue;
+    const monthGrowthPercent =
+      previousMonthRevenue.revenue > 0
+        ? Math.round(
+            ((monthDelta / previousMonthRevenue.revenue) * 100 + Number.EPSILON) *
+              100,
+          ) / 100
+        : null;
 
     // Group payments by time period
     successfulPayments.forEach((payment) => {
@@ -288,6 +374,25 @@ export const getReportAnalytics = async (req, res) => {
       generatedAt: now,
       timeFilter,
       periodLabel,
+      monthlyComparison: {
+        selectedMonth: {
+          label: formatMonthLabel(selectedMonthStart),
+          year: selectedMonthStart.getFullYear(),
+          month: selectedMonthStart.getMonth() + 1,
+          revenue: selectedMonthRevenue.revenue,
+          transactions: selectedMonthRevenue.transactions,
+        },
+        previousMonth: {
+          label: formatMonthLabel(previousMonthStart),
+          year: previousMonthStart.getFullYear(),
+          month: previousMonthStart.getMonth() + 1,
+          revenue: previousMonthRevenue.revenue,
+          transactions: previousMonthRevenue.transactions,
+        },
+        deltaAmount: monthDelta,
+        growthPercent: monthGrowthPercent,
+        trend: monthDelta >= 0 ? "up" : "down",
+      },
       summary: {
         totalRevenue,
         depositRevenue,

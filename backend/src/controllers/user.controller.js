@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import User from "../models/user.js";
+import { sendStaffAccountCreatedEmail } from "../services/email.service.js";
 
 export const getAllUsers = async (req, res) => {
   try {
@@ -64,14 +65,33 @@ export const createUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
+    const normalizedRole = String(role || "Customer").trim();
+
     const newUser = await User.create({
       fullName: fullName?.trim() || "",
       email: email.toLowerCase().trim(),
       passwordHash,
       phone: phone?.trim() || "",
-      role: role || "Customer",
+      role: normalizedRole,
       membershipStatus: membershipStatus || "Active",
     });
+
+    if (normalizedRole.toLowerCase() === "staff") {
+      try {
+        const creator = req.user?.id
+          ? await User.findById(req.user.id).select("fullName").lean()
+          : null;
+        await sendStaffAccountCreatedEmail({
+          to: newUser.email,
+          fullName: newUser.fullName,
+          loginEmail: newUser.email,
+          temporaryPassword: password,
+          createdBy: creator?.fullName || "Quản trị viên",
+        });
+      } catch (mailErr) {
+        console.error("sendStaffAccountCreatedEmail error:", mailErr);
+      }
+    }
 
     const userResponse = newUser.toObject();
     delete userResponse.passwordHash;

@@ -31,6 +31,11 @@ const bookingSchema = new Schema({
     ],
     default: "Pending",
   },
+  checkedInBy: {
+    type: Schema.Types.ObjectId,
+    ref: "User",
+  },
+  checkedInAt: Date,
   depositAmount: Number,
   createdAt: {
     type: Date,

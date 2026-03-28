@@ -40,6 +40,13 @@ export default function BookingDetailModal({
                 ["Gio bat dau", fmtTime(booking.startTime)],
                 ["Gio ket thuc", fmtTime(booking.endTime)],
                 ["Dat coc", fmtCur(booking.depositAmount)],
+                ["Staff check-in", booking.checkedInByName || "--"],
+                [
+                  "Luc check-in",
+                  booking.checkedInAt
+                    ? `${fmtTime(booking.checkedInAt)} ${fmtDate(booking.checkedInAt)}`
+                    : "--",
+                ],
               ].map(([label, value]) => (
                 <div key={label} className="d-flex justify-content-between py-2 border-bottom">
                   <span style={{ color: "#64748b" }}>{label}</span>

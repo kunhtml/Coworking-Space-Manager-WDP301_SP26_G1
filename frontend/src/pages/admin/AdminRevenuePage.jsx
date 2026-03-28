@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Button, Card, Col, Row, Table } from "react-bootstrap";
+import { Alert, Button, Card, Col, Form, Row, Table } from "react-bootstrap";
 import AdminLayout from "../../components/admin/AdminLayout";
 import RevenueChart from "../../components/admin/RevenueChart";
 import SummaryCard from "../../components/admin/SummaryCard";
@@ -43,8 +43,40 @@ function formatShortDate(dateValue) {
   });
 }
 
+function formatMonthInput(dateValue) {
+  const d = new Date(dateValue);
+  if (Number.isNaN(d.getTime())) return "";
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+}
+
+function parseMonthInput(monthText) {
+  const [yearText, monthTextValue] = String(monthText || "").split("-");
+  const year = Number.parseInt(yearText, 10);
+  const month = Number.parseInt(monthTextValue, 10);
+  if (!Number.isFinite(year) || !Number.isFinite(month)) {
+    return null;
+  }
+  if (month < 1 || month > 12) {
+    return null;
+  }
+  return { year, month };
+}
+
+function formatPercent(value) {
+  if (value === null || value === undefined) return "--";
+  const sign = value > 0 ? "+" : "";
+  return `${sign}${Number(value).toLocaleString("vi-VN", {
+    maximumFractionDigits: 2,
+  })}%`;
+}
+
 export default function AdminRevenuePage() {
   const [timeFilter, setTimeFilter] = useState("day");
+  const [selectedMonth, setSelectedMonth] = useState(() =>
+    formatMonthInput(new Date()),
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [report, setReport] = useState(null);
@@ -54,8 +86,11 @@ export default function AdminRevenuePage() {
       setLoading(true);
       setError("");
       try {
+        const selectedMonthParts = parseMonthInput(selectedMonth);
         const data = await getReportAnalyticsApi({
           timeFilter: FILTER_MAP[timeFilter],
+          year: selectedMonthParts?.year,
+          month: selectedMonthParts?.month,
         });
         setReport(data || null);
       } catch (err) {
@@ -67,7 +102,7 @@ export default function AdminRevenuePage() {
     };
 
     loadReport();
-  }, [timeFilter]);
+  }, [timeFilter, selectedMonth]);
 
   const summary = report?.summary || {};
   const revenueByPeriod = Array.isArray(report?.revenueByMonth)
@@ -79,6 +114,14 @@ export default function AdminRevenuePage() {
   const recentPayments = Array.isArray(report?.recentPayments)
     ? report.recentPayments
     : [];
+  const monthlyComparison = report?.monthlyComparison || null;
+  const monthDelta = Number(monthlyComparison?.deltaAmount || 0);
+  const monthTrendUp = String(monthlyComparison?.trend || "up") === "up";
+  const monthComparisonSubtitle = monthlyComparison
+    ? `So với ${monthlyComparison.previousMonth?.label || "tháng trước"}: ${
+        monthTrendUp ? "+" : ""
+      }${formatVND(monthDelta)} (${formatPercent(monthlyComparison.growthPercent)})`
+    : "";
 
   const filteredRevenue = useMemo(
     () =>
@@ -116,7 +159,7 @@ export default function AdminRevenuePage() {
       </div>
 
       <Row className="g-3 mb-4 align-items-center">
-        <Col lg={8} className="d-flex gap-2 flex-wrap">
+        <Col lg={6} className="d-flex gap-2 flex-wrap">
           <Button
             size="sm"
             variant={timeFilter === "day" ? "dark" : "light"}
@@ -146,7 +189,15 @@ export default function AdminRevenuePage() {
             Năm
           </Button>
         </Col>
-        <Col lg={4} className="text-lg-end">
+        <Col lg={3}>
+          <Form.Control
+            type="month"
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            aria-label="Chọn tháng để so sánh"
+          />
+        </Col>
+        <Col lg={3} className="text-lg-end">
           <small className="text-muted">
             Cập nhật:{" "}
             {report?.generatedAt
@@ -159,19 +210,27 @@ export default function AdminRevenuePage() {
       {error && <Alert variant="danger">{error}</Alert>}
 
       <Row className="g-3 mb-4">
-        <Col xl={4} md={6}>
+        <Col xl={3} md={6}>
           <SummaryCard
             label="Tổng doanh thu"
             value={loading ? "..." : formatVND(filteredRevenue)}
           />
         </Col>
-        <Col xl={4} md={6}>
+        <Col xl={3} md={6}>
+          <SummaryCard
+            label={`Lời/lãi tháng ${monthlyComparison?.selectedMonth?.label || "--"}`}
+            value={loading ? "..." : formatVND(monthlyComparison?.selectedMonth?.revenue || 0)}
+            subtitle={loading ? "" : monthComparisonSubtitle}
+            className={monthTrendUp ? "border-success-subtle" : "border-danger-subtle"}
+          />
+        </Col>
+        <Col xl={3} md={6}>
           <SummaryCard
             label="Doanh thu đơn dịch vụ"
             value={loading ? "..." : formatVND(summary.totalOrderRevenue)}
           />
         </Col>
-        <Col xl={4} md={6}>
+        <Col xl={3} md={6}>
           <SummaryCard
             label={`Tổng booking theo ${FILTER_LABEL[timeFilter]}`}
             value={

@@ -65,6 +65,18 @@ export default function BookingCard({
               <span style={{ color: "#64748b" }}>SDT</span>
               <strong style={{ color: "#0f172a" }}>{booking.customerPhone || "--"}</strong>
             </div>
+            {booking.checkedInByName && (
+              <div className="d-flex justify-content-between py-1 border-bottom">
+                <span style={{ color: "#64748b" }}>Staff check-in</span>
+                <strong style={{ color: "#0f172a" }}>{booking.checkedInByName}</strong>
+              </div>
+            )}
+            {booking.checkedInAt && (
+              <div className="d-flex justify-content-between py-1 border-bottom">
+                <span style={{ color: "#64748b" }}>Luc check-in</span>
+                <strong style={{ color: "#0f172a" }}>{fmtTime(booking.checkedInAt)} {fmtDate(booking.checkedInAt)}</strong>
+              </div>
+            )}
             <div className="d-flex justify-content-between py-1">
               <span style={{ color: "#64748b" }}>Dat coc</span>
               <strong style={{ color: "#15803d" }}>{fmtCur(booking.depositAmount)}</strong>

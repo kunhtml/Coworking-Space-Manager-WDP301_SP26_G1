@@ -7,6 +7,7 @@ import OrderItem from "../models/order_item.js";
 import MenuItem from "../models/menu_item.js";
 import Payment from "../models/payment.js";
 import Invoice from "../models/invoice.js";
+import { sendPaymentSuccessEmail } from "./email.service.js";
 import {
   BOOKING_PAYMENT_HOLD_MINUTES,
   ORDER_STATUS,
@@ -47,6 +48,62 @@ function createShortDescription(bookingCode, orderCode) {
     .slice(-5)
     .toUpperCase();
   return `NX${suffix || String(orderCode).slice(-4)}`.slice(0, 9);
+}
+
+function buildOrderDisplayCode(order) {
+  if (!order?._id) return "--";
+  return `OD-${String(order._id).slice(-6).toUpperCase()}`;
+}
+
+async function notifyPaymentSuccessByContext({ payment, invoice, booking }) {
+  if (!payment || !invoice) return;
+
+  const orderId = invoice.orderIds?.[0];
+  if (orderId) {
+    const order = await Order.findById(orderId).lean();
+    if (!order) return;
+
+    const customer = order.userId ? await User.findById(order.userId).lean() : null;
+    const emailTo = customer?.email || order.guestInfo?.email;
+    if (!emailTo) return;
+
+    await sendPaymentSuccessEmail({
+      to: emailTo,
+      customerName: customer?.fullName || order.guestInfo?.name || "Khách hàng",
+      paymentType: "ORDER",
+      orderCode: buildOrderDisplayCode(order),
+      amount: payment.amount,
+      paymentMethod: payment.paymentMethod,
+      paidAt: payment.paidAt || new Date(),
+    });
+    return;
+  }
+
+  if (payment.bookingId || booking?._id || invoice.bookingId) {
+    const bookingDoc = booking
+      ? booking
+      : await Booking.findById(payment.bookingId || invoice.bookingId).lean();
+    if (!bookingDoc) return;
+
+    const customer = bookingDoc.userId
+      ? await User.findById(bookingDoc.userId).lean()
+      : null;
+
+    const emailTo = customer?.email || bookingDoc.guestInfo?.email;
+    if (!emailTo) return;
+
+    await sendPaymentSuccessEmail({
+      to: emailTo,
+      customerName: customer?.fullName || bookingDoc.guestInfo?.name || "Khách hàng",
+      paymentType: "BOOKING",
+      bookingCode:
+        bookingDoc.bookingCode || `BK-${String(bookingDoc._id).slice(-6).toUpperCase()}`,
+      amount: payment.amount,
+      paymentMethod: payment.paymentMethod,
+      paidAt: payment.paidAt || new Date(),
+    });
+    return;
+  }
 }
 
 function mapPayOSStatus(status) {
@@ -388,6 +445,7 @@ export async function syncPayOSPaymentRecord({
   });
   if (!payment) return { payment: null, invoice: null, booking: null };
 
+  const previousStatus = payment.paymentStatus;
   const derivedStatus =
     paymentLink?.status || (webhookData?.code === "00" ? "PAID" : "FAILED");
   const paymentStatus = mapPayOSStatus(derivedStatus);
@@ -456,6 +514,18 @@ export async function syncPayOSPaymentRecord({
           $set: { status: ORDER_STATUS.CONFIRMED, updatedAt: now },
         },
       );
+    }
+  }
+
+  if (previousStatus !== "Success" && paymentStatus === "Success") {
+    try {
+      await notifyPaymentSuccessByContext({
+        payment,
+        invoice,
+        booking: invoice ? await Booking.findById(invoice.bookingId).lean() : null,
+      });
+    } catch (mailErr) {
+      console.error("sendPaymentSuccessEmail (PayOS sync) error:", mailErr);
     }
   }
 

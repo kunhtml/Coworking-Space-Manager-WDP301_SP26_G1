@@ -17,9 +17,13 @@ import {
   syncPayOSPaymentRecord,
   createPayOSClient,
 } from "../services/payos.service.js";
+import { sendPaymentSuccessEmail } from "../services/email.service.js";
 
 const resolveFrontendOrigin = (req) =>
   req.get("origin") || process.env.FRONTEND_URL || "http://localhost:5173";
+
+const buildOrderDisplayCode = (order) =>
+  order?._id ? `OD-${String(order._id).slice(-6).toUpperCase()}` : "--";
 
 function resolveMenuAvailabilityAfterStock(currentStatus, nextQty) {
   const current = String(currentStatus || "").trim().toUpperCase();
@@ -503,6 +507,43 @@ export const processCounterPayment = async (req, res) => {
       if (booking.tableId) {
         await Table.findByIdAndUpdate(booking.tableId, { status: "Occupied" });
       }
+    }
+
+    try {
+      const invoiceHasOrder = Array.isArray(invoice.orderIds) && invoice.orderIds.length > 0;
+      if (invoiceHasOrder) {
+        const customer = order.userId ? await User.findById(order.userId).lean() : null;
+        const emailTo = customer?.email || order.guestInfo?.email;
+        if (emailTo) {
+          await sendPaymentSuccessEmail({
+            to: emailTo,
+            customerName:
+              customer?.fullName || order.guestInfo?.name || booking?.guestInfo?.name || "Khách hàng",
+            paymentType: "ORDER",
+            orderCode: buildOrderDisplayCode(order),
+            amount: amountToPay,
+            paymentMethod,
+            paidAt: payment.paidAt,
+          });
+        }
+      } else if (booking) {
+        const customer = booking.userId ? await User.findById(booking.userId).lean() : null;
+        const emailTo = customer?.email || booking.guestInfo?.email;
+        if (emailTo) {
+          await sendPaymentSuccessEmail({
+            to: emailTo,
+            customerName: customer?.fullName || booking.guestInfo?.name || "Khách hàng",
+            paymentType: "BOOKING",
+            bookingCode:
+              booking.bookingCode || `BK-${String(booking._id).slice(-6).toUpperCase()}`,
+            amount: amountToPay,
+            paymentMethod,
+            paidAt: payment.paidAt,
+          });
+        }
+      }
+    } catch (mailErr) {
+      console.error("sendPaymentSuccessEmail (counter) error:", mailErr);
     }
 
     return res.json({

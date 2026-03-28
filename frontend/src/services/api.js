@@ -144,9 +144,11 @@ export const getHourlyOccupancyApi = ({ date, period } = {}) => {
   return apiClient.get(`/reports/analytics/hourly${qs ? `?${qs}` : ""}`);
 };
 
-export const getReportAnalyticsApi = ({ timeFilter } = {}) => {
+export const getReportAnalyticsApi = ({ timeFilter, year, month } = {}) => {
   const params = new URLSearchParams();
   if (timeFilter) params.append("timeFilter", timeFilter);
+  if (year) params.append("year", String(year));
+  if (month) params.append("month", String(month));
   const qs = params.toString();
   return apiClient.get(`/reports/analytics${qs ? `?${qs}` : ""}`);
 };

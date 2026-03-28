@@ -371,10 +371,14 @@ export const getAllBookings = async (req, res) => {
     const userIds = [
       ...new Set(bookings.map((b) => b.userId?.toString()).filter(Boolean)),
     ];
+    const checkedInStaffIds = [
+      ...new Set(bookings.map((b) => b.checkedInBy?.toString()).filter(Boolean)),
+    ];
+    const relatedUserIds = [...new Set([...userIds, ...checkedInStaffIds])];
 
     const [tables, users] = await Promise.all([
       Table.find({ _id: { $in: tableIds } }).lean(),
-      User.find({ _id: { $in: userIds } }).lean(),
+      User.find({ _id: { $in: relatedUserIds } }).lean(),
     ]);
 
     const tableMap = new Map(tables.map((t) => [t._id.toString(), t]));
@@ -383,6 +387,7 @@ export const getAllBookings = async (req, res) => {
     let rows = bookings.map((b) => {
       const table = tableMap.get(b.tableId?.toString());
       const user = userMap.get(b.userId?.toString());
+      const checkedInBy = userMap.get(b.checkedInBy?.toString());
       return {
         id: b._id,
         bookingCode: b.bookingCode || b._id.toString().slice(-6).toUpperCase(),
@@ -390,6 +395,9 @@ export const getAllBookings = async (req, res) => {
         tableStatus: table?.status || "Unknown",
         customerName: b.guestInfo?.name || user?.fullName || "Không xác định",
         customerPhone: b.guestInfo?.phone || user?.phone || "",
+        checkedInById: b.checkedInBy || null,
+        checkedInByName: checkedInBy?.fullName || "",
+        checkedInAt: b.checkedInAt || null,
         startTime: b.startTime,
         endTime: b.endTime,
         depositAmount: b.depositAmount || 0,
@@ -430,6 +438,7 @@ export const getAllBookings = async (req, res) => {
 export const checkInBooking = async (req, res) => {
   try {
     const { id } = req.params;
+    const checkInStaffId = req.user?.id;
     const booking = await Booking.findById(id);
     if (!booking)
       return res.status(404).json({ message: "Không tìm thấy booking." });
@@ -449,7 +458,14 @@ export const checkInBooking = async (req, res) => {
         message: `Chỉ có thể check-in booking đã xác nhận/chờ thanh toán (trạng thái hiện tại: ${booking.status}).`,
       });
     }
+
+    const staff = checkInStaffId
+      ? await User.findById(checkInStaffId).select("fullName").lean()
+      : null;
+
     booking.status = "CheckedIn";
+    booking.checkedInBy = checkInStaffId || undefined;
+    booking.checkedInAt = now;
     await booking.save();
 
     if (booking.tableId) {
@@ -460,6 +476,9 @@ export const checkInBooking = async (req, res) => {
       message: "Check-in thành công.",
       status: "CheckedIn",
       tableStatus: booking.tableId ? "Occupied" : null,
+      checkedInById: checkInStaffId || null,
+      checkedInByName: staff?.fullName || "",
+      checkedInAt: booking.checkedInAt,
     });
   } catch (err) {
     console.error(err);
