@@ -31,7 +31,10 @@ export default function BookingCard({
               <div className="fw-bold fs-6" style={{ color: "#0f172a" }}>
                 {booking.bookingCode}
               </div>
-              <div className="fw-semibold" style={{ color: "#475569", fontSize: "0.88rem" }}>
+              <div
+                className="fw-semibold"
+                style={{ color: "#475569", fontSize: "0.88rem" }}
+              >
                 {booking.customerName || "Khong xac dinh"}
               </div>
             </div>
@@ -40,7 +43,11 @@ export default function BookingCard({
               {isExpired && (
                 <span
                   className="rounded-pill px-2 py-1 fw-bold d-inline-flex align-items-center gap-1"
-                  style={{ background: "#fee2e2", color: "#b91c1c", fontSize: "0.72rem" }}
+                  style={{
+                    background: "#fee2e2",
+                    color: "#b91c1c",
+                    fontSize: "0.72rem",
+                  }}
                 >
                   <i className="bi bi-clock-history" /> Hết giờ
                 </span>
@@ -48,38 +55,55 @@ export default function BookingCard({
             </div>
           </div>
 
-          <div className="rounded-3 px-3 py-2 mb-3" style={{ background: "#f8fafc", fontSize: "0.84rem" }}>
+          <div
+            className="rounded-3 px-3 py-2 mb-3"
+            style={{ background: "#f8fafc", fontSize: "0.84rem" }}
+          >
             <div className="d-flex justify-content-between py-1 border-bottom">
               <span style={{ color: "#64748b" }}>Ban</span>
-              <strong style={{ color: "#0f172a" }}>{booking.spaceName || "--"}</strong>
+              <strong style={{ color: "#0f172a" }}>
+                {booking.spaceName || "--"}
+              </strong>
             </div>
             <div className="d-flex justify-content-between py-1 border-bottom">
               <span style={{ color: "#64748b" }}>Ngay</span>
-              <strong style={{ color: "#0f172a" }}>{fmtDate(booking.startTime)}</strong>
+              <strong style={{ color: "#0f172a" }}>
+                {fmtDate(booking.startTime)}
+              </strong>
             </div>
             <div className="d-flex justify-content-between py-1 border-bottom">
               <span style={{ color: "#64748b" }}>Gio</span>
-              <strong style={{ color: "#0f172a" }}>{fmtTime(booking.startTime)} - {fmtTime(booking.endTime)}</strong>
+              <strong style={{ color: "#0f172a" }}>
+                {fmtTime(booking.startTime)} - {fmtTime(booking.endTime)}
+              </strong>
             </div>
             <div className="d-flex justify-content-between py-1 border-bottom">
               <span style={{ color: "#64748b" }}>SDT</span>
-              <strong style={{ color: "#0f172a" }}>{booking.customerPhone || "--"}</strong>
+              <strong style={{ color: "#0f172a" }}>
+                {booking.customerPhone || "--"}
+              </strong>
             </div>
             {booking.checkedInByName && (
               <div className="d-flex justify-content-between py-1 border-bottom">
                 <span style={{ color: "#64748b" }}>Staff check-in</span>
-                <strong style={{ color: "#0f172a" }}>{booking.checkedInByName}</strong>
+                <strong style={{ color: "#0f172a" }}>
+                  {booking.checkedInByName}
+                </strong>
               </div>
             )}
             {booking.checkedInAt && (
               <div className="d-flex justify-content-between py-1 border-bottom">
                 <span style={{ color: "#64748b" }}>Luc check-in</span>
-                <strong style={{ color: "#0f172a" }}>{fmtTime(booking.checkedInAt)} {fmtDate(booking.checkedInAt)}</strong>
+                <strong style={{ color: "#0f172a" }}>
+                  {fmtTime(booking.checkedInAt)} {fmtDate(booking.checkedInAt)}
+                </strong>
               </div>
             )}
             <div className="d-flex justify-content-between py-1">
               <span style={{ color: "#64748b" }}>Dat coc</span>
-              <strong style={{ color: "#15803d" }}>{fmtCur(booking.depositAmount)}</strong>
+              <strong style={{ color: "#15803d" }}>
+                {fmtCur(booking.depositAmount)}
+              </strong>
             </div>
           </div>
 
@@ -95,7 +119,11 @@ export default function BookingCard({
               disabled={!canCheckIn || isChecking}
               onClick={() => onCheckin(booking)}
             >
-              {isChecking ? "Dang xu ly..." : isExpired ? "Hết giờ" : "Check-in"}
+              {isChecking
+                ? "Dang xu ly..."
+                : isExpired
+                  ? "Hết giờ"
+                  : "Check-in"}
             </Button>
             <Button
               variant="outline-secondary"
@@ -111,4 +139,3 @@ export default function BookingCard({
     </Col>
   );
 }
-

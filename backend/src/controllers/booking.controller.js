@@ -372,7 +372,9 @@ export const getAllBookings = async (req, res) => {
       ...new Set(bookings.map((b) => b.userId?.toString()).filter(Boolean)),
     ];
     const checkedInStaffIds = [
-      ...new Set(bookings.map((b) => b.checkedInBy?.toString()).filter(Boolean)),
+      ...new Set(
+        bookings.map((b) => b.checkedInBy?.toString()).filter(Boolean),
+      ),
     ];
     const relatedUserIds = [...new Set([...userIds, ...checkedInStaffIds])];
 

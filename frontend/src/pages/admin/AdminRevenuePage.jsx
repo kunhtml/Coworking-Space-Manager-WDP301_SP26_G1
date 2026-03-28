@@ -219,9 +219,15 @@ export default function AdminRevenuePage() {
         <Col xl={3} md={6}>
           <SummaryCard
             label={`Lời/lãi tháng ${monthlyComparison?.selectedMonth?.label || "--"}`}
-            value={loading ? "..." : formatVND(monthlyComparison?.selectedMonth?.revenue || 0)}
+            value={
+              loading
+                ? "..."
+                : formatVND(monthlyComparison?.selectedMonth?.revenue || 0)
+            }
             subtitle={loading ? "" : monthComparisonSubtitle}
-            className={monthTrendUp ? "border-success-subtle" : "border-danger-subtle"}
+            className={
+              monthTrendUp ? "border-success-subtle" : "border-danger-subtle"
+            }
           />
         </Col>
         <Col xl={3} md={6}>

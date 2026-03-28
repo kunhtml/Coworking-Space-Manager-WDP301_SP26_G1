@@ -26,7 +26,9 @@ const buildOrderDisplayCode = (order) =>
   order?._id ? `OD-${String(order._id).slice(-6).toUpperCase()}` : "--";
 
 function resolveMenuAvailabilityAfterStock(currentStatus, nextQty) {
-  const current = String(currentStatus || "").trim().toUpperCase();
+  const current = String(currentStatus || "")
+    .trim()
+    .toUpperCase();
   if (current === "UNAVAILABLE") return "UNAVAILABLE";
   return Number(nextQty || 0) > 0 ? "AVAILABLE" : "OUT_OF_STOCK";
 }
@@ -59,13 +61,18 @@ async function consumeOrderMenuStock(orderId) {
       .toUpperCase();
     const stock = Number(menu.stockQuantity || 0);
     if (availability === "UNAVAILABLE" || stock < Number(consumeQty || 0)) {
-      throw new Error(`Món ${menu.name || "đã chọn"} không đủ tồn kho để thanh toán.`);
+      throw new Error(
+        `Món ${menu.name || "đã chọn"} không đủ tồn kho để thanh toán.`,
+      );
     }
   }
 
   for (const [menuId, consumeQty] of qtyByMenuId.entries()) {
     const menu = menuMap.get(menuId);
-    const nextQty = Math.max(0, Number(menu.stockQuantity || 0) - Number(consumeQty || 0));
+    const nextQty = Math.max(
+      0,
+      Number(menu.stockQuantity || 0) - Number(consumeQty || 0),
+    );
     menu.stockQuantity = nextQty;
     menu.availabilityStatus = resolveMenuAvailabilityAfterStock(
       menu.availabilityStatus,
@@ -380,11 +387,9 @@ export const processCounterPayment = async (req, res) => {
       .toUpperCase();
 
     if (!["CASH", "QR_PAYOS"].includes(paymentMethod)) {
-      return res
-        .status(400)
-        .json({
-          message: "Phương thức thanh toán chỉ hỗ trợ CASH hoặc QR_PAYOS.",
-        });
+      return res.status(400).json({
+        message: "Phương thức thanh toán chỉ hỗ trợ CASH hoặc QR_PAYOS.",
+      });
     }
 
     let order = null;
@@ -510,15 +515,21 @@ export const processCounterPayment = async (req, res) => {
     }
 
     try {
-      const invoiceHasOrder = Array.isArray(invoice.orderIds) && invoice.orderIds.length > 0;
+      const invoiceHasOrder =
+        Array.isArray(invoice.orderIds) && invoice.orderIds.length > 0;
       if (invoiceHasOrder) {
-        const customer = order.userId ? await User.findById(order.userId).lean() : null;
+        const customer = order.userId
+          ? await User.findById(order.userId).lean()
+          : null;
         const emailTo = customer?.email || order.guestInfo?.email;
         if (emailTo) {
           await sendPaymentSuccessEmail({
             to: emailTo,
             customerName:
-              customer?.fullName || order.guestInfo?.name || booking?.guestInfo?.name || "Khách hàng",
+              customer?.fullName ||
+              order.guestInfo?.name ||
+              booking?.guestInfo?.name ||
+              "Khách hàng",
             paymentType: "ORDER",
             orderCode: buildOrderDisplayCode(order),
             amount: amountToPay,
@@ -527,15 +538,19 @@ export const processCounterPayment = async (req, res) => {
           });
         }
       } else if (booking) {
-        const customer = booking.userId ? await User.findById(booking.userId).lean() : null;
+        const customer = booking.userId
+          ? await User.findById(booking.userId).lean()
+          : null;
         const emailTo = customer?.email || booking.guestInfo?.email;
         if (emailTo) {
           await sendPaymentSuccessEmail({
             to: emailTo,
-            customerName: customer?.fullName || booking.guestInfo?.name || "Khách hàng",
+            customerName:
+              customer?.fullName || booking.guestInfo?.name || "Khách hàng",
             paymentType: "BOOKING",
             bookingCode:
-              booking.bookingCode || `BK-${String(booking._id).slice(-6).toUpperCase()}`,
+              booking.bookingCode ||
+              `BK-${String(booking._id).slice(-6).toUpperCase()}`,
             amount: amountToPay,
             paymentMethod,
             paidAt: payment.paidAt,
@@ -586,6 +601,3 @@ export const payosWebhook = async (req, res) => {
 // ========== MENU MANAGEMENT (Admin/Staff) ==========
 
 // GET /api/menu/items
-
-
-

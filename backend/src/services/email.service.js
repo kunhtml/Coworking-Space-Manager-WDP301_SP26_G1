@@ -162,7 +162,9 @@ export const sendPaymentSuccessEmail = async ({
 }) => {
   const appName = process.env.APP_NAME || "Coworking Space";
   const safeName = String(customerName || "Khách hàng").trim();
-  const normalizedType = String(paymentType || "ORDER").trim().toUpperCase();
+  const normalizedType = String(paymentType || "ORDER")
+    .trim()
+    .toUpperCase();
   const typeLabel = normalizedType === "BOOKING" ? "đặt bàn" : "đơn dịch vụ";
   const referenceCode =
     normalizedType === "BOOKING"

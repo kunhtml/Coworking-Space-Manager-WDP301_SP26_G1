@@ -63,7 +63,9 @@ async function notifyPaymentSuccessByContext({ payment, invoice, booking }) {
     const order = await Order.findById(orderId).lean();
     if (!order) return;
 
-    const customer = order.userId ? await User.findById(order.userId).lean() : null;
+    const customer = order.userId
+      ? await User.findById(order.userId).lean()
+      : null;
     const emailTo = customer?.email || order.guestInfo?.email;
     if (!emailTo) return;
 
@@ -94,10 +96,12 @@ async function notifyPaymentSuccessByContext({ payment, invoice, booking }) {
 
     await sendPaymentSuccessEmail({
       to: emailTo,
-      customerName: customer?.fullName || bookingDoc.guestInfo?.name || "Khách hàng",
+      customerName:
+        customer?.fullName || bookingDoc.guestInfo?.name || "Khách hàng",
       paymentType: "BOOKING",
       bookingCode:
-        bookingDoc.bookingCode || `BK-${String(bookingDoc._id).slice(-6).toUpperCase()}`,
+        bookingDoc.bookingCode ||
+        `BK-${String(bookingDoc._id).slice(-6).toUpperCase()}`,
       amount: payment.amount,
       paymentMethod: payment.paymentMethod,
       paidAt: payment.paidAt || new Date(),
@@ -115,7 +119,9 @@ function mapPayOSStatus(status) {
 }
 
 function resolveMenuAvailabilityAfterStock(currentStatus, nextQty) {
-  const current = String(currentStatus || "").trim().toUpperCase();
+  const current = String(currentStatus || "")
+    .trim()
+    .toUpperCase();
   if (current === "UNAVAILABLE") return "UNAVAILABLE";
   return Number(nextQty || 0) > 0 ? "AVAILABLE" : "OUT_OF_STOCK";
 }
@@ -132,7 +138,9 @@ async function consumeStockForPendingOrders(orderIds = []) {
   const pendingOrderIds = pendingOrders.map((o) => o._id);
   if (!pendingOrderIds.length) return [];
 
-  const items = await OrderItem.find({ orderId: { $in: pendingOrderIds } }).lean();
+  const items = await OrderItem.find({
+    orderId: { $in: pendingOrderIds },
+  }).lean();
   const qtyByMenuId = new Map();
   for (const item of items) {
     const key = item.menuItemId?.toString();
@@ -158,7 +166,9 @@ async function consumeStockForPendingOrders(orderIds = []) {
         .toUpperCase();
       const stock = Number(menu.stockQuantity || 0);
       if (availability === "UNAVAILABLE" || stock < Number(consumeQty || 0)) {
-        throw new Error(`Món ${menu.name || "đã chọn"} không đủ tồn kho để thanh toán.`);
+        throw new Error(
+          `Món ${menu.name || "đã chọn"} không đủ tồn kho để thanh toán.`,
+        );
       }
     }
 
@@ -504,7 +514,9 @@ export async function syncPayOSPaymentRecord({
 
     // Cập nhật trạng thái các order liên quan khi invoice đã thanh toán đủ
     if (remaining <= 0 && invoice.orderIds && invoice.orderIds.length > 0) {
-      const payableOrderIds = await consumeStockForPendingOrders(invoice.orderIds);
+      const payableOrderIds = await consumeStockForPendingOrders(
+        invoice.orderIds,
+      );
       await Order.updateMany(
         {
           _id: { $in: payableOrderIds },
@@ -522,7 +534,9 @@ export async function syncPayOSPaymentRecord({
       await notifyPaymentSuccessByContext({
         payment,
         invoice,
-        booking: invoice ? await Booking.findById(invoice.bookingId).lean() : null,
+        booking: invoice
+          ? await Booking.findById(invoice.bookingId).lean()
+          : null,
       });
     } catch (mailErr) {
       console.error("sendPaymentSuccessEmail (PayOS sync) error:", mailErr);

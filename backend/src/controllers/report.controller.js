@@ -65,15 +65,33 @@ const parseSelectedMonthStart = (yearValue, monthValue, fallbackDate) => {
 };
 
 const buildMonthRange = (monthStart) => {
-  const from = new Date(monthStart.getFullYear(), monthStart.getMonth(), 1, 0, 0, 0, 0);
-  const to = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1, 0, 0, 0, 0);
+  const from = new Date(
+    monthStart.getFullYear(),
+    monthStart.getMonth(),
+    1,
+    0,
+    0,
+    0,
+    0,
+  );
+  const to = new Date(
+    monthStart.getFullYear(),
+    monthStart.getMonth() + 1,
+    1,
+    0,
+    0,
+    0,
+    0,
+  );
   return { from, to };
 };
 
 const aggregateRevenueInRange = (payments, from, to) => {
   return payments.reduce(
     (acc, payment) => {
-      const paidDate = new Date(payment.paidAt || payment.createdAt || Date.now());
+      const paidDate = new Date(
+        payment.paidAt || payment.createdAt || Date.now(),
+      );
       if (Number.isNaN(paidDate.getTime())) return acc;
       if (paidDate < from || paidDate >= to) return acc;
 
@@ -190,7 +208,8 @@ export const getReportAnalytics = async (req, res) => {
     const monthGrowthPercent =
       previousMonthRevenue.revenue > 0
         ? Math.round(
-            ((monthDelta / previousMonthRevenue.revenue) * 100 + Number.EPSILON) *
+            ((monthDelta / previousMonthRevenue.revenue) * 100 +
+              Number.EPSILON) *
               100,
           ) / 100
         : null;
